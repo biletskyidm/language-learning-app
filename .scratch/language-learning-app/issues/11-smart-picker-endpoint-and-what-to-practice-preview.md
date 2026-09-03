@@ -1,9 +1,5 @@
 # 11: Smart picker endpoint and 'what to practice' preview
 
-**Blocked by:** 04 (Expressions list with text search and cached reads)
-
-**Status:** ready-for-agent
-
 **What to build:** `GET /expressions/pick?limit=5` returns the next expressions to practice; the app shows a "What to practice" screen listing them (used as the start step for chats and drills later). PRD story 14.
 
 **Authoritative rule (MCP `db.mjs`, user-supplied) — port verbatim in `MongoExpressionRepository.pick`:**
@@ -34,6 +30,3 @@ Note the Go port deviated (`timesPracticed > 0` instead of `score exists`); the 
 - [ ] picker unit tests: due-with-score → 1; unpracticed by tier → 2..6; practiced-but-not-due → 99 (excluded); `score: 0` present counts as practiced (`$ifNull` semantics: 0 is not null → truthy check must mirror `$ifNull`, i.e. field presence, NOT numeric truthiness — test this edge explicitly).
 - [ ] api tests: limit default/max; ordering across mixed seed; only own userId.
 - [ ] app: preview screen lists picked items with priority reason ("due", "new · very common").
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

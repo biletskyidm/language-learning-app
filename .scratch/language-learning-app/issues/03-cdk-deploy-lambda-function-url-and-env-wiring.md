@@ -1,9 +1,5 @@
 # 03: CDK deploy: Lambda Function URL and env wiring
 
-**Blocked by:** 02 (Shared-secret token handshake and auth middleware)
-
-**Status:** ready-for-agent
-
 **What to build:** `pnpm --filter infra deploy` builds the API with esbuild and deploys one Node 22 ARM64 Lambda behind a Function URL; the app's setup screen pointed at that URL with the shared secret works end to end (vocab + chat). PRD story 49 (Lambda part). Deploy happens now, right after auth, so every later ticket is tested on the phone against the real Lambda. Redeploy after each ticket (`pnpm --filter infra deploy`). **Milestone 1 (daily use)** = the redeploy after ticket 20 (cancel) lands, when vocab + chat are complete.
 
 **Reference (old `infra/stack.js`, Go) — same topology, new runtime:**
@@ -22,6 +18,3 @@ Use `NodejsFunction` (esbuild bundling, `externalModules: []`, `format: esm`). H
 - [ ] `curl $ApiUrl/health` → `db: ok`.
 - [ ] From the phone (dev build/TestFlight) against the Function URL: `/health` ok, 401 without secret, 200 with the secret entered in setup. LLM env vars are wired now (values may be empty until ticket 10).
 - [ ] README: deploy steps, how to rotate `AUTH_SECRET` (redeploy + re-enter in app).
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

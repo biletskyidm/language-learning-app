@@ -1,9 +1,5 @@
 # 02: Shared-secret token handshake and auth middleware
 
-**Blocked by:** 01 (Monorepo skeleton, local API + Mongo, app shell with health)
-
-**Status:** ready-for-agent
-
 **What to build:** On first launch the app asks for API URL and shared secret, stores both in expo-secure-store, and from then on every request carries a freshly generated bearer token derived from the secret. The API verifies it, rejects missing/invalid/stale/replayed tokens with 401, and stamps the configured `USER_ID` on the request context. PRD stories 1–4.
 
 **Token format (decision):** `Authorization: Bearer <ts>.<nonce>.<sig>`
@@ -26,6 +22,3 @@ New middleware keeps the same shape but calls `verifyToken`. `/health` stays pub
 - [ ] api: `GET /expressions` (stub 200 for now) → 401 `{error:{code:"UNAUTHORIZED"}}` without header, 200 with a valid generated token; handler sees `c.get('userId') === USER_ID`.
 - [ ] app: setup screen saves to secure store; `client.ts` test shows header present and different nonce on two calls.
 - [ ] `.env.example` gains `AUTH_SECRET`; README explains generating a 32-byte secret (`openssl rand -hex 32`).
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

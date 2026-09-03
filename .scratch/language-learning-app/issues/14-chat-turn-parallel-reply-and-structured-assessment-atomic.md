@@ -1,9 +1,5 @@
 # 14: Chat turn: parallel reply and structured assessment, atomic
 
-**Blocked by:** 13 (Chat training creation with targets and tutor opening message)
-
-**Status:** ready-for-agent
-
 **What to build:** Typing a message and pressing send returns the tutor's reply and the assessment of your message in one response; both are appended to the training. If either LLM call fails after one retry, nothing is saved and the app keeps the draft with a "Try again" toast. PRD stories 23, 24, 28.
 
 **Assessment schema (contracts `AssessmentSchema`, identical to Go decoder):**
@@ -48,6 +44,3 @@ Roles: `REPLY_MODEL` and `ASSESSMENT_MODEL`. Both calls via `Promise.all`; each 
 - [ ] api tests (fake gateway): success appends 2 messages; reply fails twice → 502 and message count unchanged; assessment invalid target key stripped; COMPLETED training → 409; both gateway roles invoked with prompts containing history.
 - [ ] `withRetry` unit test (1 failure then success → ok; 2 failures → throws).
 - [ ] app: send mutation keeps draft on error, clears on success; optimistic user bubble marked "pending" until response.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

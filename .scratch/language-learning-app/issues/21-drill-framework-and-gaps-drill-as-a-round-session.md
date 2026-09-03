@@ -1,9 +1,5 @@
 # 21: Drill framework and Gaps drill as a round session
 
-**Blocked by:** 19 (End session nudge, completion with persistent averages and narrative)
-
-**Status:** ready-for-agent
-
 **What to build:** "Drills" tab → "Gaps" → pick/override targets → a Gaps training opens. Each round: the API generates a short paragraph using 4 targets, blanks them (`___`), returns the paragraph parts plus a shuffled bank; you tap bank chips into blanks and press Check; the API judges deterministically, shows right/wrong per blank, writes 8 (right) / 2 (wrong) into SRS with snapshots, and offers "Another one". "End" completes the training with round aggregates; cancel available. Establishes the drill strategy pattern for 22/23. PRD stories 33, 34, 37, 38, 39, 40.
 
 **Drill strategy (decision, SOLID/OCP):** `interface DrillStrategy<Round, Answer, Verdict> { type; generate(ctx): Promise<Round>; judge(round, answer, ctx): Promise<Verdict>; scoresFor(verdict): Map<expressionId, number>; aggregate(rounds): Aggregates }`. Registry keyed by `type`; adding a drill = one new module + one prompt file. Generic training service handles rounds/complete/cancel via the strategy.
@@ -37,6 +33,3 @@ Structured schema `{ story: string, answers: string[] }`; validate `answers` is 
 - [ ] `norm` unit tests incl. apostrophes and punctuation.
 - [ ] app: Gaps screen state machine (idle → playing → checked); chips move into blanks; "Another one" requests next round (hook tests).
 - [ ] Manual: play two rounds, end, see counters bump in vocabulary and effects in the training.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

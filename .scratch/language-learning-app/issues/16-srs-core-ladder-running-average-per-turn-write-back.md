@@ -1,9 +1,5 @@
 # 16: SRS core: ladder, running average, per-turn write-back
 
-**Blocked by:** 14 (Chat turn: parallel reply and structured assessment, atomic)
-
-**Status:** ready-for-agent
-
 **What to build:** After a successful chat turn, every target that received a non-zero score gets its SRS fields recomputed and saved; targets with score 0 or not attempted are untouched. The vocabulary list/detail counters reflect it immediately. PRD stories 26, 27, 41, 42.
 
 **Pure module `src/srs/scheduler.ts` — port verbatim (MCP `service.mjs` / Go `srs`):**
@@ -42,6 +38,3 @@ Mongo write = `$set` of exactly those four fields (Go `UpdateSRS`). Encapsulate 
 - [ ] averageScore tests: first practice (oldAvg 0, count 1) → newScore; running average.
 - [ ] api tests: after a turn with `{score: 8}` for one target and `{score: 0}` for another, only the first expression's fields change; `timesPracticed` increments from absent → 1.
 - [ ] app: after send, vocabulary queries invalidated so the counter updates.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

@@ -1,9 +1,5 @@
 # 04: Expressions list with text search and cached reads
 
-**Blocked by:** 02 (Shared-secret token handshake and auth middleware)
-
-**Status:** ready-for-agent
-
 **What to build:** Vocabulary tab lists all expressions (newest first) with a search box matching expression text or meaning, case-insensitive. Rows show expression, type, frequency, and the trained counter placeholder (`timesPracticed`, finalized visually in 06). List is cached by TanStack Query so reopening is instant. **The list must show every record already in the Atlas `expressions` collection**, which requires the one-time migration below. PRD stories 5, 13.
 
 **Expression schema (keep existing Atlas shape; contracts `ExpressionSchema`):**
@@ -66,6 +62,3 @@ Migration is a script under `api/scripts/`, logged, safe to re-run, and it is th
 - [ ] migration script tests (memory repo / mongodb-memory-server): docs without userId get stamped; docs with userId untouched; `score` never added; re-run is a no-op.
 - [ ] mapper tests: MCP-era doc (no tags, no partOfSpeech, type `phrase`) parses; Go-era doc parses.
 - [ ] Manual: run `migrate --dry-run` then `migrate` against Atlas, open app, see ALL existing expressions; search narrows.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

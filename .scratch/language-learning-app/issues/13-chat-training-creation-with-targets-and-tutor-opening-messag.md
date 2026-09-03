@@ -1,9 +1,5 @@
 # 13: Chat training creation with targets and tutor opening message
 
-**Blocked by:** 10 (From-text capture: LLM gateway, prompt files, draft + review), 11 (Smart picker endpoint and 'what to practice' preview)
-
-**Status:** ready-for-agent
-
 **What to build:** "New chat" → optional pick/override step → context (free text) + style (formal/informal) → `POST /trainings` → chat screen opens showing target chips and the tutor's first message. Introduces the typed `trainings` collection. PRD stories 17, 19, 20, 21, 22.
 
 **Training schema (contracts, discriminated union on `type`):**
@@ -41,6 +37,3 @@ Structured schema `{ message: string }`; role env `REPLY_MODEL`.
 - [ ] mapper tests for chat training round-trip.
 - [ ] app: start flow hook sends `expressionIds` from selection (ticket 12) or omits; chat screen renders chips + first message.
 - [ ] Manual: start "scrum standup", see an in-character opening line.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.

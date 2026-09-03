@@ -1,9 +1,5 @@
 # 01: Monorepo skeleton, local API + Mongo, app shell with health
 
-**Blocked by:** None (can start immediately)
-
-**Status:** ready-for-agent
-
 **What to build:** From a clean checkout, `pnpm install && pnpm --filter api dev` starts a Hono server on `http://localhost:8787` backed by the **existing MongoDB Atlas database** (same cluster, database and `expressions` collection the MCP server and Go API used — it already holds the user's vocabulary; nothing is set up from scratch), and the Expo app (iOS simulator / dev build) shows a Home screen with a green "API: ok" line fetched from `GET /health`. Same handler tree is exported for Lambda later (ticket 03). Covers PRD stories 49 (local part) and 51.
 
 **Repo layout (decision):**
@@ -60,6 +56,3 @@ Config loader validates with zod at startup and fails loudly on a missing requir
 - [ ] App Home renders "API: ok" (RNTL test of `useHealth` against a mocked client).
 - [ ] `createApp` compiles with all repository interfaces declared (even if only in-memory implementations exist yet).
 - [ ] README at root documents the three commands above.
-
-
-**Conventions (fixed in ticket 01, repeated for convenience):** pnpm workspaces `app/`, `api/`, `infra/`, `packages/contracts/`. API error shape `{ "error": { "code": "<UPPER_SNAKE>", "message": "..." } }`. All request/response bodies validated with zod schemas exported from `@contracts`. API tests: vitest, in-process `app.request()` against `createApp(deps)` with in-memory repos + fake LLM + fixed clock. App tests: jest + React Native Testing Library on hooks/logic only. Backend is TDD: failing test first.
