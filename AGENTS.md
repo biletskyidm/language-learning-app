@@ -64,3 +64,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+
+# Review instructions
+- Focus on consequential, repository-specific behavior. Describe the compatibility constraint, data boundary, or unsafe side effect to flag and why it matters.
+- State the safe path or exception. Give Codex enough context to distinguish a real issue from expected behavior.
+- Keep rules scoped and durable. Prefer outcomes over function names that can change, and place guidance near the code it governs.
+- Leave mechanical checks in CI. Keep formatting, lint, and other deterministic checks out of review rules.
