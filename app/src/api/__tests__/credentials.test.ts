@@ -17,6 +17,13 @@ describe('saveCredentials', () => {
     expect(store.setItemAsync).toHaveBeenCalledWith(BASE_URL_KEY, 'http://192.168.1.10:8787')
     expect(store.setItemAsync).toHaveBeenCalledWith(SECRET_KEY, 'abc123')
   })
+
+  it('returns what it stored, so the caller can seed its cache without a re-read', async () => {
+    await expect(saveCredentials({ baseUrl: 'http://localhost:8787/', secret: ' abc123 ' })).resolves.toEqual({
+      baseUrl: 'http://localhost:8787',
+      secret: 'abc123',
+    })
+  })
 })
 
 describe('readCredentials', () => {

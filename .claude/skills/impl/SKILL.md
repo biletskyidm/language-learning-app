@@ -40,7 +40,19 @@ Implement exactly one issue from the project's issue map, start to finish: pick 
 
 - Run the test suite and linter/typechecker for every workspace this issue touched (`pnpm -r test`, `pnpm -r lint`, `pnpm -r typecheck` once those scripts exist — issue 01 is what sets them up, so if it hasn't landed yet, set up and run whatever the issue specifies rather than skipping verification).
 - Walk the issue file's checklist item by item and confirm each is actually true — run the literal command it names where it names one (e.g. a `curl` against a local endpoint), don't just infer it from the diff.
-- If anything fails — a test, the lint/typecheck, or a checklist item — go back to step 5. Never mark the issue done or commit on a red or partial state.
+- **If the issue changes anything the app renders or sends** — a screen, a hook, `src/api/`, a native dependency — run it on the iOS Simulator before marking it done. Jest mocks every native module, so a green app suite proves the logic and nothing about the app. Do not settle for "not verified on device" and hand that to the user as a caveat; either run it or say plainly why it was impossible.
+- If anything fails — a test, the lint/typecheck, a checklist item, or the simulator run — go back to step 5. Never mark the issue done or commit on a red or partial state.
+
+### Running the slice on the simulator
+
+1. `control` with `attach` **first**, before building — it is cheap, opens instantly on a booted simulator, and lets the user watch the rest.
+2. Start the API the app will call, in the background on port 8787, against the docker sandbox Mongo and a throwaway `AUTH_SECRET` you generate and keep — never the real `api/.env`, which is unreadable by design. The simulator reaches the Mac's `localhost` directly, so `http://localhost:8787` is the URL to type into the app.
+3. If this run added a dependency with an iOS pod (anything `expo-*` native, e.g. `expo-crypto`), `pod install` in `app/ios` first or the module is missing at runtime. Run it as `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install` — bare `pod install` dies with `Encoding::CompatibilityError`. Confirm the pod appears in `Podfile.lock`.
+4. `build` against `app/ios/LanguageLearning.xcworkspace`, scheme `LanguageLearning`. Omit `device`: passing a name fails unless a simulator is booted under exactly that name. Poll `build_status` until it reports the `.app` path.
+5. The build is Debug, so it loads its JS from Metro rather than a bundle: check `curl -s -o /dev/null -w '%{http_code}' localhost:8081/status` and start `pnpm --filter app exec expo start` in the background only if nothing answers — one is often already running, and a second instance just prompts for a different port. Restart it if this run added a JS dependency it has never resolved.
+6. `launch` it, then drive the real user path with `tap` / `text` / `screenshot` — type into the actual fields, press the actual buttons. Exercise the failure path too wherever the issue names one (a wrong secret, an unreachable API), not just the happy path.
+7. Screenshot the end state and send it with `SendUserFile` so the user sees the evidence rather than a claim.
+8. Tear down: stop the API process and drop the sandbox database. Leave a Metro instance you did not start running.
 
 ## 7. Mark complete
 

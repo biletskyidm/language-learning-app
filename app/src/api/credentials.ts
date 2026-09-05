@@ -19,9 +19,11 @@ export const readCredentials = async (): Promise<Credentials | null> => {
   return { baseUrl: normalizeUrl(baseUrl), secret }
 }
 
-export const saveCredentials = async ({ baseUrl, secret }: Credentials): Promise<void> => {
+export const saveCredentials = async ({ baseUrl, secret }: Credentials): Promise<Credentials> => {
+  const saved = { baseUrl: normalizeUrl(baseUrl), secret: secret.trim() }
   await Promise.all([
-    SecureStore.setItemAsync(BASE_URL_KEY, normalizeUrl(baseUrl)),
-    SecureStore.setItemAsync(SECRET_KEY, secret.trim()),
+    SecureStore.setItemAsync(BASE_URL_KEY, saved.baseUrl),
+    SecureStore.setItemAsync(SECRET_KEY, saved.secret),
   ])
+  return saved
 }

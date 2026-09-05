@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native'
 import { saveCredentials } from '../src/api/credentials'
+import { CREDENTIALS_KEY } from '../src/api/use-credentials'
 import { colors, spacing } from '../src/theme/tokens'
 
 export default function Setup() {
@@ -10,9 +11,10 @@ export default function Setup() {
   const [secret, setSecret] = useState('')
   const queryClient = useQueryClient()
 
+  // Seed the cache rather than invalidate: Home reads it synchronously on mount and would
+  // bounce straight back here on the stale null while a refetch was still in flight.
   const save = async () => {
-    await saveCredentials({ baseUrl, secret })
-    await queryClient.invalidateQueries()
+    queryClient.setQueryData(CREDENTIALS_KEY, await saveCredentials({ baseUrl, secret }))
     router.replace('/')
   }
 
