@@ -1,0 +1,38 @@
+{
+  "name": "app",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "test": "jest",
+    "lint": "eslint app src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "contracts": "workspace:*",
+    "expo": "^57.0.19",
+    "expo-constants": "~57.0.17",
+    "expo-dev-client": "~57.0.18",
+    "expo-linking": "~57.0.9",
+    "expo-router": "~57.0.19",
+    "expo-secure-store": "~57.0.3",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.2.18",
+    "jest": "^30.5.1",
+    "jest-expo": "^57.0.5",
+    "react-test-renderer": "^19.2.8",
+    "typescript": "^5.9.3"
+  }
+}
