@@ -50,9 +50,9 @@ Config loader validates with zod at startup and fails loudly on a missing requir
 
 **App:** `app/app/_layout.tsx` with QueryClientProvider; `app/app/index.tsx` Home showing API status via `useHealth()` hook; `app/src/api/client.ts` fetch wrapper reading base URL from secure store (fallback to `EXPO_PUBLIC_API_URL`).
 
-- [ ] `pnpm -r test` passes: api has a vitest test asserting `GET /health` returns 200 with `status: ok` using a fake db-ping dep.
-- [ ] `pnpm --filter api dev` serves on 8787 against the existing Atlas database; `curl localhost:8787/health` returns `db: ok`.
-- [ ] Startup logs the connected database name and the `expressions` document count, proving it is the existing data.
-- [ ] App Home renders "API: ok" (RNTL test of `useHealth` against a mocked client).
-- [ ] `createApp` compiles with all repository interfaces declared (even if only in-memory implementations exist yet).
-- [ ] README at root documents the three commands above.
+- [x] `pnpm -r test` passes: api has a vitest test asserting `GET /health` returns 200 with `status: ok` using a fake db-ping dep.
+- [x] `pnpm --filter api dev` serves on 8787 against the existing Atlas database; `curl localhost:8787/health` returns `db: ok`.
+- [x] Startup logs the connected database name and the `expressions` document count, proving it is the existing data.
+- [x] App Home renders "API: ok" (RNTL test of `useHealth` against a mocked client).
+- [x] `createApp` compiles with all repository interfaces declared (even if only in-memory implementations exist yet).
+- [x] README at root documents the three commands above.
