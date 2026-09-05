@@ -9,7 +9,7 @@ const NONCE_PATTERN = /^[0-9a-f]{32}$/
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
 const TIMESTAMP_PATTERN = /^\d+$/
 
-/** Best-effort replay guard: records a nonce, returning false when it was already used. */
+/** Replay guard is best-effort: a nonce is only remembered for a bounded window. */
 export interface NonceStore {
   claim(nonce: string, at: Date): boolean
 }
