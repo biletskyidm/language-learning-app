@@ -13,12 +13,10 @@ describe('lambdaEnvironment', () => {
     expect(lambdaEnvironment(required)).toMatchObject(required)
   })
 
-  it('defaults the LLM and tracing variables to empty until ticket 10 fills them', () => {
-    expect(lambdaEnvironment(required)).toMatchObject({
-      OPENROUTER_API_KEY: '',
-      REPLY_MODEL: '',
-      LANGSMITH_API_KEY: '',
-    })
+  it('omits unset optional variables instead of passing empty strings the API rejects', () => {
+    const environment = lambdaEnvironment({ ...required, LANGSMITH_TRACING: '' })
+    expect(environment).not.toHaveProperty('LANGSMITH_TRACING')
+    expect(environment).not.toHaveProperty('OPENROUTER_API_KEY')
   })
 
   it('keeps LLM values that are set', () => {

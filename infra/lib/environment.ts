@@ -19,6 +19,6 @@ export const lambdaEnvironment = (env: Record<string, string | undefined>): Reco
 
   return Object.fromEntries([
     ...REQUIRED.map((key) => [key, env[key]]),
-    ...OPTIONAL.map((key) => [key, env[key] ?? '']),
+    ...OPTIONAL.filter((key) => env[key]).map((key) => [key, env[key]]),
   ])
 }
