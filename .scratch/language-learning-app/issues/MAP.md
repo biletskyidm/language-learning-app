@@ -8,7 +8,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 
 - [x] **01** [Monorepo skeleton, local API + Mongo, app shell with health](01-monorepo-skeleton-local-api-+-mongo-app-shell-with-health.md) — blocked by: none
 - [x] **02** [Shared-secret token handshake and auth middleware](02-shared-secret-token-handshake-and-auth-middleware.md) — blocked by: 01
-- [ ] **03** [CDK deploy: Lambda Function URL and env wiring](03-cdk-deploy-lambda-function-url-and-env-wiring.md) — blocked by: 02
+- [x] **03** [CDK deploy: Lambda Function URL and env wiring](03-cdk-deploy-lambda-function-url-and-env-wiring.md) — blocked by: 02
 - [ ] **04** [Expressions list with text search and cached reads](04-expressions-list-with-text-search-and-cached-reads.md) — blocked by: 02
 - [ ] **05** [Expression filters and sort](05-expression-filters-and-sort.md) — blocked by: 04
 - [ ] **06** [Expression detail screen with trained counter](06-expression-detail-screen-with-trained-counter.md) — blocked by: 04
