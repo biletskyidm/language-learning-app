@@ -11,8 +11,7 @@ export default function Setup() {
   const [secret, setSecret] = useState('')
   const queryClient = useQueryClient()
 
-  // Seed the cache rather than invalidate: Home reads it synchronously on mount and would
-  // bounce straight back here on the stale null while a refetch was still in flight.
+  // Seeded, not invalidated: Home would bounce back here on the stale null mid-refetch.
   const save = async () => {
     queryClient.setQueryData(CREDENTIALS_KEY, await saveCredentials({ baseUrl, secret }))
     router.replace('/')

@@ -2,7 +2,6 @@ import type { NonceStore } from '@contracts'
 
 const FIVE_MINUTES_MS = 5 * 60_000
 
-/** In-process, best-effort replay guard: a nonce is refused until its TTL lapses. */
 export class TtlNonceStore implements NonceStore {
   private readonly expiry = new Map<string, number>()
 

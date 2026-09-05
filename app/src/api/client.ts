@@ -3,7 +3,6 @@ import { generateToken } from '@contracts'
 import type { ZodType } from 'zod'
 import { readCredentials } from './credentials'
 
-/** The API refused our token: the stored secret no longer matches the backend's. */
 export class UnauthorizedError extends Error {
   constructor() {
     super('The API rejected the shared secret')
@@ -11,7 +10,6 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** Setup has not run yet, so there is no API URL or secret to call with. */
 export class NotConfiguredError extends Error {
   constructor() {
     super('No API URL and secret configured')

@@ -2,7 +2,6 @@ import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 
-/** How far a token's timestamp may drift from the verifier's clock, in seconds. */
 export const TOKEN_MAX_AGE_SECONDS = 120
 
 const NONCE_BYTES = 16
@@ -17,7 +16,6 @@ export interface NonceStore {
 
 export interface GenerateTokenOptions {
   now: () => Date
-  /** Fills `size` bytes of cryptographic randomness (the `getRandomValues` contract). */
   random: (size: number) => Uint8Array
 }
 
