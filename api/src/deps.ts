@@ -1,3 +1,4 @@
+import type { TokenVerification } from '@contracts'
 import type { ExpressionRepository } from './expressions/repository'
 import type { ScenarioRepository } from './scenarios/repository'
 import type { SettingsRepository } from './settings/repository'
@@ -12,8 +13,9 @@ export interface DbHealth {
 /** Gains its LLM roles in ticket 10. */
 export interface LlmGateway {}
 
-/** Gains generate/verify in ticket 02. */
-export interface TokenVerifier {}
+export interface TokenVerifier {
+  verify(authorizationHeader: string | undefined): TokenVerification
+}
 
 export interface Deps {
   db: DbHealth

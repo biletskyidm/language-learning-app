@@ -5,7 +5,7 @@ const configSchema = z.object({
   MONGO_URI: z.string().min(1),
   MONGO_DB: z.string().min(1),
   USER_ID: z.string().min(1),
-  AUTH_SECRET: z.string().optional(),
+  AUTH_SECRET: z.string().min(32),
   OPENROUTER_API_KEY: z.string().optional(),
   REPLY_MODEL: z.string().optional(),
   ASSESSMENT_MODEL: z.string().optional(),

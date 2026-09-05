@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
+import { SecretTokenVerifier } from './auth/token-verifier'
 import { loadConfig } from './config'
 import { InMemoryScenarioRepository } from './scenarios/memory-repository'
 import { InMemorySettingsRepository } from './settings/memory-repository'
@@ -13,6 +14,7 @@ const envFile = new URL('../.env', import.meta.url)
 if (existsSync(envFile)) process.loadEnvFile(envFile)
 
 const config = loadConfig(process.env)
+const clock = () => new Date()
 const { db } = await connect(config.MONGO_URI, config.MONGO_DB)
 
 const expressions = new MongoExpressionRepository(db)
@@ -25,8 +27,8 @@ const app = createApp({
   settings: new InMemorySettingsRepository(),
   scenarios: new InMemoryScenarioRepository(),
   llm: {},
-  tokenVerifier: {},
-  clock: () => new Date(),
+  tokenVerifier: new SecretTokenVerifier(config.AUTH_SECRET, clock),
+  clock,
   userId: config.USER_ID,
 })
 

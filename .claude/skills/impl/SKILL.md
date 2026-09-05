@@ -40,7 +40,8 @@ Implement exactly one issue from the project's issue map, start to finish: pick 
 
 - Run the test suite and linter/typechecker for every workspace this issue touched (`pnpm -r test`, `pnpm -r lint`, `pnpm -r typecheck` once those scripts exist — issue 01 is what sets them up, so if it hasn't landed yet, set up and run whatever the issue specifies rather than skipping verification).
 - Walk the issue file's checklist item by item and confirm each is actually true — run the literal command it names where it names one (e.g. a `curl` against a local endpoint), don't just infer it from the diff.
-- If anything fails — a test, the lint/typecheck, or a checklist item — go back to step 5. Never mark the issue done or commit on a red or partial state.
+- If the issue changes anything the app renders or sends, run the app on the iOS Simulator and confirm the behaviour there, including the failure path the issue names. App tests mock every native module, so they prove the logic, never the app. Either run it or say plainly why it was impossible — never hand the user "not verified on device" as a caveat.
+- If anything fails — a test, the lint/typecheck, a checklist item, or the simulator run — go back to step 5. Never mark the issue done or commit on a red or partial state.
 
 ## 7. Mark complete
 

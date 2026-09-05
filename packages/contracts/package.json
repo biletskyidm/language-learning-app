@@ -9,11 +9,12 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
-    "lint": "eslint src",
+    "test": "vitest run",
+    "lint": "eslint src test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@noble/hashes": "^2.4.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
