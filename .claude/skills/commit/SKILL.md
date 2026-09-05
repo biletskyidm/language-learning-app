@@ -2,7 +2,7 @@
 name: commit
 description: Commit current changes with a one-line conventional commit message.
 argument-hint: "optional hint for the message"
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 Commit the working tree with a **conventional commit** message.
