@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
+import type { ZodError } from 'zod'
 import {
   apiError,
+  createExpressionInputSchema,
   expressionListQuerySchema,
   expressionListResponseSchema,
   expressionSchema,
@@ -8,6 +10,9 @@ import {
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
+
+const fieldMessage = ({ issues }: ZodError) =>
+  issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
 
 export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
   new Hono<AuthEnv>()
@@ -18,6 +23,19 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
       const items = await deps.expressions.list(c.get('userId'), { ...query.data, now: deps.clock() })
 
       return c.json(expressionListResponseSchema.parse({ items }))
+    })
+    .post('/expressions', async (c) => {
+      const body = await c.req.json().catch(() => undefined)
+      const input = createExpressionInputSchema.safeParse(body)
+      if (!input.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(input.error)), 400)
+
+      const userId = c.get('userId')
+      const existing = await deps.expressions.findByExpression(userId, input.data.expression)
+      if (existing) return c.json(apiError('DUPLICATE', 'That expression is already in your vocabulary'), 409)
+
+      const created = await deps.expressions.create(userId, input.data, deps.clock())
+
+      return c.json(expressionSchema.parse(created), 201)
     })
     .get('/expressions/tags', async (c) => {
       const items = await deps.expressions.tags(c.get('userId'))

@@ -1,4 +1,4 @@
-import type { Expression, ExpressionSort } from '@contracts'
+import type { CreateExpressionInput, Expression, ExpressionSort } from '@contracts'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
 
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
@@ -55,6 +55,17 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
 
   async findById(userId: string, id: string): Promise<Expression | undefined> {
     return this.expressions.find((e) => e.userId === userId && e.id === id)
+  }
+
+  async findByExpression(userId: string, expression: string): Promise<Expression | undefined> {
+    return this.expressions.find((e) => e.userId === userId && e.expression === expression)
+  }
+
+  async create(userId: string, input: CreateExpressionInput, createdAt: Date): Promise<Expression> {
+    const created: Expression = { id: crypto.randomUUID(), userId, createdAt, ...input }
+    this.expressions.push(created)
+
+    return created
   }
 
   async tags(userId: string): Promise<string[]> {

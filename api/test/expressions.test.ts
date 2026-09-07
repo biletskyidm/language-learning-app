@@ -9,7 +9,7 @@ import {
 import { createApp } from '../src/app'
 import type { Deps } from '../src/deps'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
-import { bearer, TEST_SECRET, testDeps } from './deps'
+import { bearer, NOW, TEST_SECRET, testDeps } from './deps'
 
 const expression = (overrides: Partial<Expression> = {}): Expression => ({
   id: 'e1',
@@ -272,5 +272,142 @@ describe('GET /expressions/:id', () => {
 
     expect(res.status).toBe(404)
     expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+})
+
+describe('POST /expressions', () => {
+  const body = (overrides: Record<string, unknown> = {}) => ({
+    expression: 'hit the nail on the head',
+    type: 'idiom',
+    meaning: 'to describe exactly what is causing a problem',
+    frequency: 'common',
+    ...overrides,
+  })
+
+  const post = async (payload: unknown, seed: Expression[] = [], overrides: Partial<Deps> = {}) => {
+    const deps = testDeps({ expressions: new InMemoryExpressionRepository(seed), ...overrides })
+    return createApp(deps).request('/expressions', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  it('stores the expression and answers with the created document', async () => {
+    const res = await post(body({ partOfSpeech: 'verb', examples: ['You hit the nail on the head.'], tags: ['work'] }))
+
+    expect(res.status).toBe(201)
+    const created = expressionSchema.parse(await res.json())
+    expect(created).toMatchObject({
+      userId: 'me',
+      expression: 'hit the nail on the head',
+      type: 'idiom',
+      partOfSpeech: 'verb',
+      meaning: 'to describe exactly what is causing a problem',
+      examples: ['You hit the nail on the head.'],
+      tags: ['work'],
+      frequency: 'common',
+      createdAt: NOW,
+    })
+    expect(created.id).toBeTruthy()
+  })
+
+  it('makes the new expression readable through the list', async () => {
+    const deps = testDeps()
+    const app = createApp(deps)
+    const headers = { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' }
+    await app.request('/expressions', { method: 'POST', headers, body: JSON.stringify(body()) })
+
+    const res = await app.request('/expressions', {
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock) },
+    })
+
+    const items = expressionListResponseSchema.parse(await res.json()).items
+    expect(items.map((e) => e.expression)).toEqual(['hit the nail on the head'])
+  })
+
+  it('leaves every SRS field absent on the created expression', async () => {
+    const res = await post(body())
+    const created = (await res.json()) as Record<string, unknown>
+
+    expect(created).not.toHaveProperty('score')
+    expect(created).not.toHaveProperty('timesPracticed')
+    expect(created).not.toHaveProperty('lastTimePracticedAt')
+    expect(created).not.toHaveProperty('nextTrainingAt')
+  })
+
+  it('defaults examples and tags to empty lists', async () => {
+    const res = await post(body())
+
+    expect(expressionSchema.parse(await res.json())).toMatchObject({ examples: [], tags: [] })
+  })
+
+  it('trims the text fields', async () => {
+    const res = await post(
+      body({ expression: '  hit the nail on the head  ', meaning: ' spot on  ', tags: [' work '] }),
+    )
+
+    expect(expressionSchema.parse(await res.json())).toMatchObject({
+      expression: 'hit the nail on the head',
+      meaning: 'spot on',
+      tags: ['work'],
+    })
+  })
+
+  it('names the offending field when a required one is missing', async () => {
+    const res = await post({ ...body(), meaning: undefined })
+
+    expect(res.status).toBe(400)
+    const { error } = apiErrorSchema.parse(await res.json())
+    expect(error.code).toBe('VALIDATION_ERROR')
+    expect(error.message).toContain('meaning')
+  })
+
+  it('rejects a blank expression', async () => {
+    const res = await post(body({ expression: '   ' }))
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.message).toContain('expression')
+  })
+
+  it('rejects an unknown frequency', async () => {
+    const res = await post(body({ frequency: 'sometimes' }))
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.message).toContain('frequency')
+  })
+
+  it('rejects an unknown type', async () => {
+    const res = await post(body({ type: 'proverb' }))
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.message).toContain('type')
+  })
+
+  it('rejects a body that is not JSON', async () => {
+    const deps = testDeps()
+    const res = await createApp(deps).request('/expressions', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: 'not json',
+    })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('refuses an expression the caller already has', async () => {
+    const res = await post(body(), [expression({ id: 'existing', expression: 'hit the nail on the head' })])
+
+    expect(res.status).toBe(409)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('DUPLICATE')
+  })
+
+  it('allows an expression another user already has', async () => {
+    const res = await post(body(), [
+      expression({ id: 'theirs', userId: 'someone-else', expression: 'hit the nail on the head' }),
+    ])
+
+    expect(res.status).toBe(201)
   })
 })
