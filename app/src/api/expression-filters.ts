@@ -31,7 +31,6 @@ const known = <T>(schema: ZodType<T>, value: string | undefined): T | undefined 
   return parsed.success ? parsed.data : undefined
 }
 
-/** Route params come back as free text, so anything unrecognised falls back to the default. */
 export const filtersFromParams = (params: RouteParams): ExpressionFilters => ({
   search: single(params.search) ?? '',
   tag: single(params.tag),
@@ -41,7 +40,6 @@ export const filtersFromParams = (params: RouteParams): ExpressionFilters => ({
   dir: known(sortDirectionSchema, single(params.dir)) ?? DEFAULT_FILTERS.dir,
 })
 
-/** Every key is written on every change, so clearing a filter clears it from the route too. */
 export const filtersToParams = (filters: ExpressionFilters): Record<string, string> => ({
   search: filters.search,
   tag: filters.tag ?? '',

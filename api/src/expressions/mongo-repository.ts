@@ -35,7 +35,6 @@ export const listFilter = (userId: string, query: ExpressionListParams): Express
   return filter
 }
 
-/** Optional fields sort last regardless of direction, so the `_missing` flag always leads the sort. */
 export const listPipeline = (userId: string, query: ExpressionListParams): Document[] => {
   const stages: Document[] = [{ $match: listFilter(userId, query) }]
   const direction = query.dir === 'asc' ? 1 : -1

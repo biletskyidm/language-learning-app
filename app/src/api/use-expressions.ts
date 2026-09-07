@@ -19,7 +19,6 @@ const useDebounced = (value: string, ms: number) => {
 }
 
 export const useExpressions = (filters: ExpressionFilters = DEFAULT_FILTERS) => {
-  // Only typing is debounced; tapping a chip should feel immediate.
   const search = useDebounced(filters.search.trim(), SEARCH_DEBOUNCE_MS)
   const path = `/expressions${filtersToQuery({ ...filters, search })}`
 

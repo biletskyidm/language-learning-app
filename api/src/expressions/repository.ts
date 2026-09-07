@@ -1,6 +1,5 @@
 import type { Expression, ExpressionListQuery } from '@contracts'
 
-/** `now` is resolved by the handler from the injected clock, so the repository stays free of time. */
 export type ExpressionListParams = ExpressionListQuery & { now: Date }
 
 export interface ExpressionRepository {

@@ -22,7 +22,6 @@ const Row = ({ item }: { item: Expression }) => (
 )
 
 export default function Expressions() {
-  // The route params are the filter state, so going back restores the list as it was left.
   const filters = filtersFromParams(useLocalSearchParams())
   const setFilters = (next: ExpressionFilters) => router.setParams(filtersToParams(next))
   const expressions = useExpressions(filters)

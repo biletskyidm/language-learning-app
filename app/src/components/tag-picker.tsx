@@ -9,7 +9,6 @@ type Props = {
   onClose: () => void
 }
 
-/** The vocabulary carries hundreds of distinct tags, so the list is searched rather than scrolled. */
 export const TagPicker = ({ selected, onSelect, onClose }: Props) => {
   const [search, setSearch] = useState('')
   const tags = useExpressionTags()

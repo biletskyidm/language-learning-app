@@ -1,7 +1,6 @@
 import type { Expression, ExpressionSort } from '@contracts'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
 
-/** Missing values sort last whatever the direction; a never-practiced expression counts as zero rounds. */
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
   switch (sort) {
     case 'createdAt':
