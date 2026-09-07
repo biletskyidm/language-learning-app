@@ -11,7 +11,7 @@ export const createApp = (deps: Deps) => {
   // /health is public because it is registered before the middleware and answers without calling next().
   app.route('/', healthRoutes(deps.db))
   app.use('*', requireAuth(deps))
-  app.route('/', expressionRoutes())
+  app.route('/', expressionRoutes(deps))
 
   app.notFound((c) => c.json(apiError('NOT_FOUND', 'Unknown route'), 404))
   app.onError((err, c) => {

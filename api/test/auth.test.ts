@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { apiErrorSchema, generateToken } from '@contracts'
+import { apiErrorSchema } from '@contracts'
 import { createApp } from '../src/app'
-import { NOW, TEST_SECRET, testDeps } from './deps'
+import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
+import { NOW, TEST_SECRET, bearer, testDeps } from './deps'
 
-const nonces = () => {
-  let n = 0
-  return (size: number) => Uint8Array.from({ length: size }, (_, i) => (i === 0 ? n++ : i))
-}
-
-const bearer = (secret = TEST_SECRET, now: () => Date = () => NOW, random = nonces()) =>
-  `Bearer ${generateToken(secret, { now, random })}`
+const owned = (userId: string) => ({
+  id: userId,
+  userId,
+  expression: 'break the ice',
+  type: 'idiom' as const,
+  meaning: 'to get a conversation started',
+  examples: [],
+  tags: [],
+  frequency: 'common' as const,
+  createdAt: NOW,
+})
 
 describe('auth middleware', () => {
   it('lets an anonymous request through to /health', async () => {
@@ -53,11 +58,16 @@ describe('auth middleware', () => {
   })
 
   it('accepts a freshly generated token and stamps the configured userId', async () => {
-    const app = createApp(testDeps({ userId: 'me' }))
+    const app = createApp(
+      testDeps({
+        userId: 'me',
+        expressions: new InMemoryExpressionRepository([owned('me'), owned('someone-else')]),
+      }),
+    )
 
     const res = await app.request('/expressions', { headers: { Authorization: bearer() } })
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ userId: 'me' })
+    expect(await res.json()).toMatchObject({ items: [{ userId: 'me' }] })
   })
 })

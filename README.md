@@ -68,6 +68,32 @@ API URL and secret are stored, and shows "Check your secret" when the API reject
 the URL at the Mac's LAN address (`http://192.168.x.x:8787`) for local iteration, or at the deployed
 Function URL.
 
+To skip that screen during local iteration, put the pair in a gitignored `app/.env.local`; it takes
+precedence over whatever is in the keychain:
+
+```
+EXPO_PUBLIC_API_URL=http://localhost:8787
+EXPO_PUBLIC_API_SECRET=<the same value as AUTH_SECRET in api/.env>
+```
+
+## Adopting the existing collection
+
+The Atlas `expressions` collection predates this repo: MCP-era documents carry no `userId`. One
+idempotent migration stamps the single user and fills `tags`/`examples` defaults; it never touches
+SRS fields, because an absent `score` is how the picker recognises a never-practiced phrase. Run the
+dry run first — it prints counts and writes nothing:
+
+```bash
+pnpm --filter api migrate --dry-run
+```
+
+```bash
+pnpm --filter api migrate
+```
+
+`pnpm --filter api db:clone` copies the collection into the docker-compose Mongo (override the
+target with `SANDBOX_MONGO_URI`) for isolated experiments. Not needed for normal development.
+
 ## Deploy
 
 `infra/` synthesises one Node 22 ARM64 Lambda (1024 MB, 60s — two parallel LLM calls plus a retry)

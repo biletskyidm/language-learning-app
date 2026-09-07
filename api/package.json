@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/local.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "db:clone": "tsx scripts/db-clone.ts",
     "test": "vitest run",
-    "lint": "eslint src test",
+    "lint": "eslint src test scripts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
