@@ -2,6 +2,7 @@ import React, { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react-native'
 import { apiGet } from '../client'
+import { DEFAULT_FILTERS } from '../expression-filters'
 import { SEARCH_DEBOUNCE_MS, useExpressions } from '../use-expressions'
 
 jest.mock('../client', () => ({ apiGet: jest.fn() }))
@@ -48,17 +49,20 @@ describe('useExpressions', () => {
   })
 
   it('sends the search term url-encoded', async () => {
-    const { result } = await renderHook(() => useExpressions('break the ice'), { wrapper })
+    const { result } = await renderHook(() => useExpressions({ ...DEFAULT_FILTERS, search: 'break the ice' }), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(paths()).toEqual(['/expressions?search=break%20the%20ice'])
   })
 
   it('waits for typing to settle before refetching', async () => {
-    const { rerender } = await renderHook(({ search }: { search: string }) => useExpressions(search), {
-      wrapper,
-      initialProps: { search: '' },
-    })
+    const { rerender } = await renderHook(
+      ({ search }: { search: string }) => useExpressions({ ...DEFAULT_FILTERS, search }),
+      {
+        wrapper,
+        initialProps: { search: '' },
+      },
+    )
 
     await waitFor(() => expect(paths()).toEqual(['/expressions']))
 
@@ -69,5 +73,13 @@ describe('useExpressions', () => {
     expect(paths()).toEqual(['/expressions'])
 
     await waitFor(() => expect(paths()).toEqual(['/expressions', '/expressions?search=bre']))
+  })
+
+  it('applies a chip without waiting for the search debounce', async () => {
+    await renderHook(() => useExpressions({ ...DEFAULT_FILTERS, tag: 'work', due: true, sort: 'score' }), {
+      wrapper,
+    })
+
+    await waitFor(() => expect(paths()).toEqual(['/expressions?tag=work&due=true&sort=score']))
   })
 })
