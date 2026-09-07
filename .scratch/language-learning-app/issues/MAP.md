@@ -13,7 +13,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **05** [Expression filters and sort](05-expression-filters-and-sort.md) — blocked by: 04
 - [x] **06** [Expression detail screen with trained counter](06-expression-detail-screen-with-trained-counter.md) — blocked by: 04
 - [x] **07** [Create expression manually](07-create-expression-manually.md) — blocked by: 04
-- [ ] **08** [Edit expression](08-edit-expression.md) — blocked by: 06
+- [x] **08** [Edit expression](08-edit-expression.md) — blocked by: 06
 - [ ] **09** [Delete expression](09-delete-expression.md) — blocked by: 06
 - [ ] **10** [From-text capture: LLM gateway, prompt files, draft + review](10-from-text-capture-llm-gateway-prompt-files-draft-+-review.md) — blocked by: 07
 - [ ] **11** [Smart picker endpoint and 'what to practice' preview](11-smart-picker-endpoint-and-what-to-practice-preview.md) — blocked by: 04

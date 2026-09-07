@@ -34,6 +34,15 @@ export const createExpressionInputSchema = z.object({
   frequency: frequencySchema,
 })
 
+export const updateExpressionInputSchema = createExpressionInputSchema
+  .extend({
+    partOfSpeech: partOfSpeechSchema.nullish(),
+    examples: z.array(trimmed),
+    tags: z.array(trimmed),
+  })
+  .partial()
+  .strict()
+
 export const expressionSortSchema = z.enum(['createdAt', 'score', 'nextTrainingAt', 'timesPracticed'])
 export const sortDirectionSchema = z.enum(['asc', 'desc'])
 
@@ -62,6 +71,7 @@ export type PartOfSpeech = z.infer<typeof partOfSpeechSchema>
 export type Frequency = z.infer<typeof frequencySchema>
 export type Expression = z.infer<typeof expressionSchema>
 export type CreateExpressionInput = z.infer<typeof createExpressionInputSchema>
+export type UpdateExpressionInput = z.infer<typeof updateExpressionInputSchema>
 export type ExpressionSort = z.infer<typeof expressionSortSchema>
 export type SortDirection = z.infer<typeof sortDirectionSchema>
 export type ExpressionListQuery = z.infer<typeof expressionListQuerySchema>

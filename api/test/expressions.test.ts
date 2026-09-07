@@ -411,3 +411,133 @@ describe('POST /expressions', () => {
     expect(res.status).toBe(201)
   })
 })
+
+describe('PATCH /expressions/:id', () => {
+  const stored = expression({
+    id: 'e1',
+    partOfSpeech: 'verb',
+    examples: ['Someone had to break the ice.'],
+    tags: ['work'],
+    score: 7.5,
+    timesPracticed: 3,
+  })
+
+  const patch = async (id: string, payload: unknown, seed: Expression[] = [stored]) => {
+    const deps = testDeps({ expressions: new InMemoryExpressionRepository(seed) })
+    return createApp(deps).request(`/expressions/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  it('changes the named field and leaves every other one alone', async () => {
+    const res = await patch('e1', { meaning: 'to make people feel at ease' })
+
+    expect(res.status).toBe(200)
+    expect(expressionSchema.parse(await res.json())).toMatchObject({
+      id: 'e1',
+      expression: 'break the ice',
+      type: 'idiom',
+      partOfSpeech: 'verb',
+      meaning: 'to make people feel at ease',
+      examples: ['Someone had to break the ice.'],
+      tags: ['work'],
+      frequency: 'common',
+    })
+  })
+
+  it('leaves the SRS fields untouched', async () => {
+    const res = await patch('e1', { expression: 'break the ice with someone' })
+
+    expect(expressionSchema.parse(await res.json())).toMatchObject({ score: 7.5, timesPracticed: 3 })
+  })
+
+  it('makes the change readable through the detail endpoint', async () => {
+    const deps = testDeps({ expressions: new InMemoryExpressionRepository([stored]) })
+    const app = createApp(deps)
+    await app.request('/expressions/e1', {
+      method: 'PATCH',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: ['work', 'small-talk'] }),
+    })
+
+    const res = await app.request('/expressions/e1', { headers: { Authorization: bearer(TEST_SECRET, deps.clock) } })
+
+    expect(expressionSchema.parse(await res.json()).tags).toEqual(['work', 'small-talk'])
+  })
+
+  it('replaces a list field wholesale', async () => {
+    const res = await patch('e1', { examples: [] })
+
+    expect(expressionSchema.parse(await res.json()).examples).toEqual([])
+  })
+
+  it('clears the part of speech when it is sent as null', async () => {
+    const res = await patch('e1', { partOfSpeech: null })
+
+    expect((await res.json()) as Record<string, unknown>).not.toHaveProperty('partOfSpeech')
+  })
+
+  it('trims the text fields', async () => {
+    const res = await patch('e1', { expression: '  break the ice  ', tags: [' work '] })
+
+    expect(expressionSchema.parse(await res.json())).toMatchObject({ expression: 'break the ice', tags: ['work'] })
+  })
+
+  it('refuses to write an SRS field', async () => {
+    const res = await patch('e1', { score: 10 })
+
+    expect(res.status).toBe(400)
+    const { error } = apiErrorSchema.parse(await res.json())
+    expect(error.code).toBe('VALIDATION_ERROR')
+    expect(error.message).toContain('score')
+  })
+
+  it('refuses to reassign the owner', async () => {
+    const res = await patch('e1', { userId: 'someone-else' })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('rejects a blank expression', async () => {
+    const res = await patch('e1', { expression: '   ' })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.message).toContain('expression')
+  })
+
+  it('rejects an unknown frequency', async () => {
+    const res = await patch('e1', { frequency: 'sometimes' })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.message).toContain('frequency')
+  })
+
+  it('rejects a body that is not JSON', async () => {
+    const deps = testDeps({ expressions: new InMemoryExpressionRepository([stored]) })
+    const res = await createApp(deps).request('/expressions/e1', {
+      method: 'PATCH',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: 'not json',
+    })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('hides an expression owned by someone else', async () => {
+    const res = await patch('theirs', { meaning: 'mine now' }, [expression({ id: 'theirs', userId: 'someone-else' })])
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+
+  it('answers an unknown id with a not found', async () => {
+    const res = await patch('missing', { meaning: 'nothing to patch' })
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+})

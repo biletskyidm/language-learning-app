@@ -63,3 +63,6 @@ export const apiGet = <T>(path: string, schema: ZodType<T>): Promise<T> => reque
 
 export const apiPost = <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
   request('POST', path, schema, body)
+
+export const apiPatch = <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
+  request('PATCH', path, schema, body)
