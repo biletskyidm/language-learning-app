@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, StyleSheet, Text } from 'react-native'
+import type { Expression } from '@contracts'
 import { expressionPatch } from '../../../src/api/expression-patch'
 import { useExpression } from '../../../src/api/use-expression'
 import { useUpdateExpression } from '../../../src/api/use-update-expression'
@@ -10,7 +12,11 @@ export default function EditExpressionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const expression = useExpression(id)
   const update = useUpdateExpression(id)
-  const stored = expression.data
+  // Frozen at mount: the form's fields are, so diffing against a later refetch would send fields
+  // the user never touched and clobber whatever changed the record underneath them.
+  const baseline = useRef<Expression | undefined>(undefined)
+  baseline.current ??= expression.data
+  const stored = baseline.current
 
   return (
     <>
