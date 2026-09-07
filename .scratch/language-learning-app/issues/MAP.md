@@ -11,7 +11,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **03** [CDK deploy: Lambda Function URL and env wiring](03-cdk-deploy-lambda-function-url-and-env-wiring.md) — blocked by: 02
 - [x] **04** [Expressions list with text search and cached reads](04-expressions-list-with-text-search-and-cached-reads.md) — blocked by: 02
 - [x] **05** [Expression filters and sort](05-expression-filters-and-sort.md) — blocked by: 04
-- [ ] **06** [Expression detail screen with trained counter](06-expression-detail-screen-with-trained-counter.md) — blocked by: 04
+- [x] **06** [Expression detail screen with trained counter](06-expression-detail-screen-with-trained-counter.md) — blocked by: 04
 - [ ] **07** [Create expression manually](07-create-expression-manually.md) — blocked by: 04
 - [ ] **08** [Edit expression](08-edit-expression.md) — blocked by: 06
 - [ ] **09** [Delete expression](09-delete-expression.md) — blocked by: 06

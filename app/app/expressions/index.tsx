@@ -1,24 +1,24 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import type { Expression } from '@contracts'
 import {
   filtersFromParams,
   filtersToParams,
   isFiltered,
   type ExpressionFilters,
-} from '../src/api/expression-filters'
-import { useExpressions } from '../src/api/use-expressions'
-import { ExpressionFilterBar } from '../src/components/expression-filter-bar'
-import { colors, spacing } from '../src/theme/tokens'
+} from '../../src/api/expression-filters'
+import { useExpressions } from '../../src/api/use-expressions'
+import { ExpressionFilterBar } from '../../src/components/expression-filter-bar'
+import { colors, spacing } from '../../src/theme/tokens'
 
 const Row = ({ item }: { item: Expression }) => (
-  <View style={styles.row}>
+  <Pressable style={styles.row} onPress={() => router.push(`/expressions/${item.id}`)}>
     <Text style={styles.expression}>{item.expression}</Text>
     <Text style={styles.meaning}>{item.meaning}</Text>
     <Text style={styles.meta}>
-      {item.type} · {item.frequency} · trained {item.timesPracticed ?? 0}×
+      {item.type} · {item.frequency} · ×{item.timesPracticed ?? 0}
     </Text>
-  </View>
+  </Pressable>
 )
 
 export default function Expressions() {

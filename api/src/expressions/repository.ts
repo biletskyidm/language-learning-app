@@ -6,5 +6,6 @@ export interface ExpressionRepository {
   /** Diagnostic total across every user; used by the startup log. */
   countAll(): Promise<number>
   list(userId: string, query: ExpressionListParams): Promise<Expression[]>
+  findById(userId: string, id: string): Promise<Expression | undefined>
   tags(userId: string): Promise<string[]>
 }

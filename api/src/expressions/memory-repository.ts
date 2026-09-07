@@ -53,6 +53,10 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
       .sort(comparator(query))
   }
 
+  async findById(userId: string, id: string): Promise<Expression | undefined> {
+    return this.expressions.find((e) => e.userId === userId && e.id === id)
+  }
+
   async tags(userId: string): Promise<string[]> {
     const tags = this.expressions.filter((e) => e.userId === userId).flatMap((e) => e.tags)
 

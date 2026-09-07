@@ -1,4 +1,4 @@
-import type { Db, Document } from 'mongodb'
+import { ObjectId, type Db, type Document } from 'mongodb'
 import type { Expression, Frequency } from '@contracts'
 import { toDomain } from './mapper'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
@@ -14,6 +14,12 @@ export type ExpressionListFilter = {
   frequency?: Frequency
   nextTrainingAt?: { $lte: Date }
 }
+
+export type ExpressionIdFilter = { userId: string; _id: ObjectId }
+
+/** An id the driver would reject is not a lookup failure worth a 500 — it is simply nothing to find. */
+export const idFilter = (userId: string, id: string): ExpressionIdFilter | undefined =>
+  ObjectId.isValid(id) ? { userId, _id: new ObjectId(id) } : undefined
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -72,6 +78,15 @@ export class MongoExpressionRepository implements ExpressionRepository {
       .toArray()
 
     return docs.map((doc) => toDomain(doc as Parameters<typeof toDomain>[0]))
+  }
+
+  async findById(userId: string, id: string): Promise<Expression | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db.collection(EXPRESSIONS_COLLECTION).findOne(filter)
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
   async tags(userId: string): Promise<string[]> {

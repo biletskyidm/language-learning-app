@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { apiErrorSchema, expressionListResponseSchema, expressionTagsResponseSchema, type Expression } from '@contracts'
+import {
+  apiErrorSchema,
+  expressionListResponseSchema,
+  expressionSchema,
+  expressionTagsResponseSchema,
+  type Expression,
+} from '@contracts'
 import { createApp } from '../src/app'
 import type { Deps } from '../src/deps'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
@@ -221,5 +227,50 @@ describe('GET /expressions/tags', () => {
 
     expect(res.status).toBe(200)
     expect(expressionTagsResponseSchema.parse(await res.json()).items).toEqual(['meetings', 'work'])
+  })
+})
+
+describe('GET /expressions/:id', () => {
+  it('returns the expression with every stored field', async () => {
+    const res = await request(
+      [
+        expression({
+          id: '65a1b2c3d4e5f60718293a4b',
+          partOfSpeech: 'verb',
+          examples: ['Someone had to break the ice.'],
+          tags: ['work'],
+          score: 7.5,
+          timesPracticed: 3,
+          lastTimePracticedAt: new Date('2026-01-05T00:00:00.000Z'),
+          nextTrainingAt: new Date('2026-01-12T00:00:00.000Z'),
+        }),
+      ],
+      '/expressions/65a1b2c3d4e5f60718293a4b',
+    )
+
+    expect(res.status).toBe(200)
+    expect(expressionSchema.parse(await res.json())).toMatchObject({
+      id: '65a1b2c3d4e5f60718293a4b',
+      expression: 'break the ice',
+      partOfSpeech: 'verb',
+      examples: ['Someone had to break the ice.'],
+      tags: ['work'],
+      score: 7.5,
+      timesPracticed: 3,
+    })
+  })
+
+  it('hides an expression owned by someone else', async () => {
+    const res = await request([expression({ id: 'theirs', userId: 'someone-else' })], '/expressions/theirs')
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+
+  it('answers a malformed id with a not found instead of an error', async () => {
+    const res = await request([expression({ id: 'e1' })], '/expressions/not-an-object-id')
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
   })
 })

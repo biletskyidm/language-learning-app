@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { listFilter, listPipeline } from '../src/expressions/mongo-repository'
+import { ObjectId } from 'mongodb'
+import { idFilter, listFilter, listPipeline } from '../src/expressions/mongo-repository'
 
 const NOW = new Date('2026-03-01T00:00:00.000Z')
 
@@ -79,5 +80,18 @@ describe('listPipeline', () => {
 
     expect(stages).toContainEqual({ $addFields: { _sortKey: { $ifNull: ['$timesPracticed', 0] } } })
     expect(sortStage(stages)).toEqual({ _sortKey: -1, _id: 1 })
+  })
+})
+
+describe('idFilter', () => {
+  it('scopes the lookup to the caller and the object id', () => {
+    expect(idFilter('me', '65a1b2c3d4e5f60718293a4b')).toEqual({
+      userId: 'me',
+      _id: new ObjectId('65a1b2c3d4e5f60718293a4b'),
+    })
+  })
+
+  it('refuses a malformed id so it never reaches the driver', () => {
+    expect(idFilter('me', 'not-an-object-id')).toBeUndefined()
   })
 })
