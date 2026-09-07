@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Stack } from 'expo-router'
 import { Button, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   createExpressionInputSchema,
   type CreateExpressionInput,
@@ -31,13 +33,15 @@ const FREQUENCIES: [Frequency, string][] = [
 ]
 
 type Props = {
+  title: string
   initial?: Expression
   pending: boolean
   error?: string
   onSubmit: (draft: CreateExpressionInput) => void
 }
 
-export const ExpressionForm = ({ initial, pending, error, onSubmit }: Props) => {
+export const ExpressionForm = ({ title, initial, pending, error, onSubmit }: Props) => {
+  const insets = useSafeAreaInsets()
   const [expression, setExpression] = useState(initial?.expression ?? '')
   const [type, setType] = useState<ExpressionType>(initial?.type ?? 'phrase')
   const [partOfSpeech, setPartOfSpeech] = useState(initial?.partOfSpeech)
@@ -57,6 +61,8 @@ export const ExpressionForm = ({ initial, pending, error, onSubmit }: Props) => 
     frequency,
   })
 
+  const submit = draft.success && !pending ? () => onSubmit(draft.data) : undefined
+
   const addTag = () => {
     const tag = tagDraft.trim()
     if (tag && !tags.includes(tag)) setTags([...tags, tag])
@@ -64,7 +70,23 @@ export const ExpressionForm = ({ initial, pending, error, onSubmit }: Props) => 
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardDismissMode="on-drag">
+    <ScrollView
+      contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + spacing.lg }]}
+      keyboardDismissMode="on-drag"
+    >
+      <Stack.Screen
+        options={{
+          title,
+          headerRight: () => (
+            <Pressable onPress={submit} disabled={!submit} accessibilityRole="button" hitSlop={12}>
+              <Text style={[styles.save, !submit && styles.saveDisabled]}>Save</Text>
+            </Pressable>
+          ),
+        }}
+      />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
       <Text style={styles.label}>Expression</Text>
       <TextInput
         style={styles.input}
@@ -148,19 +170,12 @@ export const ExpressionForm = ({ initial, pending, error, onSubmit }: Props) => 
           <Chip key={value} label={label} active={frequency === value} onPress={() => setFrequency(value)} />
         ))}
       </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button
-        title="Save"
-        onPress={() => draft.success && onSubmit(draft.data)}
-        disabled={!draft.success || pending}
-      />
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.lg },
+  container: { padding: spacing.md, gap: spacing.sm },
   label: { fontWeight: '600', marginTop: spacing.sm },
   input: {
     borderWidth: 1,
@@ -173,5 +188,7 @@ const styles = StyleSheet.create({
   exampleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   exampleInput: { flex: 1 },
   remove: { color: colors.muted, fontSize: 16 },
-  error: { color: colors.error, textAlign: 'center', marginTop: spacing.sm },
+  error: { color: colors.error, textAlign: 'center' },
+  save: { fontSize: 16, fontWeight: '600', color: colors.ok },
+  saveDisabled: { color: colors.muted },
 })

@@ -1,4 +1,4 @@
-import { Stack, router } from 'expo-router'
+import { router } from 'expo-router'
 import { ApiError } from '../../src/api/client'
 import { useCreateExpression } from '../../src/api/use-create-expression'
 import { ExpressionForm } from '../../src/components/expression-form'
@@ -12,15 +12,13 @@ export default function NewExpression() {
   const create = useCreateExpression()
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'New expression' }} />
-      <ExpressionForm
-        pending={create.isPending}
-        error={create.isError ? failure(create.error) : undefined}
-        onSubmit={(draft) =>
-          create.mutate(draft, { onSuccess: (created) => router.replace(`/expressions/${created.id}`) })
-        }
-      />
-    </>
+    <ExpressionForm
+      title="New expression"
+      pending={create.isPending}
+      error={create.isError ? failure(create.error) : undefined}
+      onSubmit={(draft) =>
+        create.mutate(draft, { onSuccess: (created) => router.replace(`/expressions/${created.id}`) })
+      }
+    />
   )
 }
