@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document } from 'mongodb'
-import type { Expression, Frequency } from '@contracts'
+import type { CreateExpressionInput, Expression, Frequency } from '@contracts'
 import { toDomain } from './mapper'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
 
@@ -87,6 +87,19 @@ export class MongoExpressionRepository implements ExpressionRepository {
     const doc = await this.db.collection(EXPRESSIONS_COLLECTION).findOne(filter)
 
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async findByExpression(userId: string, expression: string): Promise<Expression | undefined> {
+    const doc = await this.db.collection(EXPRESSIONS_COLLECTION).findOne({ userId, expression })
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async create(userId: string, input: CreateExpressionInput, createdAt: Date): Promise<Expression> {
+    const doc = { userId, createdAt, ...input }
+    const { insertedId } = await this.db.collection(EXPRESSIONS_COLLECTION).insertOne(doc)
+
+    return toDomain({ ...doc, _id: insertedId })
   }
 
   async tags(userId: string): Promise<string[]> {

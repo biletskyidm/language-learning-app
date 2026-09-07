@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { ExpressionSort, Frequency } from '@contracts'
 import type { ExpressionFilters } from '../api/expression-filters'
 import { colors, spacing } from '../theme/tokens'
+import { Chip } from './chip'
 import { TagPicker } from './tag-picker'
 
 const FREQUENCIES: [Frequency, string][] = [
@@ -19,17 +20,6 @@ const SORTS: [ExpressionSort, string][] = [
   ['nextTrainingAt', 'Next due'],
   ['timesPracticed', 'Practiced'],
 ]
-
-const Chip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityState={{ selected: active }}
-    style={[styles.chip, active && styles.chipActive]}
-  >
-    <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
-  </Pressable>
-)
 
 type Props = {
   filters: ExpressionFilters
@@ -91,14 +81,4 @@ const styles = StyleSheet.create({
   bar: { gap: spacing.sm },
   row: { gap: spacing.sm, alignItems: 'center', paddingRight: spacing.md },
   label: { color: colors.muted, fontSize: 12 },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
-  },
-  chipActive: { borderColor: colors.ok, backgroundColor: colors.ok },
-  chipLabel: { fontSize: 13, color: colors.muted },
-  chipLabelActive: { color: '#fff', fontWeight: '600' },
 })
