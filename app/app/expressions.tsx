@@ -1,8 +1,14 @@
-import { useState } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
 import type { Expression } from '@contracts'
+import {
+  filtersFromParams,
+  filtersToParams,
+  isFiltered,
+  type ExpressionFilters,
+} from '../src/api/expression-filters'
 import { useExpressions } from '../src/api/use-expressions'
+import { ExpressionFilterBar } from '../src/components/expression-filter-bar'
 import { colors, spacing } from '../src/theme/tokens'
 
 const Row = ({ item }: { item: Expression }) => (
@@ -16,13 +22,15 @@ const Row = ({ item }: { item: Expression }) => (
 )
 
 export default function Expressions() {
-  const [search, setSearch] = useState('')
-  const expressions = useExpressions(search)
+  const filters = filtersFromParams(useLocalSearchParams())
+  const setFilters = (next: ExpressionFilters) => router.setParams(filtersToParams(next))
+  const expressions = useExpressions(filters)
 
   const empty = () => {
     if (expressions.isPending) return <ActivityIndicator style={styles.state} />
     if (expressions.isError) return <Text style={styles.error}>Could not load your vocabulary</Text>
-    return <Text style={styles.state}>{search ? 'Nothing matches that search' : 'No expressions yet'}</Text>
+    if (filters.search || isFiltered(filters)) return <Text style={styles.state}>Nothing matches those filters</Text>
+    return <Text style={styles.state}>No expressions yet</Text>
   }
 
   return (
@@ -30,13 +38,14 @@ export default function Expressions() {
       <Stack.Screen options={{ title: 'Vocabulary' }} />
       <TextInput
         style={styles.search}
-        value={search}
-        onChangeText={setSearch}
+        value={filters.search}
+        onChangeText={(search) => setFilters({ ...filters, search })}
         placeholder="Search expression or meaning"
         autoCapitalize="none"
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
+      <ExpressionFilterBar filters={filters} onChange={setFilters} />
       <FlatList
         data={expressions.data?.items ?? []}
         keyExtractor={(item) => item.id}

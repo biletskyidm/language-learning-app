@@ -22,17 +22,35 @@ export const expressionSchema = z.object({
   nextTrainingAt: z.coerce.date().optional(),
 })
 
+export const expressionSortSchema = z.enum(['createdAt', 'score', 'nextTrainingAt', 'timesPracticed'])
+export const sortDirectionSchema = z.enum(['asc', 'desc'])
+
 export const expressionListQuerySchema = z.object({
   search: z.string().optional(),
+  tag: z.string().optional(),
+  frequency: frequencySchema.optional(),
+  due: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+  sort: expressionSortSchema.default('createdAt'),
+  dir: sortDirectionSchema.default('desc'),
 })
 
 export const expressionListResponseSchema = z.object({
   items: z.array(expressionSchema),
 })
 
+export const expressionTagsResponseSchema = z.object({
+  items: z.array(z.string()),
+})
+
 export type ExpressionType = z.infer<typeof expressionTypeSchema>
 export type PartOfSpeech = z.infer<typeof partOfSpeechSchema>
 export type Frequency = z.infer<typeof frequencySchema>
 export type Expression = z.infer<typeof expressionSchema>
+export type ExpressionSort = z.infer<typeof expressionSortSchema>
+export type SortDirection = z.infer<typeof sortDirectionSchema>
 export type ExpressionListQuery = z.infer<typeof expressionListQuerySchema>
 export type ExpressionListResponse = z.infer<typeof expressionListResponseSchema>
+export type ExpressionTagsResponse = z.infer<typeof expressionTagsResponseSchema>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { expressionListResponseSchema, type ExpressionListResponse } from '@contracts'
 import { apiGet } from './client'
+import { DEFAULT_FILTERS, filtersToQuery, type ExpressionFilters } from './expression-filters'
 
 export const EXPRESSIONS_KEY = 'expressions'
 export const SEARCH_DEBOUNCE_MS = 300
@@ -17,16 +18,13 @@ const useDebounced = (value: string, ms: number) => {
   return debounced
 }
 
-export const useExpressions = (search = '') => {
-  const debounced = useDebounced(search.trim(), SEARCH_DEBOUNCE_MS)
+export const useExpressions = (filters: ExpressionFilters = DEFAULT_FILTERS) => {
+  const search = useDebounced(filters.search.trim(), SEARCH_DEBOUNCE_MS)
+  const path = `/expressions${filtersToQuery({ ...filters, search })}`
 
   return useQuery<ExpressionListResponse>({
-    queryKey: [EXPRESSIONS_KEY, debounced],
-    queryFn: () =>
-      apiGet(
-        `/expressions${debounced ? `?search=${encodeURIComponent(debounced)}` : ''}`,
-        expressionListResponseSchema,
-      ),
+    queryKey: [EXPRESSIONS_KEY, path],
+    queryFn: () => apiGet(path, expressionListResponseSchema),
     // Keeps the previous page of rows on screen while a new search is in flight.
     placeholderData: (previous) => previous,
   })
