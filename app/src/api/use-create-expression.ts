@@ -6,9 +6,11 @@ import { EXPRESSIONS_KEY } from './use-expressions'
 const isList = (data: unknown): data is ExpressionListResponse =>
   typeof data === 'object' && data !== null && 'items' in data
 
+const OPTIMISTIC_ID = 'optimistic'
+
 const optimistic = (input: CreateExpressionInput): Expression => ({
   ...input,
-  id: 'optimistic',
+  id: OPTIMISTIC_ID,
   userId: '',
   createdAt: new Date(),
 })
@@ -27,7 +29,12 @@ export const useCreateExpression = () => {
 
       return { snapshot }
     },
-    onSuccess: (created) => queryClient.setQueryData([EXPRESSIONS_KEY, 'detail', created.id], created),
+    onSuccess: (created) => {
+      queryClient.setQueriesData({ queryKey: [EXPRESSIONS_KEY] }, (data: unknown) =>
+        isList(data) ? { items: data.items.map((item) => (item.id === OPTIMISTIC_ID ? created : item)) } : data,
+      )
+      queryClient.setQueryData([EXPRESSIONS_KEY, 'detail', created.id], created)
+    },
     onError: (_error, _input, context) => {
       context?.snapshot.forEach(([key, data]) => queryClient.setQueryData(key, data))
     },

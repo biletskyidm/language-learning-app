@@ -83,6 +83,15 @@ describe('useCreateExpression', () => {
     expect(listed()).toEqual(['break the ice'])
   })
 
+  it('swaps the optimistic row for the saved expression, so a failed refetch cannot strand it', async () => {
+    mockedApiPost.mockResolvedValue(created)
+
+    const result = await submit()
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryData<{ items: Expression[] }>(LIST_KEY)?.items).toEqual([created, existing])
+  })
+
   it('primes the detail cache so the created expression opens without a refetch', async () => {
     mockedApiPost.mockResolvedValue(created)
 
