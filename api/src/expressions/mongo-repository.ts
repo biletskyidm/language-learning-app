@@ -132,6 +132,15 @@ export class MongoExpressionRepository implements ExpressionRepository {
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
+  async delete(userId: string, id: string): Promise<boolean> {
+    const filter = idFilter(userId, id)
+    if (!filter) return false
+
+    const { deletedCount } = await this.db.collection(EXPRESSIONS_COLLECTION).deleteOne(filter)
+
+    return deletedCount === 1
+  }
+
   async tags(userId: string): Promise<string[]> {
     const tags = await this.db.collection(EXPRESSIONS_COLLECTION).distinct('tags', { userId })
 

@@ -34,7 +34,7 @@ export class ApiError extends Error {
   }
 }
 
-const request = async <T>(method: string, path: string, schema: ZodType<T>, body?: unknown): Promise<T> => {
+const send = async (method: string, path: string, body?: unknown): Promise<unknown> => {
   const credentials = await readCredentials()
   if (!credentials) throw new NotConfiguredError()
 
@@ -56,8 +56,11 @@ const request = async <T>(method: string, path: string, schema: ZodType<T>, body
       : new Error(`${method} ${path} failed with ${res.status}`)
   }
 
-  return schema.parse(payload)
+  return payload
 }
+
+const request = async <T>(method: string, path: string, schema: ZodType<T>, body?: unknown): Promise<T> =>
+  schema.parse(await send(method, path, body))
 
 export const apiGet = <T>(path: string, schema: ZodType<T>): Promise<T> => request('GET', path, schema)
 
@@ -66,3 +69,7 @@ export const apiPost = <T>(path: string, body: unknown, schema: ZodType<T>): Pro
 
 export const apiPatch = <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
   request('PATCH', path, schema, body)
+
+export const apiDelete = async (path: string): Promise<void> => {
+  await send('DELETE', path)
+}

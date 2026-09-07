@@ -10,5 +10,6 @@ export interface ExpressionRepository {
   findByExpression(userId: string, expression: string): Promise<Expression | undefined>
   create(userId: string, input: CreateExpressionInput, createdAt: Date): Promise<Expression>
   update(userId: string, id: string, patch: UpdateExpressionInput): Promise<Expression | undefined>
+  delete(userId: string, id: string): Promise<boolean>
   tags(userId: string): Promise<string[]>
 }
