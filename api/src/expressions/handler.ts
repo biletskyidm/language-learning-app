@@ -7,6 +7,7 @@ import {
   expressionListResponseSchema,
   expressionSchema,
   expressionTagsResponseSchema,
+  updateExpressionInputSchema,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
@@ -47,4 +48,14 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
       if (!expression) return c.json(apiError('NOT_FOUND', 'No such expression'), 404)
 
       return c.json(expressionSchema.parse(expression))
+    })
+    .patch('/expressions/:id', async (c) => {
+      const body = await c.req.json().catch(() => undefined)
+      const patch = updateExpressionInputSchema.safeParse(body)
+      if (!patch.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(patch.error)), 400)
+
+      const updated = await deps.expressions.update(c.get('userId'), c.req.param('id'), patch.data)
+      if (!updated) return c.json(apiError('NOT_FOUND', 'No such expression'), 404)
+
+      return c.json(expressionSchema.parse(updated))
     })

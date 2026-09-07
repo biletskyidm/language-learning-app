@@ -1,4 +1,10 @@
-import type { CreateExpressionInput, Expression, ExpressionSort } from '@contracts'
+import {
+  expressionSchema,
+  type CreateExpressionInput,
+  type Expression,
+  type ExpressionSort,
+  type UpdateExpressionInput,
+} from '@contracts'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
 
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
@@ -66,6 +72,17 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     this.expressions.push(created)
 
     return created
+  }
+
+  async update(userId: string, id: string, patch: UpdateExpressionInput): Promise<Expression | undefined> {
+    const index = this.expressions.findIndex((e) => e.userId === userId && e.id === id)
+    if (index < 0) return undefined
+
+    const merged = Object.entries({ ...this.expressions[index], ...patch }).filter(([, value]) => value !== null)
+    const updated = expressionSchema.parse(Object.fromEntries(merged))
+    this.expressions[index] = updated
+
+    return updated
   }
 
   async tags(userId: string): Promise<string[]> {

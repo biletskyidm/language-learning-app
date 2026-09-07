@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { idFilter, listFilter, listPipeline } from '../src/expressions/mongo-repository'
+import { idFilter, listFilter, listPipeline, updateOperations } from '../src/expressions/mongo-repository'
 
 const NOW = new Date('2026-03-01T00:00:00.000Z')
 
@@ -93,5 +93,28 @@ describe('idFilter', () => {
 
   it('refuses a malformed id so it never reaches the driver', () => {
     expect(idFilter('me', 'not-an-object-id')).toBeUndefined()
+  })
+})
+
+describe('updateOperations', () => {
+  it('sets only the fields the patch names', () => {
+    expect(updateOperations({ meaning: 'to get things going', tags: ['work'] })).toEqual({
+      $set: { meaning: 'to get things going', tags: ['work'] },
+    })
+  })
+
+  it('unsets a field the patch clears with a null', () => {
+    expect(updateOperations({ partOfSpeech: null })).toEqual({ $unset: { partOfSpeech: '' } })
+  })
+
+  it('combines a set and an unset', () => {
+    expect(updateOperations({ expression: 'break the ice', partOfSpeech: null })).toEqual({
+      $set: { expression: 'break the ice' },
+      $unset: { partOfSpeech: '' },
+    })
+  })
+
+  it('has nothing to write for an empty patch, which Mongo would reject', () => {
+    expect(updateOperations({})).toBeUndefined()
   })
 })

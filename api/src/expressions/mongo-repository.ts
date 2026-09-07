@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document } from 'mongodb'
-import type { CreateExpressionInput, Expression, Frequency } from '@contracts'
+import type { CreateExpressionInput, Expression, Frequency, UpdateExpressionInput } from '@contracts'
 import { toDomain } from './mapper'
 import type { ExpressionListParams, ExpressionRepository } from './repository'
 
@@ -64,6 +64,22 @@ export const listPipeline = (userId: string, query: ExpressionListParams): Docum
   return stages
 }
 
+export type ExpressionUpdate = { $set?: Record<string, unknown>; $unset?: Record<string, ''> }
+
+/** A null clears the field rather than storing a null, so the mapper never has to drop one on the way back. */
+export const updateOperations = (patch: UpdateExpressionInput): ExpressionUpdate | undefined => {
+  const entries = Object.entries(patch)
+  const set = entries.filter(([, value]) => value !== null)
+  const unset = entries.filter(([, value]) => value === null)
+
+  if (!set.length && !unset.length) return undefined
+
+  return {
+    ...(set.length ? { $set: Object.fromEntries(set) } : {}),
+    ...(unset.length ? { $unset: Object.fromEntries(unset.map(([key]) => [key, ''] as const)) } : {}),
+  }
+}
+
 export class MongoExpressionRepository implements ExpressionRepository {
   constructor(private readonly db: Db) {}
 
@@ -100,6 +116,20 @@ export class MongoExpressionRepository implements ExpressionRepository {
     const { insertedId } = await this.db.collection(EXPRESSIONS_COLLECTION).insertOne(doc)
 
     return toDomain({ ...doc, _id: insertedId })
+  }
+
+  async update(userId: string, id: string, patch: UpdateExpressionInput): Promise<Expression | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const operations = updateOperations(patch)
+    if (!operations) return this.findById(userId, id)
+
+    const doc = await this.db
+      .collection(EXPRESSIONS_COLLECTION)
+      .findOneAndUpdate(filter, operations, { returnDocument: 'after' })
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
   async tags(userId: string): Promise<string[]> {
