@@ -3,6 +3,7 @@ import {
   apiError,
   expressionListQuerySchema,
   expressionListResponseSchema,
+  expressionSchema,
   expressionTagsResponseSchema,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
@@ -22,4 +23,10 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
       const items = await deps.expressions.tags(c.get('userId'))
 
       return c.json(expressionTagsResponseSchema.parse({ items }))
+    })
+    .get('/expressions/:id', async (c) => {
+      const expression = await deps.expressions.findById(c.get('userId'), c.req.param('id'))
+      if (!expression) return c.json(apiError('NOT_FOUND', 'No such expression'), 404)
+
+      return c.json(expressionSchema.parse(expression))
     })
