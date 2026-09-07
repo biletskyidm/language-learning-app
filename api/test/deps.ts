@@ -1,3 +1,4 @@
+import { generateToken } from '@contracts'
 import { SecretTokenVerifier } from '../src/auth/token-verifier'
 import type { Deps } from '../src/deps'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
@@ -7,6 +8,10 @@ import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
 
 export const NOW = new Date('2026-01-01T00:00:00.000Z')
 export const TEST_SECRET = 'a'.repeat(64)
+
+/** Every call signs a fresh nonce, so repeated requests to one app are not replays. */
+export const bearer = (secret = TEST_SECRET, now: () => Date = () => NOW) =>
+  `Bearer ${generateToken(secret, { now, random: (size) => crypto.getRandomValues(new Uint8Array(size)) })}`
 
 export const testDeps = (overrides: Partial<Deps> = {}): Deps => {
   const clock = overrides.clock ?? (() => NOW)

@@ -10,7 +10,17 @@ export interface Credentials {
 
 const normalizeUrl = (url: string) => url.trim().replace(/\/$/, '')
 
+/** Dev override from a gitignored app/.env.local, so local iteration never needs the setup screen. */
+const fromEnv = (): Credentials | null => {
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL
+  const secret = process.env.EXPO_PUBLIC_API_SECRET
+  return baseUrl && secret ? { baseUrl: normalizeUrl(baseUrl), secret } : null
+}
+
 export const readCredentials = async (): Promise<Credentials | null> => {
+  const override = fromEnv()
+  if (override) return override
+
   const [baseUrl, secret] = await Promise.all([
     SecureStore.getItemAsync(BASE_URL_KEY),
     SecureStore.getItemAsync(SECRET_KEY),

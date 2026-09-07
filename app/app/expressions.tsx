@@ -1,0 +1,67 @@
+import { useState } from 'react'
+import { Stack } from 'expo-router'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native'
+import type { Expression } from '@contracts'
+import { useExpressions } from '../src/api/use-expressions'
+import { colors, spacing } from '../src/theme/tokens'
+
+const Row = ({ item }: { item: Expression }) => (
+  <View style={styles.row}>
+    <Text style={styles.expression}>{item.expression}</Text>
+    <Text style={styles.meaning}>{item.meaning}</Text>
+    <Text style={styles.meta}>
+      {item.type} · {item.frequency} · trained {item.timesPracticed ?? 0}×
+    </Text>
+  </View>
+)
+
+export default function Expressions() {
+  const [search, setSearch] = useState('')
+  const expressions = useExpressions(search)
+
+  const empty = () => {
+    if (expressions.isPending) return <ActivityIndicator style={styles.state} />
+    if (expressions.isError) return <Text style={styles.error}>Could not load your vocabulary</Text>
+    return <Text style={styles.state}>{search ? 'Nothing matches that search' : 'No expressions yet'}</Text>
+  }
+
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Vocabulary' }} />
+      <TextInput
+        style={styles.search}
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Search expression or meaning"
+        autoCapitalize="none"
+        autoCorrect={false}
+        clearButtonMode="while-editing"
+      />
+      <FlatList
+        data={expressions.data?.items ?? []}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <Row item={item} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={empty()}
+        keyboardDismissMode="on-drag"
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: spacing.md, gap: spacing.sm },
+  search: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: spacing.sm,
+  },
+  row: { paddingVertical: spacing.sm, gap: 2 },
+  expression: { fontSize: 16, fontWeight: '600' },
+  meaning: { color: colors.muted },
+  meta: { color: colors.muted, fontSize: 12 },
+  separator: { height: 1, backgroundColor: colors.border },
+  state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
+  error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
+})

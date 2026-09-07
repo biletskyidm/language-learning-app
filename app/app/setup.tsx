@@ -11,9 +11,12 @@ export default function Setup() {
   const [secret, setSecret] = useState('')
   const queryClient = useQueryClient()
 
-  // Seeded, not invalidated: Home would bounce back here on the stale null mid-refetch.
+  // Cleared first: everything cached belongs to the previous API. Then seeded, not invalidated,
+  // because Home would bounce back here on the stale null mid-refetch.
   const save = async () => {
-    queryClient.setQueryData(CREDENTIALS_KEY, await saveCredentials({ baseUrl, secret }))
+    const saved = await saveCredentials({ baseUrl, secret })
+    queryClient.clear()
+    queryClient.setQueryData(CREDENTIALS_KEY, saved)
     router.replace('/')
   }
 

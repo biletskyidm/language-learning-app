@@ -26,6 +26,7 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={[styles.status, { color: healthy ? colors.ok : colors.error }]}>{label()}</Text>
       {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
+      <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
     </View>
   )
 }

@@ -29,6 +29,32 @@ describe('saveCredentials', () => {
 describe('readCredentials', () => {
   beforeEach(() => jest.resetAllMocks())
 
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_API_URL
+    delete process.env.EXPO_PUBLIC_API_SECRET
+  })
+
+  it('prefers the env override over whatever is in secure storage', async () => {
+    stored({ [BASE_URL_KEY]: 'http://stale:8787', [SECRET_KEY]: 'stale-secret' })
+    process.env.EXPO_PUBLIC_API_URL = 'http://localhost:8787/'
+    process.env.EXPO_PUBLIC_API_SECRET = 'dev-secret'
+
+    await expect(readCredentials()).resolves.toEqual({
+      baseUrl: 'http://localhost:8787',
+      secret: 'dev-secret',
+    })
+  })
+
+  it('ignores a half-filled env override', async () => {
+    stored({ [BASE_URL_KEY]: 'http://localhost:8787', [SECRET_KEY]: 'abc123' })
+    process.env.EXPO_PUBLIC_API_URL = 'http://localhost:8787'
+
+    await expect(readCredentials()).resolves.toEqual({
+      baseUrl: 'http://localhost:8787',
+      secret: 'abc123',
+    })
+  })
+
   it('returns the stored pair', async () => {
     stored({ [BASE_URL_KEY]: 'http://localhost:8787', [SECRET_KEY]: 'abc123' })
 

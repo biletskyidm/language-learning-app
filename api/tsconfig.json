@@ -2,8 +2,15 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "..",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "noEmit": true
   },
-  "include": ["src", "test", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "scripts",
+    "vitest.config.ts"
+  ]
 }
