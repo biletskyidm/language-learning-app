@@ -6,6 +6,7 @@ import {
   createExpressionInputSchema,
   type CreateExpressionInput,
   type Expression,
+  type ExpressionDraft,
   type ExpressionType,
   type Frequency,
   type PartOfSpeech,
@@ -37,10 +38,11 @@ type Props = {
   initial?: Expression
   pending: boolean
   error?: string
+  onFill?: (text: string) => Promise<ExpressionDraft>
   onSubmit: (draft: CreateExpressionInput) => void
 }
 
-export const ExpressionForm = ({ title, initial, pending, error, onSubmit }: Props) => {
+export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmit }: Props) => {
   const insets = useSafeAreaInsets()
   const [expression, setExpression] = useState(initial?.expression ?? '')
   const [type, setType] = useState<ExpressionType>(initial?.type ?? 'phrase')
@@ -50,6 +52,8 @@ export const ExpressionForm = ({ title, initial, pending, error, onSubmit }: Pro
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
   const [frequency, setFrequency] = useState<Frequency>(initial?.frequency ?? 'common')
+  const [filling, setFilling] = useState(false)
+  const [fillError, setFillError] = useState<string>()
 
   const draft = createExpressionInputSchema.safeParse({
     expression,
@@ -62,6 +66,25 @@ export const ExpressionForm = ({ title, initial, pending, error, onSubmit }: Pro
   })
 
   const submit = draft.success && !pending ? () => onSubmit(draft.data) : undefined
+
+  const fill = async () => {
+    if (!onFill) return
+    setFilling(true)
+    setFillError(undefined)
+    try {
+      const drafted = await onFill(expression.trim())
+      setType(drafted.type)
+      setPartOfSpeech(drafted.partOfSpeech)
+      setMeaning(drafted.meaning)
+      setExamples(drafted.examples.length ? drafted.examples : [''])
+      setTags(drafted.tags)
+      setFrequency(drafted.frequency)
+    } catch {
+      setFillError('Could not draft this expression')
+    } finally {
+      setFilling(false)
+    }
+  }
 
   const addTag = () => {
     const tag = tagDraft.trim()
@@ -95,7 +118,19 @@ export const ExpressionForm = ({ title, initial, pending, error, onSubmit }: Pro
         placeholder="hit the nail on the head"
         autoCapitalize="none"
         autoFocus={!initial}
+        editable={!filling}
       />
+
+      {onFill ? (
+        <>
+          <Button
+            title={filling ? 'Drafting…' : 'Fill with AI'}
+            onPress={fill}
+            disabled={!expression.trim() || filling || pending}
+          />
+          {fillError ? <Text style={styles.error}>{fillError}</Text> : null}
+        </>
+      ) : null}
 
       <Text style={styles.label}>Type</Text>
       <View style={styles.row}>

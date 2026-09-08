@@ -34,6 +34,20 @@ export const createExpressionInputSchema = z.object({
   frequency: frequencySchema,
 })
 
+export const expressionDraftInputSchema = z.object({
+  text: z.string().trim().min(1).max(200),
+})
+
+/** What the LLM fills in; the headword is the text the user typed, so it is not part of the draft. */
+export const expressionDraftSchema = z.object({
+  type: expressionTypeSchema,
+  partOfSpeech: partOfSpeechSchema.optional(),
+  meaning: z.string().min(1),
+  examples: z.array(z.string().min(1)),
+  tags: z.array(z.string().min(1)),
+  frequency: frequencySchema,
+})
+
 export const updateExpressionInputSchema = createExpressionInputSchema
   .extend({
     partOfSpeech: partOfSpeechSchema.nullish(),
@@ -71,6 +85,8 @@ export type PartOfSpeech = z.infer<typeof partOfSpeechSchema>
 export type Frequency = z.infer<typeof frequencySchema>
 export type Expression = z.infer<typeof expressionSchema>
 export type CreateExpressionInput = z.infer<typeof createExpressionInputSchema>
+export type ExpressionDraftInput = z.infer<typeof expressionDraftInputSchema>
+export type ExpressionDraft = z.infer<typeof expressionDraftSchema>
 export type UpdateExpressionInput = z.infer<typeof updateExpressionInputSchema>
 export type ExpressionSort = z.infer<typeof expressionSortSchema>
 export type SortDirection = z.infer<typeof sortDirectionSchema>
