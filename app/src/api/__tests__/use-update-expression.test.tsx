@@ -5,6 +5,7 @@ import type { Expression, UpdateExpressionInput } from '@contracts'
 import { apiPatch } from '../client'
 import { useUpdateExpression } from '../use-update-expression'
 import { EXPRESSIONS_KEY } from '../use-expressions'
+import { PICK_KEY } from '../use-picked-expressions'
 
 jest.mock('../client', () => ({ apiPatch: jest.fn() }))
 
@@ -48,6 +49,7 @@ describe('useUpdateExpression', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: 0 } },
     })
+    queryClient.setQueryData([PICK_KEY], { items: [] })
     queryClient.setQueryData(LIST_KEY, { items: [stored] })
     queryClient.setQueryData(DETAIL_KEY, stored)
   })
@@ -88,5 +90,14 @@ describe('useUpdateExpression', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(queryClient.getQueryData(DETAIL_KEY)).toEqual(stored)
+  })
+
+  it('marks the practice list stale so an edited row cannot linger there', async () => {
+    mockedApiPatch.mockResolvedValue(updated)
+
+    const result = await submit({ meaning: updated.meaning })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState([PICK_KEY])?.isInvalidated).toBe(true)
   })
 })

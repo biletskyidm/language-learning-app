@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ExpressionListResponse } from '@contracts'
 import { apiDelete } from './client'
 import { EXPRESSIONS_KEY } from './use-expressions'
+import { PICK_KEY } from './use-picked-expressions'
 
 const isList = (data: unknown): data is ExpressionListResponse =>
   typeof data === 'object' && data !== null && 'items' in data
@@ -17,6 +18,7 @@ export const useDeleteExpression = (id: string) => {
       )
       queryClient.removeQueries({ queryKey: [EXPRESSIONS_KEY, 'detail', id] })
       void queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [PICK_KEY] })
     },
   })
 }

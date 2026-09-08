@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { expressionSchema, type CreateExpressionInput, type Expression, type ExpressionListResponse } from '@contracts'
 import { apiPost } from './client'
 import { EXPRESSIONS_KEY } from './use-expressions'
+import { PICK_KEY } from './use-picked-expressions'
 
 const isList = (data: unknown): data is ExpressionListResponse =>
   typeof data === 'object' && data !== null && 'items' in data
@@ -38,6 +39,10 @@ export const useCreateExpression = () => {
     onError: (_error, _input, context) => {
       context?.snapshot.forEach(([key, data]) => queryClient.setQueryData(key, data))
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: [PICK_KEY] })
+
+      return queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })
+    },
   })
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { idFilter, listFilter, listPipeline, updateOperations } from '../src/expressions/mongo-repository'
+import { idFilter, listFilter, listPipeline, pickPipeline, updateOperations } from '../src/expressions/mongo-repository'
 
 const NOW = new Date('2026-03-01T00:00:00.000Z')
 
@@ -116,5 +116,51 @@ describe('updateOperations', () => {
 
   it('has nothing to write for an empty patch, which Mongo would reject', () => {
     expect(updateOperations({})).toBeUndefined()
+  })
+})
+
+describe('pickPipeline', () => {
+  const pipeline = pickPipeline('me', { limit: 5, now: NOW })
+  const stage = (key: string) => pipeline.find((s) => key in s)?.[key]
+
+  it('matches only the caller’s due or unpracticed expressions', () => {
+    expect(stage('$match')).toEqual({
+      userId: 'me',
+      $or: [
+        { score: { $exists: true }, nextTrainingAt: { $lte: NOW } },
+        { score: { $exists: false }, frequency: 'very_common' },
+        { score: { $exists: false }, frequency: 'common' },
+        { score: { $exists: false }, frequency: 'moderate' },
+        { score: { $exists: false }, frequency: 'uncommon' },
+        { score: { $exists: false }, frequency: 'formal/academic' },
+      ],
+    })
+  })
+
+  it('ranks a due expression by score presence, so a zero score is not mistaken for a new one', () => {
+    const [due] = stage('$addFields')._priority.$switch.branches
+
+    expect(due).toEqual({
+      case: { $and: [{ $ne: [{ $type: '$score' }, 'missing'] }, { $lte: ['$nextTrainingAt', NOW] }] },
+      then: 1,
+    })
+  })
+
+  it('ranks the unpracticed tiers from very common down to formal/academic', () => {
+    const tiers = stage('$addFields')._priority.$switch.branches.slice(1)
+
+    expect(tiers.map((b: { case: { $eq: string[] }; then: number }) => [b.case.$eq[1], b.then])).toEqual([
+      ['very_common', 2],
+      ['common', 3],
+      ['moderate', 4],
+      ['uncommon', 5],
+      ['formal/academic', 6],
+    ])
+  })
+
+  it('sorts by priority with deterministic tie-breakers and applies the limit', () => {
+    expect(stage('$sort')).toEqual({ _priority: 1, nextTrainingAt: 1, createdAt: 1, _id: 1 })
+    expect(stage('$limit')).toBe(5)
+    expect(stage('$unset')).toBe('_priority')
   })
 })
