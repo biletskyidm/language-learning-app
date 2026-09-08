@@ -27,7 +27,12 @@ export default function ExpressionScreen() {
           title: expression.data?.expression ?? 'Expression',
           headerRight: () =>
             expression.data ? (
-              <Pressable onPress={() => router.push(`/expressions/${id}/edit`)} accessibilityRole="button" hitSlop={12}>
+              <Pressable
+                onPress={() => router.push(`/expressions/${id}/edit`)}
+                disabled={remove.isPending}
+                accessibilityRole="button"
+                hitSlop={12}
+              >
                 <Text style={styles.edit}>Edit</Text>
               </Pressable>
             ) : null,

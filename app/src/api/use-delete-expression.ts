@@ -11,12 +11,14 @@ export const useDeleteExpression = (id: string) => {
 
   return useMutation({
     mutationFn: () => apiDelete(`/expressions/${id}`),
-    onSuccess: async () => {
+    // Not awaited: the caller navigates away in its own onSuccess, which react-query runs only once
+    // this one has settled, so awaiting the refetch would strand the user on the deleted expression.
+    onSuccess: () => {
       queryClient.setQueriesData({ queryKey: [EXPRESSIONS_KEY] }, (data: unknown) =>
         isList(data) ? { items: data.items.filter((item) => item.id !== id) } : data,
       )
       queryClient.removeQueries({ queryKey: [EXPRESSIONS_KEY, 'detail', id] })
-      await queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })
+      void queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })
     },
   })
 }

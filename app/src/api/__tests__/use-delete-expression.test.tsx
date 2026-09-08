@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { Expression } from '@contracts'
 import { apiDelete } from '../client'
@@ -91,6 +91,28 @@ describe('useDeleteExpression', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryState(LIST_KEY)?.isInvalidated).toBe(true)
+  })
+
+  it('hands control back to the caller without waiting for the list to refetch', async () => {
+    mockedApiDelete.mockResolvedValue(undefined)
+    let releaseRefetch = () => {}
+    const observer = new QueryObserver(queryClient, {
+      queryKey: LIST_KEY,
+      queryFn: () => new Promise<{ items: Expression[] }>((resolve) => (releaseRefetch = () => resolve({ items: [other] }))),
+    })
+    const unsubscribe = observer.subscribe(() => {})
+    const navigated = jest.fn()
+
+    const { result } = await renderHook(() => useDeleteExpression('e1'), { wrapper })
+    await act(async () => {
+      result.current.mutate(undefined, { onSuccess: navigated })
+    })
+
+    await waitFor(() => expect(navigated).toHaveBeenCalled())
+    expect(queryClient.getQueryState(LIST_KEY)?.fetchStatus).toBe('fetching')
+
+    releaseRefetch()
+    unsubscribe()
   })
 
   it('leaves the caches alone when the API refuses', async () => {
