@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Expression } from '@contracts'
 
 export const MAX_TARGETS = 20
@@ -13,8 +13,18 @@ export type TargetSelection = {
 const has = (targets: Expression[], expression: Expression) =>
   targets.some((target) => target.id === expression.id)
 
-export const useTargetSelection = (initial: Expression[]): TargetSelection => {
+export const useTargetSelection = (initial: Expression[], vocabulary?: Expression[]): TargetSelection => {
   const [targets, setTargets] = useState(initial)
+
+  useEffect(() => {
+    if (!vocabulary) return
+    const existing = new Set(vocabulary.map((item) => item.id))
+    setTargets((current) =>
+      current.every((target) => existing.has(target.id))
+        ? current
+        : current.filter((target) => existing.has(target.id)),
+    )
+  }, [vocabulary])
 
   const replace = useCallback((index: number, expression: Expression) => {
     setTargets((current) => {

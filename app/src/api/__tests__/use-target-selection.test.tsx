@@ -91,3 +91,43 @@ describe('useTargetSelection', () => {
     expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
   })
 })
+
+describe('useTargetSelection reconciliation', () => {
+  it('keeps every target while the vocabulary is still unknown', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(2), undefined))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
+  })
+
+  it('drops a target that has been deleted from the vocabulary', async () => {
+    const { rerender, result } = await renderHook(
+      ({ vocabulary }: { vocabulary?: Expression[] }) => useTargetSelection(range(3), vocabulary),
+      { initialProps: { vocabulary: undefined as Expression[] | undefined } },
+    )
+
+    await rerender({ vocabulary: [expression('e0'), expression('e2')] })
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e2'])
+  })
+
+  it('keeps a manually added target that still exists', async () => {
+    const { result } = await renderHook(() =>
+      useTargetSelection(range(1), [expression('e0'), expression('other')]),
+    )
+
+    await act(() => result.current.add(expression('other')))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'other'])
+  })
+
+  it('lets the last target go when it no longer exists', async () => {
+    const { rerender, result } = await renderHook(
+      ({ vocabulary }: { vocabulary?: Expression[] }) => useTargetSelection(range(1), vocabulary),
+      { initialProps: { vocabulary: undefined as Expression[] | undefined } },
+    )
+
+    await rerender({ vocabulary: [] })
+
+    expect(result.current.targets).toEqual([])
+  })
+})

@@ -3,6 +3,7 @@ import { Stack, router } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import type { Expression } from '@contracts'
 import { pickReason } from '../src/api/pick-reason'
+import { useExpressions } from '../src/api/use-expressions'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { ExpressionPicker } from '../src/components/expression-picker'
@@ -37,7 +38,8 @@ const Row = ({ item, suggested, removable, onReplace, onRemove }: RowProps) => (
 )
 
 const Targets = ({ initial }: { initial: Expression[] }) => {
-  const { targets, replace, remove, add } = useTargetSelection(initial)
+  const vocabulary = useExpressions()
+  const { targets, replace, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState<number | 'add' | undefined>(undefined)
   const suggested = new Set(initial.map((item) => item.id))
 
@@ -81,20 +83,20 @@ const Targets = ({ initial }: { initial: Expression[] }) => {
 
 export default function Practice() {
   const picked = usePickedExpressions()
-  const items = picked.data?.items ?? []
+  const items = picked.data?.items
+
+  const body = () => {
+    if (items) {
+      return items.length ? <Targets initial={items} /> : <Text style={styles.state}>Nothing to practice right now</Text>
+    }
+    if (picked.isError) return <Text style={styles.error}>Could not work out what to practice</Text>
+    return <ActivityIndicator style={styles.state} />
+  }
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'What to practice' }} />
-      {picked.isPending ? <ActivityIndicator style={styles.state} /> : null}
-      {picked.isError ? <Text style={styles.error}>Could not work out what to practice</Text> : null}
-      {picked.isSuccess ? (
-        items.length ? (
-          <Targets initial={items} />
-        ) : (
-          <Text style={styles.state}>Nothing to practice right now</Text>
-        )
-      ) : null}
+      {body()}
     </View>
   )
 }
