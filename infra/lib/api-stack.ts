@@ -20,7 +20,7 @@ export class ApiStack extends Stack {
       handler: 'handler',
       memorySize: 1024,
       timeout: Duration.seconds(60), // two parallel LLM calls plus a retry must fit
-      environment: props.environment,
+      environment: { ...props.environment, PROMPTS_DIR: '/var/task/prompts' },
       bundling: {
         format: OutputFormat.ESM,
         target: 'node22',
@@ -28,6 +28,12 @@ export class ApiStack extends Stack {
         mainFields: ['module', 'main'],
         // mongodb is CJS and require()s node builtins lazily; ESM output needs a real require.
         banner: "import{createRequire}from'node:module';const require=createRequire(import.meta.url);",
+        // esbuild only bundles code, and the prompts are read from disk at runtime.
+        commandHooks: {
+          beforeBundling: () => [],
+          beforeInstall: () => [],
+          afterBundling: (inputDir, outputDir) => [`cp -r ${inputDir}/api/prompts ${outputDir}/prompts`],
+        },
       },
     })
 

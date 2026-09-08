@@ -3,6 +3,8 @@ import type { ZodError } from 'zod'
 import {
   apiError,
   createExpressionInputSchema,
+  expressionDraftInputSchema,
+  expressionDraftSchema,
   expressionListQuerySchema,
   expressionListResponseSchema,
   expressionSchema,
@@ -15,7 +17,15 @@ import type { Deps } from '../deps'
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
 
-export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
+const draftWithRetry = async (llm: Deps['llm'], text: string) => {
+  try {
+    return await llm.draftExpression({ text })
+  } catch {
+    return await llm.draftExpression({ text })
+  }
+}
+
+export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock' | 'llm'>) =>
   new Hono<AuthEnv>()
     .get('/expressions', async (c) => {
       const query = expressionListQuerySchema.safeParse(c.req.query())
@@ -37,6 +47,21 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
       const created = await deps.expressions.create(userId, input.data, deps.clock())
 
       return c.json(expressionSchema.parse(created), 201)
+    })
+    .post('/expressions/from-text', async (c) => {
+      const body = await c.req.json().catch(() => undefined)
+      const input = expressionDraftInputSchema.safeParse(body)
+      if (!input.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(input.error)), 400)
+
+      try {
+        const draft = await draftWithRetry(deps.llm, input.data.text)
+
+        return c.json(expressionDraftSchema.parse(draft))
+      } catch (error) {
+        console.error(error)
+
+        return c.json(apiError('LLM_UNAVAILABLE', 'Could not draft this expression'), 502)
+      }
     })
     .get('/expressions/tags', async (c) => {
       const items = await deps.expressions.tags(c.get('userId'))
