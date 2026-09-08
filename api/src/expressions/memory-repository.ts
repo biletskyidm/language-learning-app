@@ -85,6 +85,15 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     return updated
   }
 
+  async delete(userId: string, id: string): Promise<boolean> {
+    const index = this.expressions.findIndex((e) => e.userId === userId && e.id === id)
+    if (index < 0) return false
+
+    this.expressions.splice(index, 1)
+
+    return true
+  }
+
   async tags(userId: string): Promise<string[]> {
     const tags = this.expressions.filter((e) => e.userId === userId).flatMap((e) => e.tags)
 

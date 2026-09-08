@@ -541,3 +541,65 @@ describe('PATCH /expressions/:id', () => {
     expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
   })
 })
+
+describe('DELETE /expressions/:id', () => {
+  const remove = (id: string, seed: Expression[]) => {
+    const deps = testDeps({ expressions: new InMemoryExpressionRepository(seed) })
+    const app = createApp(deps)
+    const headers = () => ({ Authorization: bearer(TEST_SECRET, deps.clock) })
+
+    return {
+      delete: () => app.request(`/expressions/${id}`, { method: 'DELETE', headers: headers() }),
+      get: () => app.request(`/expressions/${id}`, { headers: headers() }),
+    }
+  }
+
+  it('drops the expression and answers with no content', async () => {
+    const { delete: del, get } = remove('e1', [expression({ id: 'e1' })])
+
+    const res = await del()
+
+    expect(res.status).toBe(204)
+    expect(await res.text()).toBe('')
+    expect((await get()).status).toBe(404)
+  })
+
+  it('leaves every other expression in place', async () => {
+    const deps = testDeps({
+      expressions: new InMemoryExpressionRepository([expression({ id: 'e1' }), expression({ id: 'e2' })]),
+    })
+    const app = createApp(deps)
+    await app.request('/expressions/e1', { method: 'DELETE', headers: { Authorization: bearer(TEST_SECRET, deps.clock) } })
+
+    const res = await app.request('/expressions', { headers: { Authorization: bearer(TEST_SECRET, deps.clock) } })
+
+    expect(expressionListResponseSchema.parse(await res.json()).items.map((e) => e.id)).toEqual(['e2'])
+  })
+
+  it('hides an expression owned by someone else', async () => {
+    const { delete: del } = remove('theirs', [expression({ id: 'theirs', userId: 'someone-else' })])
+
+    const res = await del()
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+
+  it('answers an unknown id with a not found', async () => {
+    const { delete: del } = remove('missing', [expression({ id: 'e1' })])
+
+    const res = await del()
+
+    expect(res.status).toBe(404)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND')
+  })
+
+  it('answers a second delete of the same id with a not found', async () => {
+    const { delete: del } = remove('e1', [expression({ id: 'e1' })])
+    await del()
+
+    const res = await del()
+
+    expect(res.status).toBe(404)
+  })
+})

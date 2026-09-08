@@ -59,3 +59,9 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock'>) =>
 
       return c.json(expressionSchema.parse(updated))
     })
+    .delete('/expressions/:id', async (c) => {
+      const deleted = await deps.expressions.delete(c.get('userId'), c.req.param('id'))
+      if (!deleted) return c.json(apiError('NOT_FOUND', 'No such expression'), 404)
+
+      return c.body(null, 204)
+    })
