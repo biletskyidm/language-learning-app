@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { CreateExpressionInput, ExpressionDraft } from '@contracts'
 import { ExpressionForm } from '../expression-form'
@@ -71,6 +71,25 @@ describe('ExpressionForm with AI fill', () => {
       tags: drafted.tags,
       frequency: 'moderate',
     })
+  })
+
+  it('locks the expression while the draft is in flight', async () => {
+    let resolve: (draft: ExpressionDraft) => void = () => {}
+    const onFill = jest.fn().mockReturnValue(new Promise<ExpressionDraft>((r) => (resolve = r)))
+    await renderForm(onFill)
+
+    await type(EXPRESSION, 'cut corners')
+    const pressed = fireEvent.press(screen.getByText('Fill with AI'))
+
+    await waitFor(() => expect(screen.getByPlaceholderText(EXPRESSION).props.editable).toBe(false))
+
+    resolve(drafted)
+    await act(async () => {
+      await pressed
+    })
+
+    expect(valueOf(EXPRESSION)).toBe('cut corners')
+    expect(screen.getByPlaceholderText(EXPRESSION).props.editable).toBe(true)
   })
 
   it('keeps what was typed and says so when the draft fails', async () => {

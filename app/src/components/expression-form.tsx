@@ -118,6 +118,7 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
         placeholder="hit the nail on the head"
         autoCapitalize="none"
         autoFocus={!initial}
+        editable={!filling}
       />
 
       {onFill ? (
