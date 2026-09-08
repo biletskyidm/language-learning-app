@@ -1,7 +1,8 @@
 import { ObjectId, type Db, type Document } from 'mongodb'
 import type { CreateExpressionInput, Expression, Frequency, UpdateExpressionInput } from '@contracts'
 import { toDomain } from './mapper'
-import type { ExpressionListParams, ExpressionRepository } from './repository'
+import { EXCLUDED_PRIORITY, FREQUENCY_TIERS } from './picker'
+import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository } from './repository'
 
 export const EXPRESSIONS_COLLECTION = 'expressions'
 
@@ -64,6 +65,42 @@ export const listPipeline = (userId: string, query: ExpressionListParams): Docum
   return stages
 }
 
+export const pickPipeline = (userId: string, query: ExpressionPickParams): Document[] => [
+  {
+    $match: {
+      userId,
+      $or: [
+        { score: { $exists: true }, nextTrainingAt: { $lte: query.now } },
+        ...FREQUENCY_TIERS.map(([frequency]) => ({ score: { $exists: false }, frequency })),
+      ],
+    },
+  },
+  {
+    $addFields: {
+      _priority: {
+        $switch: {
+          branches: [
+            {
+              case: {
+                $and: [{ $ne: [{ $type: '$score' }, 'missing'] }, { $lte: ['$nextTrainingAt', query.now] }],
+              },
+              then: 1,
+            },
+            ...FREQUENCY_TIERS.map(([frequency, priority]) => ({
+              case: { $eq: ['$frequency', frequency] },
+              then: priority,
+            })),
+          ],
+          default: EXCLUDED_PRIORITY,
+        },
+      },
+    },
+  },
+  { $sort: { _priority: 1, nextTrainingAt: 1, createdAt: 1, _id: 1 } },
+  { $limit: query.limit },
+  { $unset: '_priority' },
+]
+
 export type ExpressionUpdate = { $set?: Record<string, unknown>; $unset?: Record<string, ''> }
 
 /** A null clears the field rather than storing a null, so the mapper never has to drop one on the way back. */
@@ -91,6 +128,15 @@ export class MongoExpressionRepository implements ExpressionRepository {
     const docs = await this.db
       .collection(EXPRESSIONS_COLLECTION)
       .aggregate(listPipeline(userId, query))
+      .toArray()
+
+    return docs.map((doc) => toDomain(doc as Parameters<typeof toDomain>[0]))
+  }
+
+  async pick(userId: string, query: ExpressionPickParams): Promise<Expression[]> {
+    const docs = await this.db
+      .collection(EXPRESSIONS_COLLECTION)
+      .aggregate(pickPipeline(userId, query))
       .toArray()
 
     return docs.map((doc) => toDomain(doc as Parameters<typeof toDomain>[0]))

@@ -80,6 +80,17 @@ export const expressionTagsResponseSchema = z.object({
   items: z.array(z.string()),
 })
 
+export const PICK_LIMIT_DEFAULT = 5
+export const PICK_LIMIT_MAX = 20
+
+export const expressionPickQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(PICK_LIMIT_MAX).default(PICK_LIMIT_DEFAULT),
+})
+
+export const expressionPickResponseSchema = z.object({
+  items: z.array(expressionSchema),
+})
+
 export type ExpressionType = z.infer<typeof expressionTypeSchema>
 export type PartOfSpeech = z.infer<typeof partOfSpeechSchema>
 export type Frequency = z.infer<typeof frequencySchema>
@@ -93,3 +104,5 @@ export type SortDirection = z.infer<typeof sortDirectionSchema>
 export type ExpressionListQuery = z.infer<typeof expressionListQuerySchema>
 export type ExpressionListResponse = z.infer<typeof expressionListResponseSchema>
 export type ExpressionTagsResponse = z.infer<typeof expressionTagsResponseSchema>
+export type ExpressionPickQuery = z.infer<typeof expressionPickQuerySchema>
+export type ExpressionPickResponse = z.infer<typeof expressionPickResponseSchema>

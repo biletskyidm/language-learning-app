@@ -5,7 +5,8 @@ import {
   type ExpressionSort,
   type UpdateExpressionInput,
 } from '@contracts'
-import type { ExpressionListParams, ExpressionRepository } from './repository'
+import { EXCLUDED_PRIORITY, priorityOf } from './picker'
+import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository } from './repository'
 
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
   switch (sort) {
@@ -57,6 +58,22 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
       .filter((e) => !query.frequency || e.frequency === query.frequency)
       .filter((e) => !query.due || (e.nextTrainingAt !== undefined && e.nextTrainingAt <= query.now))
       .sort(comparator(query))
+  }
+
+  async pick(userId: string, query: ExpressionPickParams): Promise<Expression[]> {
+    return this.expressions
+      .filter((e) => e.userId === userId)
+      .map((e) => ({ expression: e, priority: priorityOf(e, query.now) }))
+      .filter(({ priority }) => priority !== EXCLUDED_PRIORITY)
+      .sort(
+        (a, b) =>
+          a.priority - b.priority ||
+          (a.expression.nextTrainingAt?.getTime() ?? 0) - (b.expression.nextTrainingAt?.getTime() ?? 0) ||
+          a.expression.createdAt.getTime() - b.expression.createdAt.getTime() ||
+          byId(a.expression, b.expression),
+      )
+      .slice(0, query.limit)
+      .map(({ expression }) => expression)
   }
 
   async findById(userId: string, id: string): Promise<Expression | undefined> {

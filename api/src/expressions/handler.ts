@@ -7,6 +7,8 @@ import {
   expressionDraftSchema,
   expressionListQuerySchema,
   expressionListResponseSchema,
+  expressionPickQuerySchema,
+  expressionPickResponseSchema,
   expressionSchema,
   expressionTagsResponseSchema,
   updateExpressionInputSchema,
@@ -62,6 +64,14 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock' | 'llm
 
         return c.json(apiError('LLM_UNAVAILABLE', 'Could not draft this expression'), 502)
       }
+    })
+    .get('/expressions/pick', async (c) => {
+      const query = expressionPickQuerySchema.safeParse(c.req.query())
+      if (!query.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(query.error)), 400)
+
+      const items = await deps.expressions.pick(c.get('userId'), { ...query.data, now: deps.clock() })
+
+      return c.json(expressionPickResponseSchema.parse({ items }))
     })
     .get('/expressions/tags', async (c) => {
       const items = await deps.expressions.tags(c.get('userId'))
