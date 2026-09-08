@@ -5,6 +5,7 @@ import type { CreateExpressionInput, Expression } from '@contracts'
 import { apiPost } from '../client'
 import { useCreateExpression } from '../use-create-expression'
 import { EXPRESSIONS_KEY } from '../use-expressions'
+import { PICK_KEY } from '../use-picked-expressions'
 
 jest.mock('../client', () => ({ apiPost: jest.fn() }))
 
@@ -56,6 +57,7 @@ describe('useCreateExpression', () => {
   beforeEach(() => {
     mockedApiPost.mockReset()
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: 0 } } })
+    queryClient.setQueryData([PICK_KEY], { items: [] })
     queryClient.setQueryData(LIST_KEY, { items: [existing] })
   })
 
@@ -99,5 +101,14 @@ describe('useCreateExpression', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData([EXPRESSIONS_KEY, 'detail', 'new'])).toEqual(created)
+  })
+
+  it('marks the practice list stale so a new expression can reach it', async () => {
+    mockedApiPost.mockResolvedValue(created)
+
+    const result = await submit()
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState([PICK_KEY])?.isInvalidated).toBe(true)
   })
 })

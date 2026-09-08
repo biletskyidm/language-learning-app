@@ -5,6 +5,7 @@ import type { Expression } from '@contracts'
 import { apiDelete } from '../client'
 import { useDeleteExpression } from '../use-delete-expression'
 import { EXPRESSIONS_KEY } from '../use-expressions'
+import { PICK_KEY } from '../use-picked-expressions'
 
 jest.mock('../client', () => ({ apiDelete: jest.fn() }))
 
@@ -51,6 +52,7 @@ describe('useDeleteExpression', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: 0 } },
     })
+    queryClient.setQueryData([PICK_KEY], { items: [] })
     queryClient.setQueryData(LIST_KEY, { items: [stored, other] })
     queryClient.setQueryData(DETAIL_KEY, stored)
   })
@@ -123,5 +125,14 @@ describe('useDeleteExpression', () => {
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(listed()).toEqual(['e1', 'e2'])
     expect(queryClient.getQueryData(DETAIL_KEY)).toEqual(stored)
+  })
+
+  it('marks the practice list stale so a deleted row cannot linger there', async () => {
+    mockedApiDelete.mockResolvedValue(undefined)
+
+    const result = await remove()
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState([PICK_KEY])?.isInvalidated).toBe(true)
   })
 })
