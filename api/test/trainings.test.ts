@@ -34,7 +34,7 @@ const VOCABULARY = [
   expression({ id: 'e3', expression: 'ballpark figure', meaning: 'a rough estimate', frequency: 'moderate' }),
 ]
 
-const start = async (body: unknown, llm = new FakeLlmGateway([], [OPENING]), expressions = VOCABULARY) => {
+const start = async (body: unknown, llm = new FakeLlmGateway({ firstMessages: [OPENING] }), expressions = VOCABULARY) => {
   const stored: Training[] = []
   const deps = testDeps({
     llm,
@@ -88,7 +88,7 @@ describe('POST /trainings', () => {
   it('falls back to the default target count when no limit is given', async () => {
     const plenty = Array.from({ length: 8 }, (_, i) => expression({ id: `x${i}`, expression: `phrase ${i}` }))
 
-    const { res } = await start({ ...chat }, new FakeLlmGateway([], [OPENING]), plenty)
+    const { res } = await start({ ...chat }, new FakeLlmGateway({ firstMessages: [OPENING] }), plenty)
 
     expect(chatTrainingSchema.parse(await res.json()).targets).toHaveLength(PICK_LIMIT_DEFAULT)
   })
@@ -124,7 +124,7 @@ describe('POST /trainings', () => {
   it('saves nothing when the tutor cannot be reached', async () => {
     const { res, stored } = await start(
       { ...chat, expressionIds: ['e1'] },
-      new FakeLlmGateway([], [new Error('timeout')]),
+      new FakeLlmGateway({ firstMessages: [new Error('timeout')] }),
     )
 
     expect(res.status).toBe(502)

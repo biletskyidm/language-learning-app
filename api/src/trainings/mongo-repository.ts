@@ -1,5 +1,5 @@
 import { ObjectId, type Db } from 'mongodb'
-import type { Training } from '@contracts'
+import type { ChatMessage, Training } from '@contracts'
 import { toDomain } from './mapper'
 import type { NewTraining, TrainingRepository } from './repository'
 
@@ -17,6 +17,26 @@ export class MongoTrainingRepository implements TrainingRepository {
     const { insertedId } = await this.db.collection(TRAININGS_COLLECTION).insertOne(doc)
 
     return toDomain({ ...doc, _id: insertedId })
+  }
+
+  async appendMessages(
+    userId: string,
+    id: string,
+    messages: ChatMessage[],
+    expectedCount: number,
+  ): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db
+      .collection<{ messages: ChatMessage[] }>(TRAININGS_COLLECTION)
+      .findOneAndUpdate(
+        { ...filter, messages: { $size: expectedCount } },
+        { $push: { messages: { $each: messages } } },
+        { returnDocument: 'after' },
+      )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {

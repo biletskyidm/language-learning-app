@@ -13,7 +13,7 @@ const DRAFT: ExpressionDraft = {
   frequency: 'common',
 }
 
-const draft = async (body: unknown, llm = new FakeLlmGateway([DRAFT])) => {
+const draft = async (body: unknown, llm = new FakeLlmGateway({ drafts: [DRAFT] })) => {
   const deps = testDeps({ llm })
   const res = await createApp(deps).request('/expressions/from-text', {
     method: 'POST',
@@ -47,7 +47,7 @@ describe('POST /expressions/from-text', () => {
   })
 
   it('retries once, so a single flaky call still answers with a draft', async () => {
-    const { res, llm } = await draft({ text: 'cut corners' }, new FakeLlmGateway([new Error('timeout'), DRAFT]))
+    const { res, llm } = await draft({ text: 'cut corners' }, new FakeLlmGateway({ drafts: [new Error('timeout'), DRAFT] }))
 
     expect(res.status).toBe(200)
     expect(llm.draftCalls).toEqual(['cut corners', 'cut corners'])
@@ -56,7 +56,7 @@ describe('POST /expressions/from-text', () => {
   it('gives up after the retry', async () => {
     const { res } = await draft(
       { text: 'cut corners' },
-      new FakeLlmGateway([new Error('timeout'), new Error('timeout')]),
+      new FakeLlmGateway({ drafts: [new Error('timeout'), new Error('timeout')] }),
     )
 
     expect(res.status).toBe(502)

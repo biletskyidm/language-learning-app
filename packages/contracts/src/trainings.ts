@@ -12,10 +12,27 @@ export const trainingTargetSchema = z.object({
   meaning: z.string(),
 })
 
+const assessmentCategorySchema = z.object({
+  score: z.number().min(0).max(10),
+  messageWithSuggestions: z.string(),
+})
+
+const targetCorrectnessSchema = assessmentCategorySchema.extend({ correctVersion: z.string() })
+
+/** Keyed by target text: the tutor names the expression it judged, and only attempted targets appear. */
+export const assessmentSchema = z.object({
+  grammar: assessmentCategorySchema,
+  vocabularyDiversity: assessmentCategorySchema,
+  sentenceComplexity: assessmentCategorySchema,
+  sentenceNaturalness: assessmentCategorySchema,
+  targetExpressionCorrectness: z.record(z.string(), targetCorrectnessSchema),
+})
+
 export const chatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   createdAt: z.coerce.date(),
+  assessment: assessmentSchema.optional(),
 })
 
 const baseTrainingSchema = z.object({
@@ -46,6 +63,14 @@ export const createTrainingInputSchema = z.object({
   limit: z.number().int().min(1).max(PICK_LIMIT_MAX).optional(),
 })
 
+export const sendMessageInputSchema = z.object({ content: z.string().trim().min(1).max(2000) })
+
+export const chatTurnResponseSchema = z.object({
+  reply: chatMessageSchema,
+  assessment: assessmentSchema,
+  training: trainingSchema,
+})
+
 export type TrainingType = z.infer<typeof trainingTypeSchema>
 export type TrainingStatus = z.infer<typeof trainingStatusSchema>
 export type ChatStyle = z.infer<typeof chatStyleSchema>
@@ -54,3 +79,8 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type ChatTraining = z.infer<typeof chatTrainingSchema>
 export type Training = z.infer<typeof trainingSchema>
 export type CreateTrainingInput = z.infer<typeof createTrainingInputSchema>
+export type Assessment = z.infer<typeof assessmentSchema>
+export type AssessmentCategory = z.infer<typeof assessmentCategorySchema>
+export type TargetCorrectness = z.infer<typeof targetCorrectnessSchema>
+export type SendMessageInput = z.infer<typeof sendMessageInputSchema>
+export type ChatTurnResponse = z.infer<typeof chatTurnResponseSchema>

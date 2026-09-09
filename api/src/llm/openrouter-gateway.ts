@@ -1,8 +1,16 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { z } from 'zod'
-import { expressionDraftSchema, partOfSpeechSchema, type ExpressionDraft } from '@contracts'
+import {
+  assessmentSchema,
+  expressionDraftSchema,
+  partOfSpeechSchema,
+  type Assessment,
+  type ChatMessage,
+  type ExpressionDraft,
+  type TrainingTarget,
+} from '@contracts'
 import type { Config } from '../config'
-import type { LlmGateway, TutorFirstMessageInput } from '../deps'
+import type { AssessmentInput, LlmGateway, TutorFirstMessageInput, TutorReplyInput } from '../deps'
 import { loadPrompt, renderPrompt } from './prompts'
 
 const BASE_URL = 'https://openrouter.ai/api/v1'
@@ -11,6 +19,21 @@ const BASE_URL = 'https://openrouter.ai/api/v1'
 const draftSchema = expressionDraftSchema.extend({ partOfSpeech: partOfSpeechSchema.nullable() })
 
 const tutorMessageSchema = z.object({ message: z.string().min(1) })
+
+// Structured output has no map type, so the per-target verdicts come back as a list and are keyed here.
+const assessmentOutputSchema = assessmentSchema.omit({ targetExpressionCorrectness: true }).extend({
+  targetExpressionCorrectness: z.array(
+    assessmentSchema.shape.targetExpressionCorrectness.valueType.extend({ expression: z.string() }),
+  ),
+})
+
+const bullets = (targets: TrainingTarget[]) => targets.map(({ expression }) => `- ${expression}`).join('\n')
+
+const withMeanings = (targets: TrainingTarget[]) =>
+  targets.map(({ expression, meaning }) => `- ${expression}: ${meaning}`).join('\n')
+
+const transcript = (history: ChatMessage[]) =>
+  history.map(({ role, content }) => `${role}: ${content}`).join('\n')
 
 export class OpenRouterGateway implements LlmGateway {
   constructor(private readonly config: Config) {}
@@ -37,12 +60,54 @@ export class OpenRouterGateway implements LlmGateway {
       renderPrompt(loadPrompt('tutor-first-message'), {
         context,
         style,
-        targets: targets.map((target) => `- ${target.expression}`).join('\n'),
+        targets: bullets(targets),
       }),
       { tags: ['tutor-first-message'] },
     )
 
     return message
+  }
+
+  async tutorReply({ context, style, targets, history, userContent }: TutorReplyInput): Promise<string> {
+    const model = this.model(this.config.REPLY_MODEL).withStructuredOutput(tutorMessageSchema, {
+      name: 'tutor_reply',
+    })
+
+    const { message } = await model.invoke(
+      renderPrompt(loadPrompt('tutor-reply'), {
+        context,
+        style,
+        targets: bullets(targets),
+        history: transcript(history),
+        userContent,
+      }),
+      { tags: ['tutor-reply'] },
+    )
+
+    return message
+  }
+
+  async assessMessage({ context, style, targets, userContent }: AssessmentInput): Promise<Assessment> {
+    const model = this.model(this.config.ASSESSMENT_MODEL).withStructuredOutput(assessmentOutputSchema, {
+      name: 'assessment',
+    })
+
+    const { targetExpressionCorrectness, ...categories } = await model.invoke(
+      renderPrompt(loadPrompt('assessment'), {
+        context,
+        style,
+        targets: withMeanings(targets),
+        userContent,
+      }),
+      { tags: ['assessment'] },
+    )
+
+    return {
+      ...categories,
+      targetExpressionCorrectness: Object.fromEntries(
+        targetExpressionCorrectness.map(({ expression, ...verdict }) => [expression, verdict]),
+      ),
+    }
   }
 
   private model(name: string | undefined) {

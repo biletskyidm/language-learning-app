@@ -1,4 +1,11 @@
-import type { ChatStyle, ExpressionDraft, TokenVerification, TrainingTarget } from '@contracts'
+import type {
+  Assessment,
+  ChatMessage,
+  ChatStyle,
+  ExpressionDraft,
+  TokenVerification,
+  TrainingTarget,
+} from '@contracts'
 import type { ExpressionRepository } from './expressions/repository'
 import type { ScenarioRepository } from './scenarios/repository'
 import type { SettingsRepository } from './settings/repository'
@@ -16,9 +23,20 @@ export interface TutorFirstMessageInput {
   targets: TrainingTarget[]
 }
 
+export interface AssessmentInput {
+  context: string
+  style: ChatStyle
+  targets: TrainingTarget[]
+  userContent: string
+}
+
+export type TutorReplyInput = AssessmentInput & { history: ChatMessage[] }
+
 export interface LlmGateway {
   draftExpression(input: { text: string }): Promise<ExpressionDraft>
   tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
+  tutorReply(input: TutorReplyInput): Promise<string>
+  assessMessage(input: AssessmentInput): Promise<Assessment>
 }
 
 export interface TokenVerifier {

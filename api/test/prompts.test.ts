@@ -45,6 +45,34 @@ describe('loadPrompt', () => {
     expect(rendered).not.toContain('{{')
   })
 
+  it('renders the tutor reply prompt with the conversation so far and the new message', () => {
+    const rendered = renderPrompt(loadPrompt('tutor-reply'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '- break the ice',
+      history: 'assistant: How did yesterday go?\nuser: Slowly.',
+      userContent: 'I broke the ice with the client.',
+    })
+
+    expect(rendered).toContain('assistant: How did yesterday go?')
+    expect(rendered).toContain('user: Slowly.')
+    expect(rendered).toContain('I broke the ice with the client.')
+    expect(rendered).not.toContain('{{')
+  })
+
+  it('renders the assessment prompt with the targets and their meanings', () => {
+    const rendered = renderPrompt(loadPrompt('assessment'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '- break the ice: to get a conversation started',
+      userContent: 'I broke the ice with the client.',
+    })
+
+    expect(rendered).toContain('- break the ice: to get a conversation started')
+    expect(rendered).toContain('I broke the ice with the client.')
+    expect(rendered).not.toContain('{{')
+  })
+
   it('drops the target section of the tutor prompt when there is nothing to practice', () => {
     const rendered = renderPrompt(loadPrompt('tutor-first-message'), {
       context: 'a scrum standup',
