@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ChatTurnResponse, Training } from '@contracts'
 import { ApiError, apiPost } from '../client'
+import { EXPRESSIONS_KEY } from '../use-expressions'
 import { useSendMessage } from '../use-send-message'
 import { TRAININGS_KEY } from '../use-training'
 
@@ -72,6 +73,7 @@ describe('useSendMessage', () => {
     mockedApiPost.mockResolvedValue(turn)
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false, gcTime: 0 } } })
     queryClient.setQueryData([TRAININGS_KEY, 'detail', 't1'], opened)
+    queryClient.setQueryData([EXPRESSIONS_KEY, '/expressions'], { expressions: [], tags: [] })
   })
 
   afterEach(() => queryClient.clear())
@@ -88,6 +90,13 @@ describe('useSendMessage', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData([TRAININGS_KEY, 'detail', 't1'])).toEqual(turn.training)
+  })
+
+  it('marks the vocabulary stale so the trained counter catches up with the turn', async () => {
+    const result = await send(CONTENT)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState([EXPRESSIONS_KEY, '/expressions'])?.isInvalidated).toBe(true)
   })
 
   it('marks the conversation stale when the turn is refused as out of date', async () => {

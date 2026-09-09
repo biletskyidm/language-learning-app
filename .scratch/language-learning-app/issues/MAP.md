@@ -21,7 +21,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **13** [Chat training creation with targets and tutor opening message](13-chat-training-creation-with-targets-and-tutor-opening-messag.md) — blocked by: 10, 11
 - [x] **14** [Chat turn: parallel reply and structured assessment, atomic](14-chat-turn-parallel-reply-and-structured-assessment-atomic.md) — blocked by: 13
 - [x] **15** [Assessment UI: compact badge, expandable breakdown, chip lighting](15-assessment-ui-compact-badge-expandable-breakdown-chip-lighti.md) — blocked by: 14
-- [ ] **16** [SRS core: ladder, running average, per-turn write-back](16-srs-core-ladder-running-average-per-turn-write-back.md) — blocked by: 14
+- [x] **16** [SRS core: ladder, running average, per-turn write-back](16-srs-core-ladder-running-average-per-turn-write-back.md) — blocked by: 14
 - [ ] **17** [SRS effect snapshots on the training](17-srs-effect-snapshots-on-the-training.md) — blocked by: 16
 - [ ] **18** [Trainings list with type/status filter and resume](18-trainings-list-with-type-status-filter-and-resume.md) — blocked by: 13
 - [ ] **19** [End session nudge, completion with persistent averages and narrative](19-end-session-nudge-completion-with-persistent-averages-and-na.md) — blocked by: 16, 18

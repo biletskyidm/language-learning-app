@@ -15,6 +15,7 @@ import {
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 import { withRetry } from '../llm/retry'
+import { SrsService } from '../srs/service'
 
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
@@ -37,8 +38,17 @@ const onlyTargets = (assessment: Assessment, targets: TrainingTarget[]): Assessm
   }
 }
 
-export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) =>
-  new Hono<AuthEnv>()
+const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
+  new Map(
+    targets
+      .map(({ expressionId, expression }) => [expressionId, assessment.targetPhrasesCorrectness[expression]?.score])
+      .filter((entry): entry is [string, number] => entry[1] !== undefined),
+  )
+
+export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) => {
+  const srs = new SrsService(deps.expressions, deps.clock)
+
+  return new Hono<AuthEnv>()
     .post('/trainings', async (c) => {
       const body = await c.req.json().catch(() => undefined)
       const input = createTrainingInputSchema.safeParse(body)
@@ -122,6 +132,8 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const updated = await deps.trainings.appendMessages(userId, training.id, turn, messages.length)
       if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
 
+      await srs.apply(userId, targets, scoredTargets(assessment, targets))
+
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))
     })
     .get('/trainings/:id', async (c) => {
@@ -130,3 +142,4 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       return c.json(trainingSchema.parse(training))
     })
+}

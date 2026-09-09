@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { chatTurnResponseSchema } from '@contracts'
 import { ApiError, apiPost } from './client'
+import { EXPRESSIONS_KEY } from './use-expressions'
 import { TRAININGS_KEY } from './use-training'
 
 export const useSendMessage = (trainingId: string) => {
@@ -12,6 +13,7 @@ export const useSendMessage = (trainingId: string) => {
       apiPost(`/trainings/${trainingId}/messages`, { content }, chatTurnResponseSchema),
     onSuccess: ({ training }) => {
       queryClient.setQueryData(detail, training)
+      queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })
     },
     onError: (error) => {
       if (error instanceof ApiError && error.code === 'TURN_CONFLICT') {
