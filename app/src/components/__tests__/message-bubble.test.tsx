@@ -3,20 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react-native'
 import type { Assessment, ChatMessage } from '@contracts'
 import { MessageBubble } from '../message-bubble'
 
-const category = (score: number, suggestion: string) => ({ score, messageWithSuggestions: suggestion })
+const category = (score: number) => ({ score, messageWithSuggestions: 'try this instead' })
 
 const assessment: Assessment = {
-  grammar: category(8, 'I went to the shop'),
-  vocabularyDiversity: category(6, 'vary your verbs'),
-  sentenceComplexity: category(4, 'join the clauses'),
-  sentenceNaturalness: category(9, 'sounds native'),
-  targetExpressionCorrectness: {
-    'break the ice': {
-      score: 7,
-      messageWithSuggestions: 'nearly right',
-      correctVersion: 'I broke the ice with a joke',
-    },
-  },
+  grammar: category(8),
+  vocabularyDiversity: category(6),
+  sentenceComplexity: category(4),
+  sentenceNaturalness: category(9),
+  targetExpressionCorrectness: {},
 }
 
 const message = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
@@ -33,42 +27,33 @@ describe('MessageBubble', () => {
     expect(screen.getByText('6.8')).toBeTruthy()
   })
 
-  it('keeps the breakdown collapsed until tapped', async () => {
-    await render(<MessageBubble message={message({ assessment })} />)
+  it('asks for the preview on a long press', async () => {
+    const onPreview = jest.fn()
+    await render(<MessageBubble message={message({ assessment })} onPreview={onPreview} />)
 
-    expect(screen.queryByText('Grammar')).toBeNull()
+    await fireEvent(screen.getByTestId('assessed-message'), 'longPress')
+
+    expect(onPreview).toHaveBeenCalled()
   })
 
-  it('expands the four categories and the targets on tap', async () => {
-    await render(<MessageBubble message={message({ assessment })} />)
+  it('stays quiet on a plain tap', async () => {
+    const onPreview = jest.fn()
+    await render(<MessageBubble message={message({ assessment })} onPreview={onPreview} />)
 
-    await fireEvent.press(screen.getByTestId('assessment-badge'))
+    await fireEvent.press(screen.getByTestId('assessed-message'))
 
-    expect(screen.getByText('Grammar')).toBeTruthy()
-    expect(screen.getByText('I went to the shop')).toBeTruthy()
-    expect(screen.getByText('Naturalness')).toBeTruthy()
-    expect(screen.getByText('break the ice')).toBeTruthy()
-    expect(screen.getByText('I broke the ice with a joke')).toBeTruthy()
-  })
-
-  it('collapses again on a second tap', async () => {
-    await render(<MessageBubble message={message({ assessment })} />)
-
-    await fireEvent.press(screen.getByTestId('assessment-badge'))
-    await fireEvent.press(screen.getByTestId('assessment-badge'))
-
-    expect(screen.queryByText('Grammar')).toBeNull()
+    expect(onPreview).not.toHaveBeenCalled()
   })
 
   it('shows no badge on a tutor message', async () => {
     await render(<MessageBubble message={message({ role: 'assistant', assessment: undefined })} />)
 
-    expect(screen.queryByTestId('assessment-badge')).toBeNull()
+    expect(screen.queryByTestId('assessed-message')).toBeNull()
   })
 
   it('shows no badge on a message still being assessed', async () => {
     await render(<MessageBubble message={message()} />)
 
-    expect(screen.queryByTestId('assessment-badge')).toBeNull()
+    expect(screen.queryByTestId('assessed-message')).toBeNull()
   })
 })

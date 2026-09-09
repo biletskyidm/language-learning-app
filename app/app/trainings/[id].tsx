@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ChatMessage } from '@contracts'
 import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
+import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
 import { TargetChips } from '../../src/components/target-chips'
 import { TypingIndicator } from '../../src/components/typing-indicator'
@@ -26,6 +27,7 @@ export default function Chat() {
   const training = useTraining(id)
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
+  const [preview, setPreview] = useState<ChatMessage | null>(null)
   const list = useRef<FlatList<ChatMessage>>(null)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
@@ -56,7 +58,7 @@ export default function Chat() {
         ref={list}
         data={messages}
         keyExtractor={(_, index) => String(index)}
-        renderItem={({ item }) => <MessageBubble message={item} />}
+        renderItem={({ item }) => <MessageBubble message={item} onPreview={() => setPreview(item)} />}
         contentContainerStyle={styles.messages}
         ListFooterComponent={send.isPending ? <TypingIndicator /> : null}
         onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
@@ -80,6 +82,9 @@ export default function Chat() {
           <Text style={styles.sendLabel}>Send</Text>
         </Pressable>
       </View>
+      {preview?.assessment ? (
+        <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
+      ) : null}
     </KeyboardAvoidingView>
   )
 }
