@@ -47,7 +47,9 @@ export default function Chat() {
     const content = draft.trim()
     if (!content || send.isPending) return
 
-    send.mutate(content, { onSuccess: () => setDraft('') })
+    send.mutate(content, {
+      onSuccess: () => setDraft((current) => (current.trim() === content ? '' : current)),
+    })
   }
 
   return (
