@@ -42,7 +42,7 @@ export const createTrainingInputSchema = z.object({
   type: z.literal('chat'),
   context: z.string().trim().min(1).max(500),
   style: chatStyleSchema,
-  expressionIds: z.array(z.string()).min(1).optional(),
+  expressionIds: z.array(z.string()).min(1).max(PICK_LIMIT_MAX).optional(),
   limit: z.number().int().min(1).max(PICK_LIMIT_MAX).optional(),
 })
 

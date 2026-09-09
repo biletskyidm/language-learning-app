@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { apiErrorSchema, chatTrainingSchema, PICK_LIMIT_DEFAULT, type Expression, type Training } from '@contracts'
+import {
+  apiErrorSchema,
+  chatTrainingSchema,
+  PICK_LIMIT_DEFAULT,
+  PICK_LIMIT_MAX,
+  type Expression,
+  type Training,
+} from '@contracts'
 import { createApp } from '../src/app'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
 import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
@@ -130,6 +137,11 @@ describe('POST /trainings', () => {
     ['a context over 500 characters', { ...chat, context: 'a'.repeat(501) }],
     ['an unknown style', { ...chat, style: 'chatty' }],
     ['a training type that does not exist yet', { ...chat, type: 'gaps' }],
+    ['an empty list of expression ids', { ...chat, expressionIds: [] }],
+    [
+      'more expression ids than a session can hold',
+      { ...chat, expressionIds: Array.from({ length: PICK_LIMIT_MAX + 1 }, (_, i) => `e${i}`) },
+    ],
   ])('refuses %s', async (_name, body) => {
     const { res } = await start(body)
 
