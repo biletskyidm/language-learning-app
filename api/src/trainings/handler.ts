@@ -93,6 +93,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       const { context, style, targets, messages } = training
       const { content } = input.data
+      const tutorMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content
 
       let reply: string
       let assessed: Assessment
@@ -101,7 +102,10 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
           withRetry(() => deps.llm.tutorReply({ context, style, targets, history: messages, userContent: content }), {
             attempts: 2,
           }),
-          withRetry(() => deps.llm.assessMessage({ context, style, targets, userContent: content }), { attempts: 2 }),
+          withRetry(
+            () => deps.llm.assessMessage({ context, style, targets, userContent: content, tutorMessage }),
+            { attempts: 2 },
+          ),
         ])
       } catch (error) {
         console.error(error)

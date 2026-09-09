@@ -87,7 +87,7 @@ export class OpenRouterGateway implements LlmGateway {
     return message
   }
 
-  async assessMessage({ context, style, targets, userContent }: AssessmentInput): Promise<Assessment> {
+  async assessMessage({ context, style, targets, userContent, tutorMessage }: AssessmentInput): Promise<Assessment> {
     const model = this.model(this.config.ASSESSMENT_MODEL).withStructuredOutput(assessmentOutputSchema, {
       name: 'assessment',
     })
@@ -98,6 +98,7 @@ export class OpenRouterGateway implements LlmGateway {
         style,
         targets: withMeanings(targets),
         userContent,
+        tutorMessage,
       }),
       { tags: ['assessment'] },
     )

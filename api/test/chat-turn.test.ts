@@ -120,7 +120,7 @@ describe('POST /trainings/:id/messages', () => {
       },
     ])
     expect(llm.assessmentCalls).toEqual([
-      { context: 'a scrum standup', style: 'informal', targets, userContent: CONTENT },
+      { context: 'a scrum standup', style: 'informal', targets, userContent: CONTENT, tutorMessage: OPENING },
     ])
   })
 

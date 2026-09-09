@@ -28,6 +28,8 @@ export interface AssessmentInput {
   style: ChatStyle
   targets: TrainingTarget[]
   userContent: string
+  /** What the tutor said last, so contextCorrectness can judge the answer and not only the scenario. */
+  tutorMessage?: string
 }
 
 export type TutorReplyInput = AssessmentInput & { history: ChatMessage[] }
