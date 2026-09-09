@@ -13,49 +13,38 @@ type RowProps = {
   item: Expression
   suggested: boolean
   removable: boolean
-  onReplace: () => void
   onRemove: () => void
 }
 
-const Row = ({ item, suggested, removable, onReplace, onRemove }: RowProps) => (
+const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   <View style={styles.row}>
     <Pressable style={styles.rowBody} onPress={() => router.push(`/expressions/${item.id}`)}>
       <Text style={styles.expression}>{item.expression}</Text>
       <Text style={styles.meaning}>{item.meaning}</Text>
       {suggested ? <Text style={styles.reason}>{pickReason(item)}</Text> : null}
     </Pressable>
-    <View style={styles.actions}>
-      <Pressable onPress={onReplace} accessibilityRole="button" hitSlop={8}>
-        <Text style={styles.action}>Replace</Text>
+    {removable ? (
+      <Pressable onPress={onRemove} accessibilityRole="button" hitSlop={8}>
+        <Text style={styles.remove}>Remove</Text>
       </Pressable>
-      {removable ? (
-        <Pressable onPress={onRemove} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.remove}>Remove</Text>
-        </Pressable>
-      ) : null}
-    </View>
+    ) : null}
   </View>
 )
 
 const Targets = ({ initial }: { initial: Expression[] }) => {
   const vocabulary = useExpressions()
-  const { targets, replace, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
-  const [picking, setPicking] = useState<number | 'add' | undefined>(undefined)
+  const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
+  const [picking, setPicking] = useState(false)
   const suggested = new Set(initial.map((item) => item.id))
-
-  const select = (expression: Expression) => {
-    if (picking === 'add') add(expression)
-    else if (picking !== undefined) replace(picking, expression)
-  }
 
   return (
     <>
-      {picking !== undefined ? (
+      {picking ? (
         <ExpressionPicker
-          title={picking === 'add' ? 'Add an expression' : 'Swap in an expression'}
+          title="Add an expression"
           excludedIds={targets.map((target) => target.id)}
-          onSelect={select}
-          onClose={() => setPicking(undefined)}
+          onSelect={add}
+          onClose={() => setPicking(false)}
         />
       ) : null}
       <FlatList
@@ -66,14 +55,13 @@ const Targets = ({ initial }: { initial: Expression[] }) => {
             item={item}
             suggested={suggested.has(item.id)}
             removable={targets.length > 1}
-            onReplace={() => setPicking(index)}
             onRemove={() => remove(index)}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
       {targets.length < MAX_TARGETS ? (
-        <Pressable onPress={() => setPicking('add')} accessibilityRole="button" style={styles.add}>
+        <Pressable onPress={() => setPicking(true)} accessibilityRole="button" style={styles.add}>
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
@@ -108,8 +96,6 @@ const styles = StyleSheet.create({
   expression: { fontSize: 16, fontWeight: '600' },
   meaning: { color: colors.muted },
   reason: { color: colors.ok, fontSize: 12 },
-  actions: { alignItems: 'flex-end', gap: 4 },
-  action: { color: colors.ok, fontSize: 13, fontWeight: '600' },
   remove: { color: colors.error, fontSize: 13, fontWeight: '600' },
   separator: { height: 1, backgroundColor: colors.border },
   add: { paddingVertical: spacing.sm, alignItems: 'center' },

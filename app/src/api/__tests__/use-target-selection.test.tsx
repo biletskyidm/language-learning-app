@@ -25,22 +25,6 @@ describe('useTargetSelection', () => {
     expect(ids(result.current.targets)).toEqual(['e0', 'e1', 'e2'])
   })
 
-  it('swaps one suggestion for another and leaves the rest in place', async () => {
-    const { result } = await renderHook(() => useTargetSelection(range(3)))
-
-    await act(() => result.current.replace(1, expression('other')))
-
-    expect(ids(result.current.targets)).toEqual(['e0', 'other', 'e2'])
-  })
-
-  it('ignores a replacement that is already selected somewhere else', async () => {
-    const { result } = await renderHook(() => useTargetSelection(range(3)))
-
-    await act(() => result.current.replace(0, expression('e2')))
-
-    expect(ids(result.current.targets)).toEqual(['e0', 'e1', 'e2'])
-  })
-
   it('drops a suggestion it was told to remove', async () => {
     const { result } = await renderHook(() => useTargetSelection(range(3)))
 
@@ -85,8 +69,8 @@ describe('useTargetSelection', () => {
   it('ignores an index that is not in the selection', async () => {
     const { result } = await renderHook(() => useTargetSelection(range(2)))
 
-    await act(() => result.current.replace(5, expression('other')))
     await act(() => result.current.remove(-1))
+    await act(() => result.current.remove(5))
 
     expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
   })

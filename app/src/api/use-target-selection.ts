@@ -5,7 +5,6 @@ export const MAX_TARGETS = 20
 
 export type TargetSelection = {
   targets: Expression[]
-  replace: (index: number, expression: Expression) => void
   remove: (index: number) => void
   add: (expression: Expression) => void
 }
@@ -26,13 +25,6 @@ export const useTargetSelection = (initial: Expression[], vocabulary?: Expressio
     )
   }, [vocabulary])
 
-  const replace = useCallback((index: number, expression: Expression) => {
-    setTargets((current) => {
-      if (!current[index] || has(current, expression)) return current
-      return current.map((target, i) => (i === index ? expression : target))
-    })
-  }, [])
-
   const remove = useCallback((index: number) => {
     setTargets((current) => {
       if (!current[index] || current.length === 1) return current
@@ -47,5 +39,5 @@ export const useTargetSelection = (initial: Expression[], vocabulary?: Expressio
     })
   }, [])
 
-  return { targets, replace, remove, add }
+  return { targets, remove, add }
 }
