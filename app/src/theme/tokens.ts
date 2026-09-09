@@ -1,5 +1,6 @@
 export const colors = {
   ok: '#1a7f37',
+  warn: '#b45309',
   error: '#c0392b',
   muted: '#6b7280',
   border: '#d1d5db',
