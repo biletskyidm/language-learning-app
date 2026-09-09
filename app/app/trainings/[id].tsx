@@ -15,14 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ChatMessage } from '@contracts'
 import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
+import { AssessmentPreview } from '../../src/components/assessment-preview'
+import { MessageBubble } from '../../src/components/message-bubble'
+import { TargetChips } from '../../src/components/target-chips'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
-
-const MessageBubble = ({ message }: { message: ChatMessage }) => (
-  <View style={[styles.bubble, message.role === 'user' ? styles.mine : styles.theirs]}>
-    <Text style={styles.bubbleText}>{message.content}</Text>
-  </View>
-)
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -30,6 +27,7 @@ export default function Chat() {
   const training = useTraining(id)
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
+  const [preview, setPreview] = useState<ChatMessage | null>(null)
   const list = useRef<FlatList<ChatMessage>>(null)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
@@ -55,18 +53,12 @@ export default function Chat() {
       keyboardVerticalOffset={insets.top + 44}
     >
       <Stack.Screen options={{ title: training.data.context }} />
-      <View style={styles.chips}>
-        {training.data.targets.map((target) => (
-          <View key={target.expressionId} style={styles.chip}>
-            <Text style={styles.chipLabel}>{target.expression}</Text>
-          </View>
-        ))}
-      </View>
+      <TargetChips targets={training.data.targets} messages={messages} />
       <FlatList
         ref={list}
         data={messages}
         keyExtractor={(_, index) => String(index)}
-        renderItem={({ item }) => <MessageBubble message={item} />}
+        renderItem={({ item }) => <MessageBubble message={item} onPreview={() => setPreview(item)} />}
         contentContainerStyle={styles.messages}
         ListFooterComponent={send.isPending ? <TypingIndicator /> : null}
         onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
@@ -90,33 +82,16 @@ export default function Chat() {
           <Text style={styles.sendLabel}>Send</Text>
         </Pressable>
       </View>
+      {preview?.assessment ? (
+        <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
+      ) : null}
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
-  },
-  chipLabel: { fontSize: 13, color: colors.muted },
   messages: { padding: spacing.md, gap: spacing.sm },
-  bubble: { maxWidth: '85%', borderRadius: 16, padding: spacing.sm + 2 },
-  theirs: { alignSelf: 'flex-start', backgroundColor: '#eef0f3' },
-  mine: { alignSelf: 'flex-end', backgroundColor: colors.ok },
-  bubbleText: { fontSize: 15 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
