@@ -14,18 +14,23 @@ export const trainingTargetSchema = z.object({
 
 const assessmentCategorySchema = z.object({
   score: z.number().min(0).max(10),
-  messageWithSuggestions: z.string(),
+  feedback: z.string(),
+  suggestions: z.string(),
 })
 
 const targetCorrectnessSchema = assessmentCategorySchema.extend({ correctVersion: z.string() })
 
-/** Keyed by target text: the tutor names the expression it judged, and only attempted targets appear. */
+const overallFeedbackSchema = z.object({ strengths: z.string(), areasForImprovement: z.string() })
+
+/** targetPhrasesCorrectness is keyed by target text: the tutor names the expression it judged, and only attempted targets appear. */
 export const assessmentSchema = z.object({
-  grammar: assessmentCategorySchema,
+  contextCorrectness: assessmentCategorySchema,
+  grammarAndSyntax: assessmentCategorySchema,
   vocabularyDiversity: assessmentCategorySchema,
   sentenceComplexity: assessmentCategorySchema,
   sentenceNaturalness: assessmentCategorySchema,
-  targetExpressionCorrectness: z.record(z.string(), targetCorrectnessSchema),
+  targetPhrasesCorrectness: z.record(z.string(), targetCorrectnessSchema),
+  overallFeedback: overallFeedbackSchema,
 })
 
 export const chatMessageSchema = z.object({
@@ -82,5 +87,6 @@ export type CreateTrainingInput = z.infer<typeof createTrainingInputSchema>
 export type Assessment = z.infer<typeof assessmentSchema>
 export type AssessmentCategory = z.infer<typeof assessmentCategorySchema>
 export type TargetCorrectness = z.infer<typeof targetCorrectnessSchema>
+export type OverallFeedback = z.infer<typeof overallFeedbackSchema>
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>
 export type ChatTurnResponse = z.infer<typeof chatTurnResponseSchema>

@@ -109,7 +109,7 @@ The backend owns all LLM calls through LangChain.js + OpenRouter, with model ids
 - **Scenarios** collection: named presets with context and style.
 
 ### Assessment shapes
-- Per-message assessment identical to the Go implementation: four category scores `{score 0–10, messageWithSuggestions}` plus `targetExpressionCorrectness` map `{expression → {score, messageWithSuggestions, correctVersion}}`.
+- Per-message assessment: five category scores (contextCorrectness, grammarAndSyntax, vocabularyDiversity, sentenceComplexity, sentenceNaturalness) as `{score 0–10, feedback, suggestions}`, plus a `targetPhrasesCorrectness` map `{expression → {score, feedback, suggestions, correctVersion}}` and an `overallFeedback` `{strengths, areasForImprovement}` about that message.
 - Final chat assessment: deterministic averages per category, per-target stats (used, usedCorrectly, average score), plus narrative fields strengths, areasForImprovement, suggestedFocus from one LLM call. The averages are stored on the training and always rendered on ended trainings (detail header and history row), not hidden behind the narrative.
 - Drill verdicts map to constants: correct 8, wrong 2.
 

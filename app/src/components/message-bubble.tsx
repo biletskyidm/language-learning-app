@@ -20,7 +20,9 @@ export const MessageBubble = ({ message, onPreview }: Props) => {
       style={message.role === 'user' ? styles.mine : styles.theirs}
     >
       <View style={[styles.bubble, message.role === 'user' ? styles.bubbleMine : styles.bubbleTheirs]}>
-        <Text style={styles.bubbleText}>{message.content}</Text>
+        <Text style={[styles.bubbleText, message.role === 'user' ? styles.bubbleTextMine : null]}>
+          {message.content}
+        </Text>
       </View>
       {assessment ? (
         <View style={[styles.badge, { borderColor: toneColor[badgeTone(score)] }]}>
@@ -37,9 +39,10 @@ const styles = StyleSheet.create({
   mine: { alignSelf: 'flex-end', alignItems: 'flex-end', maxWidth: '85%', gap: 4 },
   theirs: { alignSelf: 'flex-start', maxWidth: '85%' },
   bubble: { borderRadius: 16, padding: spacing.sm + 2 },
-  bubbleTheirs: { backgroundColor: '#eef0f3' },
+  bubbleTheirs: { backgroundColor: '#d5d9e0' },
   bubbleMine: { backgroundColor: colors.ok },
   bubbleText: { fontSize: 15 },
+  bubbleTextMine: { color: '#fff' },
   badge: {
     borderWidth: 1,
     borderRadius: 999,

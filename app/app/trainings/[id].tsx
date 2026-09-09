@@ -28,6 +28,7 @@ export default function Chat() {
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
+  const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
   const list = useRef<FlatList<ChatMessage>>(null)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
@@ -43,6 +44,7 @@ export default function Chat() {
     if (!content || send.isPending) return
 
     setDraft('')
+    setInputHeight(INPUT_MIN_HEIGHT)
     send.mutate(content, { onError: () => setDraft((current) => current || content) })
   }
 
@@ -66,9 +68,14 @@ export default function Chat() {
       {send.isError ? <Text style={styles.error}>Could not send that — try again</Text> : null}
       <View style={[styles.composer, { paddingBottom: insets.bottom + spacing.sm }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { height: inputHeight }]}
           value={draft}
           onChangeText={setDraft}
+          onContentSizeChange={(event) =>
+            setInputHeight(
+              Math.min(INPUT_MAX_HEIGHT, Math.max(INPUT_MIN_HEIGHT, event.nativeEvent.contentSize.height)),
+            )
+          }
           placeholder="Say something"
           placeholderTextColor={colors.muted}
           multiline
@@ -89,6 +96,9 @@ export default function Chat() {
   )
 }
 
+const INPUT_MIN_HEIGHT = 40
+const INPUT_MAX_HEIGHT = 120
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   messages: { padding: spacing.md, gap: spacing.sm },
@@ -102,7 +112,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    maxHeight: 120,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 20,

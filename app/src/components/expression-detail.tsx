@@ -1,18 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import type { Expression } from '@contracts'
+import { relativeDays } from '../api/expression-srs'
 import { colors, spacing } from '../theme/tokens'
-
-const DAY_MS = 86_400_000
-
-const relativeDays = (date: Date, now: Date) => {
-  const days = Math.round((date.getTime() - now.getTime()) / DAY_MS)
-
-  if (days === 0) return 'today'
-  if (days === 1) return 'tomorrow'
-  if (days === -1) return 'yesterday'
-
-  return days > 0 ? `in ${days} days` : `${-days} days ago`
-}
 
 const trained = (times = 0) => `Trained ${times} ${times === 1 ? 'time' : 'times'}`
 

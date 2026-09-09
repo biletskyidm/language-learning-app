@@ -16,19 +16,24 @@ import { FakeLlmGateway } from './fake-llm'
 const OPENING = 'Morning — how did yesterday go on the payments ticket?'
 const REPLY = 'Nice one. Did the client come back with numbers yet?'
 
-const category = { score: 8, messageWithSuggestions: 'I broke the ice with the client.' }
+const category = { score: 8, feedback: 'The tenses hold up.', suggestions: 'I broke the ice with the client.' }
 
-const assessment = (targetExpressionCorrectness: Assessment['targetExpressionCorrectness'] = {}): Assessment => ({
-  grammar: category,
+const OVERALL = { strengths: 'You opened confidently.', areasForImprovement: 'Vary your sentence openings.' }
+
+const assessment = (targetPhrasesCorrectness: Assessment['targetPhrasesCorrectness'] = {}): Assessment => ({
+  contextCorrectness: category,
+  grammarAndSyntax: category,
   vocabularyDiversity: category,
   sentenceComplexity: category,
   sentenceNaturalness: category,
-  targetExpressionCorrectness,
+  targetPhrasesCorrectness,
+  overallFeedback: OVERALL,
 })
 
 const USED = {
   score: 9,
-  messageWithSuggestions: 'I broke the ice with the client.',
+  feedback: 'Used naturally and in the right tense.',
+  suggestions: 'I broke the ice with the client.',
   correctVersion: 'I broke the ice by asking about their weekend.',
 }
 
@@ -86,7 +91,9 @@ describe('POST /trainings/:id/messages', () => {
     expect(res.status).toBe(200)
     const turn = chatTurnResponseSchema.parse(await res.json())
     expect(turn.reply).toEqual({ role: 'assistant', content: REPLY, createdAt: NOW })
-    expect(turn.assessment.grammar.score).toBe(8)
+    expect(turn.assessment.contextCorrectness.score).toBe(8)
+    expect(turn.assessment.grammarAndSyntax.score).toBe(8)
+    expect(turn.assessment.overallFeedback).toEqual(OVERALL)
   })
 
   it('appends the message and the reply to the conversation as one turn', async () => {
@@ -113,7 +120,7 @@ describe('POST /trainings/:id/messages', () => {
       },
     ])
     expect(llm.assessmentCalls).toEqual([
-      { context: 'a scrum standup', style: 'informal', targets, userContent: CONTENT },
+      { context: 'a scrum standup', style: 'informal', targets, userContent: CONTENT, tutorMessage: OPENING },
     ])
   })
 
@@ -126,8 +133,8 @@ describe('POST /trainings/:id/messages', () => {
     )
 
     const turn = chatTurnResponseSchema.parse(await res.json())
-    expect(Object.keys(turn.assessment.targetExpressionCorrectness)).toEqual(['break the ice'])
-    expect(Object.keys(stored.messages[1]?.assessment?.targetExpressionCorrectness ?? {})).toEqual(['break the ice'])
+    expect(Object.keys(turn.assessment.targetPhrasesCorrectness)).toEqual(['break the ice'])
+    expect(Object.keys(stored.messages[1]?.assessment?.targetPhrasesCorrectness ?? {})).toEqual(['break the ice'])
   })
 
   it('takes the reply of a second attempt when the first one fails', async () => {

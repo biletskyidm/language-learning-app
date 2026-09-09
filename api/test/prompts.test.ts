@@ -60,16 +60,31 @@ describe('loadPrompt', () => {
     expect(rendered).not.toContain('{{')
   })
 
-  it('renders the assessment prompt with the targets and their meanings', () => {
+  it('renders the assessment prompt with the targets, their meanings and what the tutor asked', () => {
     const rendered = renderPrompt(loadPrompt('assessment'), {
       context: 'a scrum standup',
       style: 'informal',
       targets: '- break the ice: to get a conversation started',
       userContent: 'I broke the ice with the client.',
+      tutorMessage: 'How did the call go?',
     })
 
     expect(rendered).toContain('- break the ice: to get a conversation started')
+    expect(rendered).toContain('How did the call go?')
     expect(rendered).toContain('I broke the ice with the client.')
+    expect(rendered).not.toContain('{{')
+  })
+
+  it('drops the tutor question from the assessment prompt when there is none', () => {
+    const rendered = renderPrompt(loadPrompt('assessment'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '- break the ice: to get a conversation started',
+      userContent: 'I broke the ice with the client.',
+      tutorMessage: undefined,
+    })
+
+    expect(rendered).not.toContain('The tutor just said')
     expect(rendered).not.toContain('{{')
   })
 

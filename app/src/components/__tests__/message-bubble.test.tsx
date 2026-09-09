@@ -3,14 +3,16 @@ import { fireEvent, render, screen } from '@testing-library/react-native'
 import type { Assessment, ChatMessage } from '@contracts'
 import { MessageBubble } from '../message-bubble'
 
-const category = (score: number) => ({ score, messageWithSuggestions: 'try this instead' })
+const category = (score: number) => ({ score, feedback: 'clear enough', suggestions: 'try this instead' })
 
 const assessment: Assessment = {
-  grammar: category(8),
+  contextCorrectness: category(7),
+  grammarAndSyntax: category(8),
   vocabularyDiversity: category(6),
   sentenceComplexity: category(4),
   sentenceNaturalness: category(9),
-  targetExpressionCorrectness: {},
+  targetPhrasesCorrectness: {},
+  overallFeedback: { strengths: 'good flow', areasForImprovement: 'watch the tenses' },
 }
 
 const message = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({

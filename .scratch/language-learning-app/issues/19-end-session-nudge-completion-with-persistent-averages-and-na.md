@@ -2,7 +2,7 @@
 
 **What to build:** The chat screen always shows "End session". Once every target has a lit chip (ticket 15 rule) a banner suggests ending. Ending calls complete: the API computes per-category averages and per-target stats deterministically, asks the LLM for a short narrative, stores all of it, and the training becomes COMPLETED. Averages are always visible afterwards: in the chat header, at the top of the ended chat, and in the Sessions list row. PRD stories 30, 31.
 
-**Aggregator (pure, port of Go `AggregateFinalAssessment`):** averages over user messages that have an assessment; per target: collect `targetExpressionCorrectness[text].score` where > 0; `used = scores.length > 0`; `score = mean`; `usedCorrectly = mean >= 7`. Targets never attempted: `{ used: false, usedCorrectly: false, score: 0 }`.
+**Aggregator (pure, port of Go `AggregateFinalAssessment`):** averages over user messages that have an assessment (five categories, contextCorrectness included); per target: collect `targetPhrasesCorrectness[text].score` where > 0; `used = scores.length > 0`; `score = mean`; `usedCorrectly = mean >= 7`. Targets never attempted: `{ used: false, usedCorrectly: false, score: 0 }`.
 
 **Final assessment schema:**
 ```ts

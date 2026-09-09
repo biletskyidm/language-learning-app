@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import type { Expression } from '@contracts'
 import { DEFAULT_FILTERS } from '../api/expression-filters'
+import { srsSummary } from '../api/expression-srs'
 import { useExpressions } from '../api/use-expressions'
 import { colors, spacing } from '../theme/tokens'
 import { Chip } from './chip'
@@ -58,6 +59,7 @@ export const ExpressionPicker = ({ title, excludedIds, onSelect, onClose }: Prop
             <Pressable onPress={() => choose(item)} style={styles.option} accessibilityRole="button">
               <Text style={styles.expression}>{item.expression}</Text>
               <Text style={styles.meaning}>{item.meaning}</Text>
+              <Text style={styles.stats}>{srsSummary(item, new Date())}</Text>
             </Pressable>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -86,6 +88,7 @@ const styles = StyleSheet.create({
   option: { paddingVertical: spacing.sm, gap: 2 },
   expression: { fontSize: 15, fontWeight: '600' },
   meaning: { color: colors.muted },
+  stats: { color: colors.muted, fontSize: 12 },
   separator: { height: 1, backgroundColor: colors.border },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
 })

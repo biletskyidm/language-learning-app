@@ -21,9 +21,9 @@ const draftSchema = expressionDraftSchema.extend({ partOfSpeech: partOfSpeechSch
 const tutorMessageSchema = z.object({ message: z.string().min(1) })
 
 // Structured output has no map type, so the per-target verdicts come back as a list and are keyed here.
-const assessmentOutputSchema = assessmentSchema.omit({ targetExpressionCorrectness: true }).extend({
-  targetExpressionCorrectness: z.array(
-    assessmentSchema.shape.targetExpressionCorrectness.valueType.extend({ expression: z.string() }),
+const assessmentOutputSchema = assessmentSchema.omit({ targetPhrasesCorrectness: true }).extend({
+  targetPhrasesCorrectness: z.array(
+    assessmentSchema.shape.targetPhrasesCorrectness.valueType.extend({ expression: z.string() }),
   ),
 })
 
@@ -87,25 +87,26 @@ export class OpenRouterGateway implements LlmGateway {
     return message
   }
 
-  async assessMessage({ context, style, targets, userContent }: AssessmentInput): Promise<Assessment> {
+  async assessMessage({ context, style, targets, userContent, tutorMessage }: AssessmentInput): Promise<Assessment> {
     const model = this.model(this.config.ASSESSMENT_MODEL).withStructuredOutput(assessmentOutputSchema, {
       name: 'assessment',
     })
 
-    const { targetExpressionCorrectness, ...categories } = await model.invoke(
+    const { targetPhrasesCorrectness, ...categories } = await model.invoke(
       renderPrompt(loadPrompt('assessment'), {
         context,
         style,
         targets: withMeanings(targets),
         userContent,
+        tutorMessage,
       }),
       { tags: ['assessment'] },
     )
 
     return {
       ...categories,
-      targetExpressionCorrectness: Object.fromEntries(
-        targetExpressionCorrectness.map(({ expression, ...verdict }) => [expression, verdict]),
+      targetPhrasesCorrectness: Object.fromEntries(
+        targetPhrasesCorrectness.map(({ expression, ...verdict }) => [expression, verdict]),
       ),
     }
   }
