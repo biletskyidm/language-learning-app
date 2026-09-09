@@ -15,14 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ChatMessage } from '@contracts'
 import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
+import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
 
-type Bubble = ChatMessage & { pending?: boolean }
-
-const MessageBubble = ({ message }: { message: Bubble }) => (
-  <View
-    style={[styles.bubble, message.role === 'user' ? styles.mine : styles.theirs, message.pending && styles.pending]}
-  >
+const MessageBubble = ({ message }: { message: ChatMessage }) => (
+  <View style={[styles.bubble, message.role === 'user' ? styles.mine : styles.theirs]}>
     <Text style={styles.bubbleText}>{message.content}</Text>
   </View>
 )
@@ -33,23 +30,22 @@ export default function Chat() {
   const training = useTraining(id)
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
-  const list = useRef<FlatList<Bubble>>(null)
+  const list = useRef<FlatList<ChatMessage>>(null)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
   if (training.isError) return <Text style={styles.error}>Could not open this conversation</Text>
 
-  const messages: Bubble[] =
+  const messages: ChatMessage[] =
     send.isPending && send.variables
-      ? [...training.data.messages, { role: 'user', content: send.variables, createdAt: new Date(), pending: true }]
+      ? [...training.data.messages, { role: 'user', content: send.variables, createdAt: new Date() }]
       : training.data.messages
 
   const submit = () => {
     const content = draft.trim()
     if (!content || send.isPending) return
 
-    send.mutate(content, {
-      onSuccess: () => setDraft((current) => (current.trim() === content ? '' : current)),
-    })
+    setDraft('')
+    send.mutate(content, { onError: () => setDraft((current) => current || content) })
   }
 
   return (
@@ -72,6 +68,7 @@ export default function Chat() {
         keyExtractor={(_, index) => String(index)}
         renderItem={({ item }) => <MessageBubble message={item} />}
         contentContainerStyle={styles.messages}
+        ListFooterComponent={send.isPending ? <TypingIndicator /> : null}
         onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
       />
       {send.isError ? <Text style={styles.error}>Could not send that — try again</Text> : null}
@@ -90,7 +87,7 @@ export default function Chat() {
           disabled={!draft.trim() || send.isPending}
           style={[styles.send, (!draft.trim() || send.isPending) && styles.sendOff]}
         >
-          {send.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendLabel}>Send</Text>}
+          <Text style={styles.sendLabel}>Send</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -119,7 +116,6 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '85%', borderRadius: 16, padding: spacing.sm + 2 },
   theirs: { alignSelf: 'flex-start', backgroundColor: '#eef0f3' },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.ok },
-  pending: { opacity: 0.5 },
   bubbleText: { fontSize: 15 },
   composer: {
     flexDirection: 'row',
