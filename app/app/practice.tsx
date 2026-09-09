@@ -31,8 +31,14 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
       <Text style={suggested ? styles.suggestedStats : styles.stats}>{srsSummary(item, new Date())}</Text>
     </Pressable>
     {removable ? (
-      <Pressable onPress={onRemove} accessibilityRole="button" hitSlop={8}>
-        <Text style={styles.remove}>Remove</Text>
+      <Pressable
+        onPress={onRemove}
+        accessibilityRole="button"
+        accessibilityLabel="Remove"
+        hitSlop={8}
+        style={styles.remove}
+      >
+        <Text style={styles.removeIcon}>×</Text>
       </Pressable>
     ) : null}
   </View>
@@ -149,7 +155,15 @@ const styles = StyleSheet.create({
   meaning: { color: colors.muted },
   stats: { color: colors.muted, fontSize: 12 },
   suggestedStats: { color: colors.ok, fontSize: 12 },
-  remove: { color: colors.error, fontSize: 13, fontWeight: '600' },
+  remove: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeIcon: { color: '#fff', fontSize: 16, fontWeight: '600', lineHeight: 18 },
   separator: { height: 1, backgroundColor: colors.border },
   add: { paddingVertical: spacing.sm, alignItems: 'center' },
   addLabel: { color: colors.ok, fontSize: 15, fontWeight: '600' },
