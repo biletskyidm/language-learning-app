@@ -1,48 +1,105 @@
+import { useState } from 'react'
 import { Stack, router } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import type { Expression } from '@contracts'
 import { pickReason } from '../src/api/pick-reason'
+import { useExpressions } from '../src/api/use-expressions'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
+import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
+import { ExpressionPicker } from '../src/components/expression-picker'
 import { colors, spacing } from '../src/theme/tokens'
 
-const Row = ({ item }: { item: Expression }) => (
-  <Pressable style={styles.row} onPress={() => router.push(`/expressions/${item.id}`)}>
-    <Text style={styles.expression}>{item.expression}</Text>
-    <Text style={styles.meaning}>{item.meaning}</Text>
-    <Text style={styles.reason}>{pickReason(item)}</Text>
-  </Pressable>
+type RowProps = {
+  item: Expression
+  suggested: boolean
+  removable: boolean
+  onRemove: () => void
+}
+
+const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
+  <View style={styles.row}>
+    <Pressable style={styles.rowBody} onPress={() => router.push(`/expressions/${item.id}`)}>
+      <Text style={styles.expression}>{item.expression}</Text>
+      <Text style={styles.meaning}>{item.meaning}</Text>
+      {suggested ? <Text style={styles.reason}>{pickReason(item)}</Text> : null}
+    </Pressable>
+    {removable ? (
+      <Pressable onPress={onRemove} accessibilityRole="button" hitSlop={8}>
+        <Text style={styles.remove}>Remove</Text>
+      </Pressable>
+    ) : null}
+  </View>
 )
+
+const Targets = ({ initial }: { initial: Expression[] }) => {
+  const vocabulary = useExpressions()
+  const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
+  const [picking, setPicking] = useState(false)
+  const suggested = new Set(initial.map((item) => item.id))
+
+  return (
+    <>
+      {picking ? (
+        <ExpressionPicker
+          title="Add an expression"
+          excludedIds={targets.map((target) => target.id)}
+          onSelect={add}
+          onClose={() => setPicking(false)}
+        />
+      ) : null}
+      <FlatList
+        data={targets}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <Row
+            item={item}
+            suggested={suggested.has(item.id)}
+            removable={targets.length > 1}
+            onRemove={() => remove(index)}
+          />
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+      {targets.length < MAX_TARGETS ? (
+        <Pressable onPress={() => setPicking(true)} accessibilityRole="button" style={styles.add}>
+          <Text style={styles.addLabel}>Add an expression</Text>
+        </Pressable>
+      ) : null}
+    </>
+  )
+}
 
 export default function Practice() {
   const picked = usePickedExpressions()
+  const items = picked.data?.items
 
-  const empty = () => {
-    if (picked.isPending) return <ActivityIndicator style={styles.state} />
+  const body = () => {
+    if (items) {
+      return items.length ? <Targets initial={items} /> : <Text style={styles.state}>Nothing to practice right now</Text>
+    }
     if (picked.isError) return <Text style={styles.error}>Could not work out what to practice</Text>
-    return <Text style={styles.state}>Nothing to practice right now</Text>
+    return <ActivityIndicator style={styles.state} />
   }
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'What to practice' }} />
-      <FlatList
-        data={picked.data?.items ?? []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <Row item={item} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={empty()}
-      />
+      {body()}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.md },
-  row: { paddingVertical: spacing.sm, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  rowBody: { flex: 1, gap: 2 },
   expression: { fontSize: 16, fontWeight: '600' },
   meaning: { color: colors.muted },
   reason: { color: colors.ok, fontSize: 12 },
+  remove: { color: colors.error, fontSize: 13, fontWeight: '600' },
   separator: { height: 1, backgroundColor: colors.border },
+  add: { paddingVertical: spacing.sm, alignItems: 'center' },
+  addLabel: { color: colors.ok, fontSize: 15, fontWeight: '600' },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
 })

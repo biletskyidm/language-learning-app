@@ -17,7 +17,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **09** [Delete expression](09-delete-expression.md) — blocked by: 06
 - [x] **10** [AI fill on the create form: LLM gateway, prompt files](10-ai-fill-on-create-llm-gateway-and-prompt-files.md) — blocked by: 07
 - [x] **11** [Smart picker endpoint and 'what to practice' preview](11-smart-picker-endpoint-and-what-to-practice-preview.md) — blocked by: 04
-- [ ] **12** [Manual override on the pick screen](12-manual-override-on-the-pick-screen.md) — blocked by: 11
+- [x] **12** [Manual override on the pick screen](12-manual-override-on-the-pick-screen.md) — blocked by: 11
 - [ ] **13** [Chat training creation with targets and tutor opening message](13-chat-training-creation-with-targets-and-tutor-opening-messag.md) — blocked by: 10, 11
 - [ ] **14** [Chat turn: parallel reply and structured assessment, atomic](14-chat-turn-parallel-reply-and-structured-assessment-atomic.md) — blocked by: 13
 - [ ] **15** [Assessment UI: compact badge, expandable breakdown, chip lighting](15-assessment-ui-compact-badge-expandable-breakdown-chip-lighti.md) — blocked by: 14

@@ -1,0 +1,117 @@
+import { act, renderHook } from '@testing-library/react-native'
+import type { Expression } from '@contracts'
+import { MAX_TARGETS, useTargetSelection } from '../use-target-selection'
+
+const expression = (id: string): Expression => ({
+  id,
+  userId: 'me',
+  expression: `phrase ${id}`,
+  type: 'idiom',
+  meaning: 'a meaning',
+  examples: [],
+  tags: [],
+  frequency: 'common',
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+})
+
+const ids = (targets: Expression[]) => targets.map((target) => target.id)
+
+const range = (count: number) => Array.from({ length: count }, (_, index) => expression(`e${index}`))
+
+describe('useTargetSelection', () => {
+  it('starts from what the picker suggested', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(3)))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e1', 'e2'])
+  })
+
+  it('drops a suggestion it was told to remove', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(3)))
+
+    await act(() => result.current.remove(0))
+
+    expect(ids(result.current.targets)).toEqual(['e1', 'e2'])
+  })
+
+  it('keeps the last target rather than leaving nothing to practice', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(1)))
+
+    await act(() => result.current.remove(0))
+
+    expect(ids(result.current.targets)).toEqual(['e0'])
+  })
+
+  it('adds an expression the picker did not suggest', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(1)))
+
+    await act(() => result.current.add(expression('other')))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'other'])
+  })
+
+  it('ignores an expression that is already selected', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(2)))
+
+    await act(() => result.current.add(expression('e1')))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
+  })
+
+  it('stops adding at the upper bound', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(MAX_TARGETS)))
+
+    await act(() => result.current.add(expression('one-too-many')))
+
+    expect(result.current.targets).toHaveLength(MAX_TARGETS)
+    expect(ids(result.current.targets)).not.toContain('one-too-many')
+  })
+
+  it('ignores an index that is not in the selection', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(2)))
+
+    await act(() => result.current.remove(-1))
+    await act(() => result.current.remove(5))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
+  })
+})
+
+describe('useTargetSelection reconciliation', () => {
+  it('keeps every target while the vocabulary is still unknown', async () => {
+    const { result } = await renderHook(() => useTargetSelection(range(2), undefined))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e1'])
+  })
+
+  it('drops a target that has been deleted from the vocabulary', async () => {
+    const { rerender, result } = await renderHook(
+      ({ vocabulary }: { vocabulary?: Expression[] }) => useTargetSelection(range(3), vocabulary),
+      { initialProps: { vocabulary: undefined as Expression[] | undefined } },
+    )
+
+    await rerender({ vocabulary: [expression('e0'), expression('e2')] })
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'e2'])
+  })
+
+  it('keeps a manually added target that still exists', async () => {
+    const { result } = await renderHook(() =>
+      useTargetSelection(range(1), [expression('e0'), expression('other')]),
+    )
+
+    await act(() => result.current.add(expression('other')))
+
+    expect(ids(result.current.targets)).toEqual(['e0', 'other'])
+  })
+
+  it('lets the last target go when it no longer exists', async () => {
+    const { rerender, result } = await renderHook(
+      ({ vocabulary }: { vocabulary?: Expression[] }) => useTargetSelection(range(1), vocabulary),
+      { initialProps: { vocabulary: undefined as Expression[] | undefined } },
+    )
+
+    await rerender({ vocabulary: [] })
+
+    expect(result.current.targets).toEqual([])
+  })
+})
