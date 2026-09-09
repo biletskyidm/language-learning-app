@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export type PromptRole = 'draft-expression'
+export type PromptRole = 'draft-expression' | 'tutor-first-message'
 
 /** The Lambda bundle carries the prompts next to the handler, so the path is set in the environment there. */
 const directory = process.env.PROMPTS_DIR ?? fileURLToPath(new URL('../../prompts', import.meta.url))

@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import { Stack, router } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
-import type { Expression } from '@contracts'
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { createTrainingInputSchema, type ChatStyle, type Expression } from '@contracts'
 import { pickReason } from '../src/api/pick-reason'
+import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
+import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
 import { colors, spacing } from '../src/theme/tokens'
+
+const STYLES: [ChatStyle, string][] = [
+  ['informal', 'informal'],
+  ['formal', 'formal'],
+]
 
 type RowProps = {
   item: Expression
@@ -30,6 +37,50 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
     ) : null}
   </View>
 )
+
+const StartChat = ({ targets }: { targets: Expression[] }) => {
+  const [context, setContext] = useState('')
+  const [style, setStyle] = useState<ChatStyle>('informal')
+  const create = useCreateTraining()
+
+  const input = createTrainingInputSchema.safeParse({
+    type: 'chat',
+    context,
+    style,
+    expressionIds: targets.map((target) => target.id),
+  })
+
+  const start = () =>
+    input.success &&
+    create.mutate(input.data, { onSuccess: (training) => router.push(`/trainings/${training.id}`) })
+
+  return (
+    <View style={styles.start}>
+      <TextInput
+        style={styles.context}
+        value={context}
+        onChangeText={setContext}
+        placeholder="What is the situation? e.g. a scrum standup"
+        placeholderTextColor={colors.muted}
+        multiline
+      />
+      <View style={styles.styles}>
+        {STYLES.map(([value, label]) => (
+          <Chip key={value} label={label} active={style === value} onPress={() => setStyle(value)} />
+        ))}
+      </View>
+      {create.isError ? <Text style={styles.error}>Could not start the conversation</Text> : null}
+      <Pressable
+        onPress={start}
+        accessibilityRole="button"
+        disabled={!input.success || create.isPending}
+        style={[styles.startButton, (!input.success || create.isPending) && styles.startButtonOff]}
+      >
+        <Text style={styles.startLabel}>{create.isPending ? 'Starting…' : 'Start chat'}</Text>
+      </Pressable>
+    </View>
+  )
+}
 
 const Targets = ({ initial }: { initial: Expression[] }) => {
   const vocabulary = useExpressions()
@@ -65,6 +116,7 @@ const Targets = ({ initial }: { initial: Expression[] }) => {
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
+      <StartChat targets={targets} />
     </>
   )
 }
@@ -100,6 +152,18 @@ const styles = StyleSheet.create({
   separator: { height: 1, backgroundColor: colors.border },
   add: { paddingVertical: spacing.sm, alignItems: 'center' },
   addLabel: { color: colors.ok, fontSize: 15, fontWeight: '600' },
+  start: { gap: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  context: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: spacing.sm,
+    minHeight: 60,
+  },
+  styles: { flexDirection: 'row', gap: spacing.sm },
+  startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
+  startButtonOff: { opacity: 0.4 },
+  startLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
 })
