@@ -2,11 +2,14 @@ import React, { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ChatTurnResponse, Training } from '@contracts'
-import { apiPost } from '../client'
+import { ApiError, apiPost } from '../client'
 import { useSendMessage } from '../use-send-message'
 import { TRAININGS_KEY } from '../use-training'
 
-jest.mock('../client', () => ({ apiPost: jest.fn() }))
+jest.mock('../client', () => ({
+  ...jest.requireActual('../client'),
+  apiPost: jest.fn(),
+}))
 
 const mockedApiPost = apiPost as jest.MockedFunction<typeof apiPost>
 
@@ -83,6 +86,15 @@ describe('useSendMessage', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData([TRAININGS_KEY, 'detail', 't1'])).toEqual(turn.training)
+  })
+
+  it('marks the conversation stale when the turn is refused as out of date', async () => {
+    mockedApiPost.mockRejectedValue(new ApiError(409, 'TURN_CONFLICT', 'This conversation moved on — reopen it'))
+
+    const result = await send(CONTENT)
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(queryClient.getQueryState([TRAININGS_KEY, 'detail', 't1'])?.isInvalidated).toBe(true)
   })
 
   it('leaves the conversation untouched when the turn is refused, so the draft is not lost', async () => {

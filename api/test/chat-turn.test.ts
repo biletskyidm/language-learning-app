@@ -3,11 +3,13 @@ import {
   apiErrorSchema,
   chatTurnResponseSchema,
   type Assessment,
+  type ChatMessage,
   type ChatTraining,
   type Training,
 } from '@contracts'
 import { createApp } from '../src/app'
 import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
+import type { TutorReplyInput } from '../src/deps'
 import { bearer, NOW, TEST_SECRET, testDeps } from './deps'
 import { FakeLlmGateway } from './fake-llm'
 
@@ -63,6 +65,19 @@ const send = async (
 }
 
 const CONTENT = 'I broke the ice with the client yesterday.'
+
+/** Lets a test land another turn while this one is still waiting on the tutor. */
+class RacingLlmGateway extends FakeLlmGateway {
+  constructor(private readonly meanwhile: () => void) {
+    super({ replies: [REPLY], assessments: [assessment()] })
+  }
+
+  async tutorReply(input: TutorReplyInput): Promise<string> {
+    this.meanwhile()
+
+    return super.tutorReply(input)
+  }
+}
 
 describe('POST /trainings/:id/messages', () => {
   it('answers with the tutor reply and the assessment of the message just sent', async () => {
@@ -162,6 +177,21 @@ describe('POST /trainings/:id/messages', () => {
     expect(res.status).toBe(409)
     expect(apiErrorSchema.parse(await res.json()).error.code).toBe('TRAINING_NOT_ACTIVE')
     expect(stored.messages).toHaveLength(1)
+  })
+
+  it('saves nothing when another turn landed while the tutor was thinking', async () => {
+    const existing = training()
+    const meanwhile: ChatMessage = { role: 'assistant', content: 'Still there?', createdAt: NOW }
+
+    const { res, stored } = await send(
+      { content: CONTENT },
+      new RacingLlmGateway(() => existing.messages.push(meanwhile)),
+      existing,
+    )
+
+    expect(res.status).toBe(409)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('TURN_CONFLICT')
+    expect(stored.messages).toEqual([{ role: 'assistant', content: OPENING, createdAt: NOW }, meanwhile])
   })
 
   it('answers 404 for a training that does not exist', async () => {

@@ -115,7 +115,8 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         { role: 'user', content, createdAt: now, assessment },
         { role: 'assistant', content: reply, createdAt: now },
       ]
-      const updated = await deps.trainings.appendMessages(userId, training.id, turn)
+      const updated = await deps.trainings.appendMessages(userId, training.id, turn, messages.length)
+      if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))
     })

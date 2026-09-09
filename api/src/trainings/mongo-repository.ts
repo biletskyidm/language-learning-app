@@ -19,16 +19,24 @@ export class MongoTrainingRepository implements TrainingRepository {
     return toDomain({ ...doc, _id: insertedId })
   }
 
-  async appendMessages(userId: string, id: string, messages: ChatMessage[]): Promise<Training> {
+  async appendMessages(
+    userId: string,
+    id: string,
+    messages: ChatMessage[],
+    expectedCount: number,
+  ): Promise<Training | undefined> {
     const filter = idFilter(userId, id)
-    if (!filter) throw new Error(`No training ${id} to append to`)
+    if (!filter) return undefined
 
     const doc = await this.db
       .collection<{ messages: ChatMessage[] }>(TRAININGS_COLLECTION)
-      .findOneAndUpdate(filter, { $push: { messages: { $each: messages } } }, { returnDocument: 'after' })
-    if (!doc) throw new Error(`No training ${id} to append to`)
+      .findOneAndUpdate(
+        { ...filter, messages: { $size: expectedCount } },
+        { $push: { messages: { $each: messages } } },
+        { returnDocument: 'after' },
+      )
 
-    return toDomain(doc as Parameters<typeof toDomain>[0])
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {
