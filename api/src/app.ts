@@ -4,6 +4,7 @@ import { requireAuth, type AuthEnv } from './auth/middleware'
 import type { Deps } from './deps'
 import { expressionRoutes } from './expressions/handler'
 import { healthRoutes } from './health/handler'
+import { trainingRoutes } from './trainings/handler'
 
 export const createApp = (deps: Deps) => {
   const app = new Hono<AuthEnv>()
@@ -12,6 +13,7 @@ export const createApp = (deps: Deps) => {
   app.route('/', healthRoutes(deps.db))
   app.use('*', requireAuth(deps))
   app.route('/', expressionRoutes(deps))
+  app.route('/', trainingRoutes(deps))
 
   app.notFound((c) => c.json(apiError('NOT_FOUND', 'Unknown route'), 404))
   app.onError((err, c) => {

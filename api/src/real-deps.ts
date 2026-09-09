@@ -7,7 +7,7 @@ import { MongoDbHealth } from './health/mongo-db-health'
 import { OpenRouterGateway } from './llm/openrouter-gateway'
 import { InMemoryScenarioRepository } from './scenarios/memory-repository'
 import { InMemorySettingsRepository } from './settings/memory-repository'
-import { InMemoryTrainingRepository } from './trainings/memory-repository'
+import { MongoTrainingRepository } from './trainings/mongo-repository'
 
 export const realDeps = (db: Db, config: Config): Deps => {
   const clock = () => new Date()
@@ -15,7 +15,7 @@ export const realDeps = (db: Db, config: Config): Deps => {
   return {
     db: new MongoDbHealth(db),
     expressions: new MongoExpressionRepository(db),
-    trainings: new InMemoryTrainingRepository(),
+    trainings: new MongoTrainingRepository(db),
     settings: new InMemorySettingsRepository(),
     scenarios: new InMemoryScenarioRepository(),
     llm: new OpenRouterGateway(config),

@@ -1,4 +1,4 @@
-import type { ExpressionDraft, TokenVerification } from '@contracts'
+import type { ChatStyle, ExpressionDraft, TokenVerification, TrainingTarget } from '@contracts'
 import type { ExpressionRepository } from './expressions/repository'
 import type { ScenarioRepository } from './scenarios/repository'
 import type { SettingsRepository } from './settings/repository'
@@ -10,8 +10,15 @@ export interface DbHealth {
   ping(): Promise<boolean>
 }
 
+export interface TutorFirstMessageInput {
+  context: string
+  style: ChatStyle
+  targets: TrainingTarget[]
+}
+
 export interface LlmGateway {
   draftExpression(input: { text: string }): Promise<ExpressionDraft>
+  tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
 }
 
 export interface TokenVerifier {

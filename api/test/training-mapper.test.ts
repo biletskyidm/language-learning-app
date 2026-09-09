@@ -1,0 +1,44 @@
+import { ObjectId } from 'mongodb'
+import { describe, expect, it } from 'vitest'
+import type { ChatTraining } from '@contracts'
+import { toDoc, toDomain } from '../src/trainings/mapper'
+
+const id = '507f1f77bcf86cd799439022'
+
+const training: ChatTraining = {
+  id,
+  userId: 'me',
+  type: 'chat',
+  status: 'ACTIVE',
+  context: 'a scrum standup',
+  style: 'informal',
+  targets: [{ expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }],
+  messages: [
+    { role: 'assistant', content: 'Morning — what did you get done yesterday?', createdAt: new Date('2026-01-01T00:00:00.000Z') },
+  ],
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+}
+
+describe('training mapper', () => {
+  it('round-trips a chat training unchanged', () => {
+    expect(toDomain(toDoc(training))).toEqual(training)
+  })
+
+  it('stores the id as an ObjectId rather than a field of its own', () => {
+    const doc = toDoc(training)
+
+    expect(doc._id).toBeInstanceOf(ObjectId)
+    expect(doc._id.toHexString()).toBe(id)
+    expect(doc).not.toHaveProperty('id')
+  })
+
+  it('keeps an ended training with its completion timestamp', () => {
+    const completed = { ...training, status: 'COMPLETED' as const, completedAt: new Date('2026-01-02T00:00:00.000Z') }
+
+    expect(toDomain(toDoc(completed))).toEqual(completed)
+  })
+
+  it('ignores fields written by nothing in this codebase', () => {
+    expect(toDomain({ ...toDoc(training), legacyNote: 'from an old importer' })).toEqual(training)
+  })
+})

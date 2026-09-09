@@ -30,4 +30,29 @@ describe('loadPrompt', () => {
     expect(rendered).toContain('cut corners')
     expect(rendered).not.toContain('{{')
   })
+
+  it('renders the tutor first message prompt with the context, style and targets', () => {
+    const rendered = renderPrompt(loadPrompt('tutor-first-message'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '- break the ice\n- touch base',
+    })
+
+    expect(rendered).toContain('a scrum standup')
+    expect(rendered).toContain('informal')
+    expect(rendered).toContain('- break the ice')
+    expect(rendered).toContain('- touch base')
+    expect(rendered).not.toContain('{{')
+  })
+
+  it('drops the target section of the tutor prompt when there is nothing to practice', () => {
+    const rendered = renderPrompt(loadPrompt('tutor-first-message'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '',
+    })
+
+    expect(rendered).not.toContain('practicing')
+    expect(rendered).not.toContain('{{')
+  })
 })
