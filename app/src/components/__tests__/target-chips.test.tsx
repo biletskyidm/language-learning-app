@@ -8,16 +8,18 @@ const targets: TrainingTarget[] = [
   { expressionId: 'e2', expression: 'under the weather', meaning: 'slightly ill' },
 ]
 
-const category = (score: number) => ({ score, messageWithSuggestions: '' })
+const category = (score: number) => ({ score, feedback: '', suggestions: '' })
 
 const assessment = (targetScore: number, expression: string): Assessment => ({
-  grammar: category(5),
+  contextCorrectness: category(5),
+  grammarAndSyntax: category(5),
   vocabularyDiversity: category(5),
   sentenceComplexity: category(5),
   sentenceNaturalness: category(5),
-  targetExpressionCorrectness: {
+  targetPhrasesCorrectness: {
     [expression]: { ...category(targetScore), correctVersion: '' },
   },
+  overallFeedback: { strengths: '', areasForImprovement: '' },
 })
 
 const message = (assessed?: Assessment): ChatMessage => ({

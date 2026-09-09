@@ -4,8 +4,9 @@ import type { Assessment, AssessmentCategory } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { badgeTone } from './assessment'
 
-const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetExpressionCorrectness'> }[] = [
-  { label: 'Grammar', key: 'grammar' },
+const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCorrectness' | 'overallFeedback'> }[] = [
+  { label: 'Context', key: 'contextCorrectness' },
+  { label: 'Grammar', key: 'grammarAndSyntax' },
   { label: 'Vocabulary', key: 'vocabularyDiversity' },
   { label: 'Complexity', key: 'sentenceComplexity' },
   { label: 'Naturalness', key: 'sentenceNaturalness' },
@@ -21,9 +22,8 @@ const Row = ({ label, category }: { label: string; category: AssessmentCategory 
         {category.score.toFixed(1)}
       </Text>
     </View>
-    {category.messageWithSuggestions ? (
-      <Text style={styles.suggestion}>{category.messageWithSuggestions}</Text>
-    ) : null}
+    {category.feedback ? <Text style={styles.feedback}>{category.feedback}</Text> : null}
+    {category.suggestions ? <Text style={styles.suggestion}>{category.suggestions}</Text> : null}
   </View>
 )
 
@@ -31,21 +31,21 @@ type Props = { assessment: Assessment; onDismiss: () => void }
 
 export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
   const pop = useRef(new Animated.Value(0)).current
-  const targets = Object.entries(assessment.targetExpressionCorrectness)
+  const targets = Object.entries(assessment.targetPhrasesCorrectness)
 
   useEffect(() => {
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()
   }, [pop])
 
   return (
-    <Pressable
-      style={styles.backdrop}
-      onPress={onDismiss}
-      accessibilityRole="button"
-      accessibilityLabel="Dismiss assessment"
-    >
+    <View style={styles.backdrop}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss assessment"
+      />
       <Animated.View
-        onStartShouldSetResponder={() => true}
         style={[
           styles.card,
           { opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] },
@@ -68,9 +68,14 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
               ))}
             </View>
           ) : null}
+          <View style={styles.targets}>
+            <Text style={styles.heading}>Overall</Text>
+            <Text style={styles.feedback}>{assessment.overallFeedback.strengths}</Text>
+            <Text style={styles.suggestion}>{assessment.overallFeedback.areasForImprovement}</Text>
+          </View>
         </ScrollView>
       </Animated.View>
-    </Pressable>
+    </View>
   )
 }
 
@@ -101,6 +106,7 @@ const styles = StyleSheet.create({
   rowHead: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   rowLabel: { flexShrink: 1, fontWeight: '600', fontSize: 15 },
   rowScore: { fontWeight: '700', fontSize: 15 },
+  feedback: { fontSize: 14 },
   suggestion: { color: colors.muted, fontSize: 14 },
   targets: { gap: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
   heading: { fontWeight: '700', fontSize: 15 },

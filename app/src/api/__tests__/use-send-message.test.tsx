@@ -22,7 +22,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 const CONTENT = 'I broke the ice with the client.'
 
-const category = { score: 8, messageWithSuggestions: CONTENT }
+const category = { score: 8, feedback: 'clear enough', suggestions: CONTENT }
 
 const opened: Training = {
   id: 't1',
@@ -39,11 +39,13 @@ const opened: Training = {
 const turn: ChatTurnResponse = {
   reply: { role: 'assistant', content: 'Nice one. Any numbers back yet?', createdAt: NOW },
   assessment: {
-    grammar: category,
+    contextCorrectness: category,
+    grammarAndSyntax: category,
     vocabularyDiversity: category,
     sentenceComplexity: category,
     sentenceNaturalness: category,
-    targetExpressionCorrectness: {},
+    targetPhrasesCorrectness: {},
+    overallFeedback: { strengths: 'confident opening', areasForImprovement: 'stay on the topic' },
   },
   training: {
     ...opened,

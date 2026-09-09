@@ -23,7 +23,7 @@ export const averageScore = (oldAvg: number, newScore: number, count: number) =>
 ```
 **Apply rule (port of MCP `updateProgress` / Go `AddTurn` tail):**
 ```
-for (text, ts) in assessment.targetExpressionCorrectness:
+for (text, ts) in assessment.targetPhrasesCorrectness:
   if ts.score === 0: continue
   expr = targetById(text); if !expr: continue
   count = (expr.timesPracticed ?? 0) + 1

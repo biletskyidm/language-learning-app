@@ -5,6 +5,8 @@ import { toDoc, toDomain } from '../src/trainings/mapper'
 
 const id = '507f1f77bcf86cd799439022'
 
+const category = { score: 8, feedback: 'The tenses hold up.', suggestions: 'I broke the ice with the client.' }
+
 const training: ChatTraining = {
   id,
   userId: 'me',
@@ -15,6 +17,22 @@ const training: ChatTraining = {
   targets: [{ expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }],
   messages: [
     { role: 'assistant', content: 'Morning — what did you get done yesterday?', createdAt: new Date('2026-01-01T00:00:00.000Z') },
+    {
+      role: 'user',
+      content: 'I broke the ice with the client.',
+      createdAt: new Date('2026-01-01T00:01:00.000Z'),
+      assessment: {
+        contextCorrectness: category,
+        grammarAndSyntax: category,
+        vocabularyDiversity: category,
+        sentenceComplexity: category,
+        sentenceNaturalness: category,
+        targetPhrasesCorrectness: {
+          'break the ice': { ...category, correctVersion: 'I broke the ice by asking about their weekend.' },
+        },
+        overallFeedback: { strengths: 'You opened confidently.', areasForImprovement: 'Vary your openings.' },
+      },
+    },
   ],
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
 }

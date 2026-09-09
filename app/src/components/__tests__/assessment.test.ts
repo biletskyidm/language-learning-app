@@ -1,19 +1,21 @@
 import type { Assessment, ChatMessage } from '@contracts'
 import { badgeTone, litTargets, overallScore } from '../assessment'
 
-const category = (score: number) => ({ score, messageWithSuggestions: 'try this instead' })
+const category = (score: number) => ({ score, feedback: 'clear enough', suggestions: 'try this instead' })
 
 const assessment = (scores: number[], targets: Record<string, number> = {}): Assessment => ({
-  grammar: category(scores[0]),
-  vocabularyDiversity: category(scores[1]),
-  sentenceComplexity: category(scores[2]),
-  sentenceNaturalness: category(scores[3]),
-  targetExpressionCorrectness: Object.fromEntries(
+  contextCorrectness: category(scores[0]),
+  grammarAndSyntax: category(scores[1]),
+  vocabularyDiversity: category(scores[2]),
+  sentenceComplexity: category(scores[3]),
+  sentenceNaturalness: category(scores[4]),
+  targetPhrasesCorrectness: Object.fromEntries(
     Object.entries(targets).map(([expression, score]) => [
       expression,
       { ...category(score), correctVersion: `${expression}, correctly` },
     ]),
   ),
+  overallFeedback: { strengths: 'good flow', areasForImprovement: 'watch the tenses' },
 })
 
 const userMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
@@ -24,12 +26,12 @@ const userMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
 })
 
 describe('overallScore', () => {
-  it('averages the four categories', () => {
-    expect(overallScore(assessment([8, 7, 6, 9]))).toBe(7.5)
+  it('averages the five categories', () => {
+    expect(overallScore(assessment([5, 8, 7, 6, 9]))).toBe(7)
   })
 
   it('ignores target scores', () => {
-    expect(overallScore(assessment([4, 4, 4, 4], { 'break the ice': 10 }))).toBe(4)
+    expect(overallScore(assessment([4, 4, 4, 4, 4], { 'break the ice': 10 }))).toBe(4)
   })
 })
 
@@ -52,21 +54,21 @@ describe('badgeTone', () => {
 
 describe('litTargets', () => {
   it('lights a target scored 7 or more', () => {
-    const messages = [userMessage({ assessment: assessment([5, 5, 5, 5], { 'break the ice': 7 }) })]
+    const messages = [userMessage({ assessment: assessment([5, 5, 5, 5, 5], { 'break the ice': 7 }) })]
 
     expect(litTargets(messages)).toEqual(new Set(['break the ice']))
   })
 
   it('leaves a target attempted badly unlit', () => {
-    const messages = [userMessage({ assessment: assessment([5, 5, 5, 5], { 'break the ice': 6.9 }) })]
+    const messages = [userMessage({ assessment: assessment([5, 5, 5, 5, 5], { 'break the ice': 6.9 }) })]
 
     expect(litTargets(messages)).toEqual(new Set())
   })
 
   it('keeps a target lit once any message earned it', () => {
     const messages = [
-      userMessage({ assessment: assessment([5, 5, 5, 5], { 'break the ice': 9 }) }),
-      userMessage({ assessment: assessment([5, 5, 5, 5], { 'break the ice': 2 }) }),
+      userMessage({ assessment: assessment([5, 5, 5, 5, 5], { 'break the ice': 9 }) }),
+      userMessage({ assessment: assessment([5, 5, 5, 5, 5], { 'break the ice': 2 }) }),
     ]
 
     expect(litTargets(messages)).toEqual(new Set(['break the ice']))

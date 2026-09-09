@@ -31,8 +31,8 @@ const onlyTargets = (assessment: Assessment, targets: TrainingTarget[]): Assessm
 
   return {
     ...assessment,
-    targetExpressionCorrectness: Object.fromEntries(
-      Object.entries(assessment.targetExpressionCorrectness).filter(([expression]) => known.has(expression)),
+    targetPhrasesCorrectness: Object.fromEntries(
+      Object.entries(assessment.targetPhrasesCorrectness).filter(([expression]) => known.has(expression)),
     ),
   }
 }
