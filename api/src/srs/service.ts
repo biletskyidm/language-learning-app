@@ -20,8 +20,9 @@ export class SrsService {
 
   async apply(userId: string, targets: TrainingTarget[], scores: Map<string, number>): Promise<SrsEffect[]> {
     const effects: SrsEffect[] = []
+    const unique = [...new Map(targets.map((target) => [target.expressionId, target])).values()]
 
-    for (const target of targets) {
+    for (const target of unique) {
       const scoreWritten = scores.get(target.expressionId)
       if (scoreWritten === undefined || scoreWritten === 0) continue
 

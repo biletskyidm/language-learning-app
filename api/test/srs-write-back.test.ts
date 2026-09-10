@@ -78,10 +78,16 @@ const turn = async (scores: Assessment['targetPhrasesCorrectness'], expressions 
   const res = await createApp(deps).request('/trainings/t1/messages', {
     method: 'POST',
     headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: 'I broke the ice with the client yesterday.' }),
+    body: JSON.stringify({ content: 'I broke the ice with the client yesterday.', turnId: 'turn-1' }),
   })
 
   return { res, stored, find: (id: string) => stored.find((e) => e.id === id) as Expression }
+}
+
+class UnwritableExpressionRepository extends InMemoryExpressionRepository {
+  async applySrs(): Promise<void> {
+    throw new Error('connection reset')
+  }
 }
 
 describe('SRS write-back after a chat turn', () => {
@@ -120,6 +126,47 @@ describe('SRS write-back after a chat turn', () => {
     })
   })
 
+  it('counts a target listed twice in the session as one practice', async () => {
+    const doubled = { ...training, targets: [training.targets[0], training.targets[0]] as ChatTraining['targets'] }
+    const stored = [{ ...NEVER_PRACTICED }]
+    const deps = testDeps({
+      expressions: new InMemoryExpressionRepository(stored),
+      trainings: new InMemoryTrainingRepository([doubled]),
+      llm: new FakeLlmGateway({
+        replies: ['Any numbers back yet?'],
+        assessments: [assessment({ 'break the ice': correctness(8) })],
+      }),
+    })
+    const res = await createApp(deps).request('/trainings/t1/messages', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'I broke the ice with the client yesterday.', turnId: 'turn-1' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(stored[0]).toMatchObject({ score: 8, timesPracticed: 1, nextTrainingAt: daysAfter(1) })
+  })
+
+  it('keeps a turn that landed even when its scores cannot be written', async () => {
+    const trainings = [{ ...training }]
+    const deps = testDeps({
+      expressions: new UnwritableExpressionRepository([{ ...NEVER_PRACTICED }]),
+      trainings: new InMemoryTrainingRepository(trainings),
+      llm: new FakeLlmGateway({
+        replies: ['Any numbers back yet?'],
+        assessments: [assessment({ 'break the ice': correctness(8) })],
+      }),
+    })
+    const res = await createApp(deps).request('/trainings/t1/messages', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'I broke the ice with the client yesterday.', turnId: 'turn-1' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect((trainings[0] as ChatTraining).messages).toHaveLength(3)
+  })
+
   it('writes nothing when the turn itself fails', async () => {
     const stored = [{ ...NEVER_PRACTICED }]
     const deps = testDeps({
@@ -133,7 +180,7 @@ describe('SRS write-back after a chat turn', () => {
     const res = await createApp(deps).request('/trainings/t1/messages', {
       method: 'POST',
       headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: 'I broke the ice with the client yesterday.' }),
+      body: JSON.stringify({ content: 'I broke the ice with the client yesterday.', turnId: 'turn-1' }),
     })
 
     expect(res.status).toBe(502)

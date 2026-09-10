@@ -38,6 +38,8 @@ export const chatMessageSchema = z.object({
   content: z.string(),
   createdAt: z.coerce.date(),
   assessment: assessmentSchema.optional(),
+  /** Carried by user messages: the client's id for the send that produced this turn. */
+  turnId: z.string().optional(),
 })
 
 const baseTrainingSchema = z.object({
@@ -68,7 +70,11 @@ export const createTrainingInputSchema = z.object({
   limit: z.number().int().min(1).max(PICK_LIMIT_MAX).optional(),
 })
 
-export const sendMessageInputSchema = z.object({ content: z.string().trim().min(1).max(2000) })
+/** turnId is the client's idempotency key: resending it replays the turn instead of starting a second one. */
+export const sendMessageInputSchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+  turnId: z.string().min(1).max(100),
+})
 
 export const chatTurnResponseSchema = z.object({
   reply: chatMessageSchema,

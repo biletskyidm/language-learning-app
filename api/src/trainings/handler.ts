@@ -9,6 +9,7 @@ import {
   trainingSchema,
   type Assessment,
   type ChatMessage,
+  type ChatTraining,
   type Expression,
   type TrainingTarget,
 } from '@contracts'
@@ -36,6 +37,18 @@ const onlyTargets = (assessment: Assessment, targets: TrainingTarget[]): Assessm
       Object.entries(assessment.targetPhrasesCorrectness).filter(([expression]) => known.has(expression)),
     ),
   }
+}
+
+/**
+ * A send that already landed is replayed rather than run again: the client retries when a turn's
+ * response never arrives, and without this the same message would be answered and stored twice.
+ */
+const alreadyTaken = (training: ChatTraining, turnId: string) => {
+  const index = training.messages.findIndex((message) => message.turnId === turnId)
+  const sent = training.messages[index]
+  const reply = training.messages[index + 1]
+
+  return sent?.assessment && reply ? { reply, assessment: sent.assessment } : undefined
 }
 
 const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
@@ -102,7 +115,10 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       }
 
       const { context, style, targets, messages } = training
-      const { content } = input.data
+      const { content, turnId } = input.data
+
+      const taken = alreadyTaken(training, turnId)
+      if (taken) return c.json(chatTurnResponseSchema.parse({ ...taken, training }))
       const tutorMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content
 
       let reply: string
@@ -126,13 +142,19 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const now = deps.clock()
       const assessment = onlyTargets(assessed, targets)
       const turn: ChatMessage[] = [
-        { role: 'user', content, createdAt: now, assessment },
+        { role: 'user', content, turnId, createdAt: now, assessment },
         { role: 'assistant', content: reply, createdAt: now },
       ]
       const updated = await deps.trainings.appendMessages(userId, training.id, turn, messages.length)
       if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
 
-      await srs.apply(userId, targets, scoredTargets(assessment, targets))
+      // The turn is committed by this point, so a failure here must not answer with a retryable error:
+      // the retry would replay this turn and the scores would still be missing. They catch up next use.
+      try {
+        await srs.apply(userId, targets, scoredTargets(assessment, targets))
+      } catch (error) {
+        console.error(error)
+      }
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))
     })
