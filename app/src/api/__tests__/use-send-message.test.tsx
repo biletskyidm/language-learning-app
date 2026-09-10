@@ -44,6 +44,7 @@ const opened: Training = {
   style: 'informal',
   targets: [{ expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }],
   messages: [{ role: 'assistant', content: 'Morning — how did yesterday go?', createdAt: NOW }],
+  srsEffects: [],
   createdAt: NOW,
 }
 
@@ -58,6 +59,7 @@ const turn: ChatTurnResponse = {
     targetPhrasesCorrectness: {},
     overallFeedback: { strengths: 'confident opening', areasForImprovement: 'stay on the topic' },
   },
+  srsEffects: [],
   training: {
     ...opened,
     messages: [

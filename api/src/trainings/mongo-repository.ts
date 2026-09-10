@@ -1,5 +1,5 @@
 import { ObjectId, type Db } from 'mongodb'
-import type { ChatMessage, Training } from '@contracts'
+import type { ChatMessage, SrsEffect, Training } from '@contracts'
 import { toDomain } from './mapper'
 import type { NewTraining, TrainingRepository } from './repository'
 
@@ -37,6 +37,15 @@ export class MongoTrainingRepository implements TrainingRepository {
       )
 
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async appendSrsEffects(userId: string, id: string, effects: SrsEffect[]): Promise<void> {
+    const filter = idFilter(userId, id)
+    if (!filter) return
+
+    await this.db
+      .collection<{ srsEffects: SrsEffect[] }>(TRAININGS_COLLECTION)
+      .updateOne(filter, { $push: { srsEffects: { $each: effects } } })
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {

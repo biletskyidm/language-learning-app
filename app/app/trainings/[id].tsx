@@ -17,6 +17,7 @@ import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
+import { SrsEffectsSheet } from '../../src/components/srs-effects-sheet'
 import { TargetChips } from '../../src/components/target-chips'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
@@ -28,6 +29,7 @@ export default function Chat() {
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
+  const [effects, setEffects] = useState(false)
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
   const list = useRef<FlatList<ChatMessage>>(null)
 
@@ -54,7 +56,16 @@ export default function Chat() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={insets.top + 44}
     >
-      <Stack.Screen options={{ title: training.data.context }} />
+      <Stack.Screen
+        options={{
+          title: training.data.context,
+          headerRight: () => (
+            <Pressable onPress={() => setEffects(true)} accessibilityRole="button">
+              <Text style={styles.headerAction}>Effects</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <TargetChips targets={training.data.targets} messages={messages} />
       <FlatList
         ref={list}
@@ -92,6 +103,9 @@ export default function Chat() {
       {preview?.assessment ? (
         <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
       ) : null}
+      {effects ? (
+        <SrsEffectsSheet effects={training.data.srsEffects} onDismiss={() => setEffects(false)} />
+      ) : null}
     </KeyboardAvoidingView>
   )
 }
@@ -128,6 +142,7 @@ const styles = StyleSheet.create({
   },
   sendOff: { opacity: 0.4 },
   sendLabel: { color: '#fff', fontWeight: '600' },
+  headerAction: { color: colors.ok, fontSize: 16, fontWeight: '600' },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.sm },
 })

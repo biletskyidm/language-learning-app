@@ -65,6 +65,7 @@ const training: ChatTraining = {
     meaning,
   })),
   messages: [{ role: 'assistant', content: 'Morning — how did yesterday go?', createdAt: NOW }],
+  srsEffects: [],
   createdAt: NOW,
 }
 
