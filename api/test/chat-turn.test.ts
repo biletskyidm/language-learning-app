@@ -70,6 +70,7 @@ const send = async (
 }
 
 const CONTENT = 'I broke the ice with the client yesterday.'
+const TURN_ID = 'turn-1'
 
 /** Lets a test land another turn while this one is still waiting on the tutor. */
 class RacingLlmGateway extends FakeLlmGateway {
@@ -86,7 +87,7 @@ class RacingLlmGateway extends FakeLlmGateway {
 
 describe('POST /trainings/:id/messages', () => {
   it('answers with the tutor reply and the assessment of the message just sent', async () => {
-    const { res } = await send({ content: CONTENT })
+    const { res } = await send({ content: CONTENT, turnId: TURN_ID })
 
     expect(res.status).toBe(200)
     const turn = chatTurnResponseSchema.parse(await res.json())
@@ -97,17 +98,17 @@ describe('POST /trainings/:id/messages', () => {
   })
 
   it('appends the message and the reply to the conversation as one turn', async () => {
-    const { stored } = await send({ content: CONTENT })
+    const { stored } = await send({ content: CONTENT, turnId: TURN_ID })
 
     expect(stored.messages).toEqual([
       { role: 'assistant', content: OPENING, createdAt: NOW },
-      { role: 'user', content: CONTENT, createdAt: NOW, assessment: assessment() },
+      { role: 'user', content: CONTENT, turnId: TURN_ID, createdAt: NOW, assessment: assessment() },
       { role: 'assistant', content: REPLY, createdAt: NOW },
     ])
   })
 
   it('asks the tutor and the assessor about the same message, in the context and style of the session', async () => {
-    const { llm } = await send({ content: CONTENT })
+    const { llm } = await send({ content: CONTENT, turnId: TURN_ID })
 
     const targets = training().targets
     expect(llm.replyCalls).toEqual([
@@ -128,7 +129,7 @@ describe('POST /trainings/:id/messages', () => {
     const invented = assessment({ 'break the ice': USED, 'jump the gun': USED })
 
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new FakeLlmGateway({ replies: [REPLY], assessments: [invented] }),
     )
 
@@ -139,7 +140,7 @@ describe('POST /trainings/:id/messages', () => {
 
   it('takes the reply of a second attempt when the first one fails', async () => {
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new FakeLlmGateway({ replies: [new Error('timeout'), REPLY], assessments: [assessment()] }),
     )
 
@@ -149,7 +150,7 @@ describe('POST /trainings/:id/messages', () => {
 
   it('saves nothing when the tutor cannot be reached twice', async () => {
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new FakeLlmGateway({
         replies: [new Error('timeout'), new Error('timeout')],
         assessments: [assessment()],
@@ -163,7 +164,7 @@ describe('POST /trainings/:id/messages', () => {
 
   it('saves nothing when the assessment cannot be reached twice', async () => {
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new FakeLlmGateway({
         replies: [REPLY, REPLY],
         assessments: [new Error('timeout'), new Error('timeout')],
@@ -176,7 +177,7 @@ describe('POST /trainings/:id/messages', () => {
 
   it('refuses to add a turn to a session that is already over', async () => {
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new FakeLlmGateway({ replies: [REPLY], assessments: [assessment()] }),
       training({ status: 'COMPLETED', completedAt: NOW }),
     )
@@ -191,7 +192,7 @@ describe('POST /trainings/:id/messages', () => {
     const meanwhile: ChatMessage = { role: 'assistant', content: 'Still there?', createdAt: NOW }
 
     const { res, stored } = await send(
-      { content: CONTENT },
+      { content: CONTENT, turnId: TURN_ID },
       new RacingLlmGateway(() => existing.messages.push(meanwhile)),
       existing,
     )
@@ -201,12 +202,53 @@ describe('POST /trainings/:id/messages', () => {
     expect(stored.messages).toEqual([{ role: 'assistant', content: OPENING, createdAt: NOW }, meanwhile])
   })
 
+  it('replays a turn that already landed instead of answering the same message twice', async () => {
+    const existing = training()
+    const llm = new FakeLlmGateway({ replies: [REPLY], assessments: [assessment()] })
+    const stored: Training[] = [existing]
+    const deps = testDeps({ llm, trainings: new InMemoryTrainingRepository(stored) })
+    const app = createApp(deps)
+    const post = () =>
+      app.request('/trainings/t1/messages', {
+        method: 'POST',
+        headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: CONTENT, turnId: TURN_ID }),
+      })
+
+    const first = chatTurnResponseSchema.parse(await (await post()).json())
+    const retry = await post()
+
+    expect(retry.status).toBe(200)
+    expect(chatTurnResponseSchema.parse(await retry.json()).reply).toEqual(first.reply)
+    expect((stored[0] as ChatTraining).messages).toHaveLength(3)
+    expect(llm.replyCalls).toHaveLength(1)
+  })
+
+  it('treats a different send as its own turn even when the words repeat', async () => {
+    const existing = training()
+    const llm = new FakeLlmGateway({ replies: [REPLY, REPLY], assessments: [assessment(), assessment()] })
+    const stored: Training[] = [existing]
+    const deps = testDeps({ llm, trainings: new InMemoryTrainingRepository(stored) })
+    const app = createApp(deps)
+    const post = (turnId: string) =>
+      app.request('/trainings/t1/messages', {
+        method: 'POST',
+        headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: CONTENT, turnId }),
+      })
+
+    await post('turn-1')
+    await post('turn-2')
+
+    expect((stored[0] as ChatTraining).messages).toHaveLength(5)
+  })
+
   it('answers 404 for a training that does not exist', async () => {
     const deps = testDeps()
     const res = await createApp(deps).request('/trainings/nope/messages', {
       method: 'POST',
       headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: CONTENT }),
+      body: JSON.stringify({ content: CONTENT, turnId: TURN_ID }),
     })
 
     expect(res.status).toBe(404)
@@ -229,7 +271,7 @@ describe('POST /trainings/:id/messages', () => {
     const res = await createApp(testDeps()).request('/trainings/t1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: CONTENT }),
+      body: JSON.stringify({ content: CONTENT, turnId: TURN_ID }),
     })
 
     expect(res.status).toBe(401)

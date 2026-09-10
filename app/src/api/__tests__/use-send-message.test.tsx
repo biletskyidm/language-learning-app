@@ -3,9 +3,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ChatTurnResponse, Training } from '@contracts'
 import { ApiError, apiPost } from '../client'
+import { EXPRESSIONS_KEY } from '../use-expressions'
 import { useSendMessage } from '../use-send-message'
 import { TRAININGS_KEY } from '../use-training'
 
+jest.mock('expo-crypto', () => {
+  let counter = 0
+  return {
+    getRandomValues: (bytes: Uint8Array) => {
+      counter += 1
+      bytes.forEach((_, i) => (bytes[i] = i === 0 ? counter : i))
+      return bytes
+    },
+  }
+})
 jest.mock('../client', () => ({
   ...jest.requireActual('../client'),
   apiPost: jest.fn(),
@@ -72,6 +83,7 @@ describe('useSendMessage', () => {
     mockedApiPost.mockResolvedValue(turn)
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false, gcTime: 0 } } })
     queryClient.setQueryData([TRAININGS_KEY, 'detail', 't1'], opened)
+    queryClient.setQueryData([EXPRESSIONS_KEY, '/expressions'], { expressions: [], tags: [] })
   })
 
   afterEach(() => queryClient.clear())
@@ -80,7 +92,11 @@ describe('useSendMessage', () => {
     const result = await send(CONTENT)
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(mockedApiPost).toHaveBeenCalledWith('/trainings/t1/messages', { content: CONTENT }, expect.anything())
+    expect(mockedApiPost).toHaveBeenCalledWith(
+      '/trainings/t1/messages',
+      { content: CONTENT, turnId: expect.any(String) },
+      expect.anything(),
+    )
   })
 
   it('puts the whole turn in the cache so the reply shows without a refetch', async () => {
@@ -90,6 +106,13 @@ describe('useSendMessage', () => {
     expect(queryClient.getQueryData([TRAININGS_KEY, 'detail', 't1'])).toEqual(turn.training)
   })
 
+  it('marks the vocabulary stale so the trained counter catches up with the turn', async () => {
+    const result = await send(CONTENT)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState([EXPRESSIONS_KEY, '/expressions'])?.isInvalidated).toBe(true)
+  })
+
   it('marks the conversation stale when the turn is refused as out of date', async () => {
     mockedApiPost.mockRejectedValue(new ApiError(409, 'TURN_CONFLICT', 'This conversation moved on — reopen it'))
 
@@ -97,6 +120,40 @@ describe('useSendMessage', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(queryClient.getQueryState([TRAININGS_KEY, 'detail', 't1'])?.isInvalidated).toBe(true)
+  })
+
+  it('resends a failed message under the same turn id, so the turn is never doubled', async () => {
+    mockedApiPost.mockRejectedValueOnce(new Error('POST /trainings/t1/messages failed with 502'))
+    const { result } = await renderHook(() => useSendMessage('t1'), { wrapper })
+
+    await act(async () => {
+      result.current.mutate(CONTENT)
+    })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    await act(async () => {
+      result.current.mutate(CONTENT)
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    const [first, second] = mockedApiPost.mock.calls
+    expect((second?.[1] as { turnId: string }).turnId).toBe((first?.[1] as { turnId: string }).turnId)
+  })
+
+  it('starts a new turn when the message is edited after a failure', async () => {
+    mockedApiPost.mockRejectedValueOnce(new Error('POST /trainings/t1/messages failed with 502'))
+    const { result } = await renderHook(() => useSendMessage('t1'), { wrapper })
+
+    await act(async () => {
+      result.current.mutate(CONTENT)
+    })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    await act(async () => {
+      result.current.mutate(`${CONTENT} Sorry, typo.`)
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    const [first, second] = mockedApiPost.mock.calls
+    expect((second?.[1] as { turnId: string }).turnId).not.toBe((first?.[1] as { turnId: string }).turnId)
   })
 
   it('leaves the conversation untouched when the turn is refused, so the draft is not lost', async () => {

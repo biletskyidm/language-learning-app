@@ -6,7 +6,7 @@ import {
   type UpdateExpressionInput,
 } from '@contracts'
 import { EXCLUDED_PRIORITY, priorityOf } from './picker'
-import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository } from './repository'
+import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository, SrsFields } from './repository'
 
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
   switch (sort) {
@@ -100,6 +100,13 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     this.expressions[index] = updated
 
     return updated
+  }
+
+  async applySrs(userId: string, id: string, fields: SrsFields): Promise<void> {
+    const index = this.expressions.findIndex((e) => e.userId === userId && e.id === id)
+    if (index < 0) return
+
+    this.expressions[index] = { ...(this.expressions[index] as Expression), ...fields }
   }
 
   async delete(userId: string, id: string): Promise<boolean> {

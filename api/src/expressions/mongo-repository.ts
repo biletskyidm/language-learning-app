@@ -2,7 +2,7 @@ import { ObjectId, type Db, type Document } from 'mongodb'
 import type { CreateExpressionInput, Expression, Frequency, UpdateExpressionInput } from '@contracts'
 import { toDomain } from './mapper'
 import { EXCLUDED_PRIORITY, FREQUENCY_TIERS } from './picker'
-import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository } from './repository'
+import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository, SrsFields } from './repository'
 
 export const EXPRESSIONS_COLLECTION = 'expressions'
 
@@ -176,6 +176,13 @@ export class MongoExpressionRepository implements ExpressionRepository {
       .findOneAndUpdate(filter, operations, { returnDocument: 'after' })
 
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async applySrs(userId: string, id: string, fields: SrsFields): Promise<void> {
+    const filter = idFilter(userId, id)
+    if (!filter) return
+
+    await this.db.collection(EXPRESSIONS_COLLECTION).updateOne(filter, { $set: fields })
   }
 
   async delete(userId: string, id: string): Promise<boolean> {

@@ -9,12 +9,14 @@ import {
   trainingSchema,
   type Assessment,
   type ChatMessage,
+  type ChatTraining,
   type Expression,
   type TrainingTarget,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 import { withRetry } from '../llm/retry'
+import { SrsService } from '../srs/service'
 
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
@@ -37,8 +39,29 @@ const onlyTargets = (assessment: Assessment, targets: TrainingTarget[]): Assessm
   }
 }
 
-export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) =>
-  new Hono<AuthEnv>()
+/**
+ * A send that already landed is replayed rather than run again: the client retries when a turn's
+ * response never arrives, and without this the same message would be answered and stored twice.
+ */
+const alreadyTaken = (training: ChatTraining, turnId: string) => {
+  const index = training.messages.findIndex((message) => message.turnId === turnId)
+  const sent = training.messages[index]
+  const reply = training.messages[index + 1]
+
+  return sent?.assessment && reply ? { reply, assessment: sent.assessment } : undefined
+}
+
+const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
+  new Map(
+    targets
+      .map(({ expressionId, expression }) => [expressionId, assessment.targetPhrasesCorrectness[expression]?.score])
+      .filter((entry): entry is [string, number] => entry[1] !== undefined),
+  )
+
+export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) => {
+  const srs = new SrsService(deps.expressions, deps.clock)
+
+  return new Hono<AuthEnv>()
     .post('/trainings', async (c) => {
       const body = await c.req.json().catch(() => undefined)
       const input = createTrainingInputSchema.safeParse(body)
@@ -92,7 +115,10 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       }
 
       const { context, style, targets, messages } = training
-      const { content } = input.data
+      const { content, turnId } = input.data
+
+      const taken = alreadyTaken(training, turnId)
+      if (taken) return c.json(chatTurnResponseSchema.parse({ ...taken, training }))
       const tutorMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content
 
       let reply: string
@@ -116,11 +142,20 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const now = deps.clock()
       const assessment = onlyTargets(assessed, targets)
       const turn: ChatMessage[] = [
-        { role: 'user', content, createdAt: now, assessment },
+        { role: 'user', content, turnId, createdAt: now, assessment },
         { role: 'assistant', content: reply, createdAt: now },
       ]
       const updated = await deps.trainings.appendMessages(userId, training.id, turn, messages.length)
       if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
+
+      // The turn is committed by this point, so a failure here must not answer with a retryable error:
+      // a replay exits at alreadyTaken and never reaches this, so the update is dropped for good. The
+      // expression stays due and its next practice carries it forward; ticket 17 makes the effects durable.
+      try {
+        await srs.apply(userId, targets, scoredTargets(assessment, targets))
+      } catch (error) {
+        console.error('srs.apply failed', { userId, trainingId: training.id, turnId }, error)
+      }
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))
     })
@@ -130,3 +165,4 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       return c.json(trainingSchema.parse(training))
     })
+}
