@@ -149,11 +149,12 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
 
       // The turn is committed by this point, so a failure here must not answer with a retryable error:
-      // the retry would replay this turn and the scores would still be missing. They catch up next use.
+      // a replay exits at alreadyTaken and never reaches this, so the update is dropped for good. The
+      // expression stays due and its next practice carries it forward; ticket 17 makes the effects durable.
       try {
         await srs.apply(userId, targets, scoredTargets(assessment, targets))
       } catch (error) {
-        console.error(error)
+        console.error('srs.apply failed', { userId, trainingId: training.id, turnId }, error)
       }
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))

@@ -21,37 +21,48 @@ export class SrsService {
   async apply(userId: string, targets: TrainingTarget[], scores: Map<string, number>): Promise<SrsEffect[]> {
     const effects: SrsEffect[] = []
     const unique = [...new Map(targets.map((target) => [target.expressionId, target])).values()]
+    const failed: string[] = []
+    let firstError: unknown
 
     for (const target of unique) {
       const scoreWritten = scores.get(target.expressionId)
       if (scoreWritten === undefined || scoreWritten === 0) continue
 
-      const expression = await this.expressions.findById(userId, target.expressionId)
-      if (!expression) continue
+      try {
+        const expression = await this.expressions.findById(userId, target.expressionId)
+        if (!expression) continue
 
-      const now = this.clock()
-      const timesPracticed = (expression.timesPracticed ?? 0) + 1
-      const score = averageScore(expression.score ?? 0, scoreWritten, timesPracticed)
-      const after = {
-        score,
-        timesPracticed,
-        lastTimePracticedAt: now,
-        nextTrainingAt: nextTrainingAt(timesPracticed, now, score),
+        const now = this.clock()
+        const timesPracticed = (expression.timesPracticed ?? 0) + 1
+        const score = averageScore(expression.score ?? 0, scoreWritten, timesPracticed)
+        const after = {
+          score,
+          timesPracticed,
+          lastTimePracticedAt: now,
+          nextTrainingAt: nextTrainingAt(timesPracticed, now, score),
+        }
+
+        await this.expressions.applySrs(userId, expression.id, after)
+
+        effects.push({
+          expressionId: expression.id,
+          expression: target.expression,
+          scoreWritten,
+          before: {
+            score: expression.score,
+            timesPracticed: expression.timesPracticed,
+            nextTrainingAt: expression.nextTrainingAt,
+          },
+          after,
+        })
+      } catch (error) {
+        failed.push(target.expressionId)
+        firstError ??= error
       }
+    }
 
-      await this.expressions.applySrs(userId, expression.id, after)
-
-      effects.push({
-        expressionId: expression.id,
-        expression: target.expression,
-        scoreWritten,
-        before: {
-          score: expression.score,
-          timesPracticed: expression.timesPracticed,
-          nextTrainingAt: expression.nextTrainingAt,
-        },
-        after,
-      })
+    if (failed.length) {
+      throw new Error(`SRS update failed for ${failed.join(', ')}`, { cause: firstError })
     }
 
     return effects

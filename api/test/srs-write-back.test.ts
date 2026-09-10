@@ -90,6 +90,21 @@ class UnwritableExpressionRepository extends InMemoryExpressionRepository {
   }
 }
 
+class PartlyUnwritableExpressionRepository extends InMemoryExpressionRepository {
+  constructor(
+    expressions: Expression[],
+    private readonly failingId: string,
+  ) {
+    super(expressions)
+  }
+
+  async applySrs(userId: string, id: string, srs: Parameters<InMemoryExpressionRepository['applySrs']>[2]) {
+    if (id === this.failingId) throw new Error('connection reset')
+
+    return super.applySrs(userId, id, srs)
+  }
+}
+
 describe('SRS write-back after a chat turn', () => {
   it('schedules a phrase used for the first time and starts its counter', async () => {
     const { res, find } = await turn({ 'break the ice': correctness(8) })
@@ -165,6 +180,27 @@ describe('SRS write-back after a chat turn', () => {
 
     expect(res.status).toBe(200)
     expect((trainings[0] as ChatTraining).messages).toHaveLength(3)
+  })
+
+  it('still writes the remaining targets when one of them cannot be written', async () => {
+    const stored = [{ ...NEVER_PRACTICED }, { ...PRACTICED }]
+    const deps = testDeps({
+      expressions: new PartlyUnwritableExpressionRepository(stored, 'e1'),
+      trainings: new InMemoryTrainingRepository([{ ...training }]),
+      llm: new FakeLlmGateway({
+        replies: ['Any numbers back yet?'],
+        assessments: [assessment({ 'break the ice': correctness(8), 'touch base': correctness(4) })],
+      }),
+    })
+    const res = await createApp(deps).request('/trainings/t1/messages', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'I broke the ice with the client yesterday.', turnId: 'turn-1' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(stored[0]).toEqual(NEVER_PRACTICED)
+    expect(stored[1]).toMatchObject({ score: 7, timesPracticed: 4, nextTrainingAt: daysAfter(14) })
   })
 
   it('writes nothing when the turn itself fails', async () => {
