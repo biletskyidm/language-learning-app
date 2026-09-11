@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react-native'
+import { fireEvent, render, screen } from '@testing-library/react-native'
 import type { Assessment, ChatMessage, TrainingTarget } from '@contracts'
 import { TargetChips } from '../target-chips'
 
@@ -52,5 +52,14 @@ describe('TargetChips', () => {
     )
 
     expect(screen.getByLabelText('break the ice, not used yet')).toBeTruthy()
+  })
+
+  it('hands the pressed target over', async () => {
+    const onPress = jest.fn()
+    await render(<TargetChips targets={targets} messages={[]} onPress={onPress} />)
+
+    await fireEvent.press(screen.getByLabelText('under the weather, not used yet'))
+
+    expect(onPress).toHaveBeenCalledWith(targets[1])
   })
 })

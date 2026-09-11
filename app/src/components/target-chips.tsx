@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { ChatMessage, TrainingTarget } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { litTargets } from './assessment'
 
-type Props = { targets: TrainingTarget[]; messages: ChatMessage[] }
+type Props = { targets: TrainingTarget[]; messages: ChatMessage[]; onPress?: (target: TrainingTarget) => void }
 
-export const TargetChips = ({ targets, messages }: Props) => {
+export const TargetChips = ({ targets, messages, onPress }: Props) => {
   const lit = litTargets(messages)
 
   return (
@@ -14,13 +14,15 @@ export const TargetChips = ({ targets, messages }: Props) => {
         const isLit = lit.has(target.expression)
 
         return (
-          <View
+          <Pressable
             key={target.expressionId}
+            onPress={() => onPress?.(target)}
+            accessibilityRole="button"
             accessibilityLabel={`${target.expression}, ${isLit ? 'used correctly' : 'not used yet'}`}
             style={[styles.chip, isLit && styles.chipLit]}
           >
             <Text style={[styles.chipLabel, isLit && styles.chipLabelLit]}>{target.expression}</Text>
-          </View>
+          </Pressable>
         )
       })}
     </View>

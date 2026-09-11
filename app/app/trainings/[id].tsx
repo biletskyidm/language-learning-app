@@ -12,13 +12,13 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { ChatMessage } from '@contracts'
+import type { ChatMessage, TrainingTarget } from '@contracts'
 import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
-import { SrsEffectsSheet } from '../../src/components/srs-effects-sheet'
 import { TargetChips } from '../../src/components/target-chips'
+import { TargetProgress } from '../../src/components/target-progress'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
 
@@ -29,7 +29,7 @@ export default function Chat() {
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
-  const [effects, setEffects] = useState(false)
+  const [progress, setProgress] = useState<TrainingTarget | null>(null)
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
   const list = useRef<FlatList<ChatMessage>>(null)
 
@@ -56,17 +56,8 @@ export default function Chat() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={insets.top + 44}
     >
-      <Stack.Screen
-        options={{
-          title: training.data.context,
-          headerRight: () => (
-            <Pressable onPress={() => setEffects(true)} accessibilityRole="button">
-              <Text style={styles.headerAction}>Effects</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <TargetChips targets={training.data.targets} messages={messages} />
+      <Stack.Screen options={{ title: training.data.context }} />
+      <TargetChips targets={training.data.targets} messages={messages} onPress={setProgress} />
       <FlatList
         ref={list}
         data={messages}
@@ -103,8 +94,8 @@ export default function Chat() {
       {preview?.assessment ? (
         <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
       ) : null}
-      {effects ? (
-        <SrsEffectsSheet effects={training.data.srsEffects} onDismiss={() => setEffects(false)} />
+      {progress ? (
+        <TargetProgress target={progress} effects={training.data.srsEffects} onDismiss={() => setProgress(null)} />
       ) : null}
     </KeyboardAvoidingView>
   )
@@ -142,7 +133,6 @@ const styles = StyleSheet.create({
   },
   sendOff: { opacity: 0.4 },
   sendLabel: { color: '#fff', fontWeight: '600' },
-  headerAction: { color: colors.ok, fontSize: 16, fontWeight: '600' },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.sm },
 })
