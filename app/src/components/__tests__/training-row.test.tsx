@@ -35,6 +35,22 @@ describe('TrainingRow', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  it('opens the session menu from an active row without resuming it', async () => {
+    const onMenu = jest.fn()
+    await render(<TrainingRow training={summary()} onMenu={onMenu} />)
+
+    await fireEvent.press(screen.getByLabelText('Session menu'))
+
+    expect(onMenu).toHaveBeenCalledTimes(1)
+    expect(router.push).not.toHaveBeenCalled()
+  })
+
+  it.each(['COMPLETED', 'CANCELED'] as const)('offers no session menu on a %s row', async (status) => {
+    await render(<TrainingRow training={summary({ status })} onMenu={jest.fn()} />)
+
+    expect(screen.queryByLabelText('Session menu')).toBeNull()
+  })
+
   it('names a chat by its context and status', async () => {
     await render(<TrainingRow training={summary()} />)
 

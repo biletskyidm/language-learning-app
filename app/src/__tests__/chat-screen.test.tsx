@@ -145,4 +145,12 @@ describe('Chat screen', () => {
     expect(screen.queryByPlaceholderText('Say something')).toBeNull()
     expect(screen.queryByText(NUDGE)).toBeNull()
   })
+
+  it('marks a canceled chat as canceled, without a composer or a summary', async () => {
+    await open({ ...resumed, status: 'CANCELED', canceledAt: new Date('2026-01-01T00:10:00.000Z') })
+
+    expect(screen.getByText('Session canceled')).toBeTruthy()
+    expect(screen.getByText('I broke the ice with the client.')).toBeTruthy()
+    expect(screen.queryByPlaceholderText('Say something')).toBeNull()
+  })
 })

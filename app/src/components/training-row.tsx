@@ -19,7 +19,7 @@ export const TRAINING_STATUS_NAMES: Record<TrainingStatus, string> = {
 
 const TYPE_ICONS: Record<TrainingType, string> = { chat: '💬', gaps: '🧩', describe: '🗣️', smuggle: '🎒' }
 
-export const TrainingRow = ({ training }: { training: TrainingSummary }) => {
+export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; onMenu?: () => void }) => {
   const resumable = training.type === 'chat' && training.status === 'ACTIVE'
   const averages = training.finalAssessment?.averages
 
@@ -41,6 +41,11 @@ export const TrainingRow = ({ training }: { training: TrainingSummary }) => {
         </Text>
         {averages ? <Text style={styles.meta}>{averagesLine(averages)}</Text> : null}
       </View>
+      {onMenu && training.status === 'ACTIVE' ? (
+        <Pressable onPress={onMenu} accessibilityRole="button" accessibilityLabel="Session menu" hitSlop={12}>
+          <Text style={styles.menu}>⋯</Text>
+        </Pressable>
+      ) : null}
     </Pressable>
   )
 }
@@ -52,4 +57,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '600' },
   meta: { color: colors.muted, fontSize: 12 },
   active: { color: colors.ok, fontWeight: '600' },
+  menu: { fontSize: 22, color: colors.muted, paddingHorizontal: spacing.sm },
 })

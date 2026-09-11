@@ -72,6 +72,16 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     return copy(training)
   }
 
+  async cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined> {
+    const training = this.stored(userId, id)
+    if (!training || training.status !== 'ACTIVE') return undefined
+
+    training.status = 'CANCELED'
+    training.canceledAt = canceledAt
+
+    return copy(training)
+  }
+
   private stored(userId: string, id: string) {
     return this.trainings.find((training) => training.userId === userId && training.id === id)
   }
