@@ -13,6 +13,7 @@ import {
   type ChatMessage,
   type ChatTraining,
   type Expression,
+  type Narrative,
   type SrsEffect,
   type TrainingTarget,
 } from '@contracts'
@@ -20,6 +21,7 @@ import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 import { withRetry } from '../llm/retry'
 import { SrsService } from '../srs/service'
+import { aggregateSession } from './aggregator'
 
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
@@ -193,6 +195,41 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       }
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, srsEffects, training: stored }))
+    })
+    .post('/trainings/:id/complete', async (c) => {
+      const userId = c.get('userId')
+      const training = await deps.trainings.findById(userId, c.req.param('id'))
+      if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
+      if (training.status !== 'ACTIVE') {
+        return c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+      }
+
+      const aggregate = aggregateSession(training.messages, training.targets)
+
+      let narrative: Narrative
+      try {
+        narrative = await withRetry(() => deps.llm.summarizeSession(aggregate), { attempts: 2 })
+      } catch (error) {
+        console.error(error)
+
+        return c.json(apiError('LLM_UNAVAILABLE', 'Could not sum up this conversation'), 502)
+      }
+
+      const completed = await deps.trainings.complete(
+        userId,
+        training.id,
+        { ...aggregate, narrative, computedAt: deps.clock() },
+        training.messages.length,
+      )
+      if (!completed) {
+        const current = await deps.trainings.findById(userId, training.id)
+
+        return current?.status === 'ACTIVE'
+          ? c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
+          : c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+      }
+
+      return c.json(trainingSchema.parse(completed))
     })
     .get('/trainings/:id', async (c) => {
       const training = await deps.trainings.findById(c.get('userId'), c.req.param('id'))

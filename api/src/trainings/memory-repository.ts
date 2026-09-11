@@ -1,6 +1,7 @@
 import {
   trainingSummarySchema,
   type ChatMessage,
+  type FinalAssessment,
   type SrsEffect,
   type Training,
   type TrainingListQuery,
@@ -43,7 +44,7 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     expectedCount: number,
   ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
-    if (!training || training.messages.length !== expectedCount) return undefined
+    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
 
     training.messages = [...training.messages, ...messages]
 
@@ -53,6 +54,22 @@ export class InMemoryTrainingRepository implements TrainingRepository {
   async appendSrsEffects(userId: string, id: string, effects: SrsEffect[]): Promise<void> {
     const training = this.stored(userId, id)
     if (training) training.srsEffects = [...training.srsEffects, ...effects]
+  }
+
+  async complete(
+    userId: string,
+    id: string,
+    finalAssessment: FinalAssessment,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
+    const training = this.stored(userId, id)
+    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
+
+    training.status = 'COMPLETED'
+    training.completedAt = finalAssessment.computedAt
+    training.finalAssessment = finalAssessment
+
+    return copy(training)
   }
 
   private stored(userId: string, id: string) {

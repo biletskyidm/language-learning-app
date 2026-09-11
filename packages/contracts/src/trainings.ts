@@ -72,16 +72,6 @@ const baseTrainingSchema = z.object({
   canceledAt: z.coerce.date().optional(),
 })
 
-export const chatTrainingSchema = baseTrainingSchema.extend({
-  type: z.literal('chat'),
-  context: z.string(),
-  style: chatStyleSchema,
-  messages: z.array(chatMessageSchema),
-})
-
-/** The union grows a member per drill type; the discriminator keeps one collection readable. */
-export const trainingSchema = z.discriminatedUnion('type', [chatTrainingSchema])
-
 export const finalAssessmentAveragesSchema = z.object({
   contextCorrectness: z.number(),
   grammarAndSyntax: z.number(),
@@ -89,6 +79,32 @@ export const finalAssessmentAveragesSchema = z.object({
   sentenceComplexity: z.number(),
   sentenceNaturalness: z.number(),
 })
+
+export const targetStatSchema = z.object({ used: z.boolean(), usedCorrectly: z.boolean(), score: z.number() })
+
+export const narrativeSchema = z.object({
+  strengths: z.string(),
+  areasForImprovement: z.string(),
+  suggestedFocus: z.string(),
+})
+
+export const finalAssessmentSchema = z.object({
+  averages: finalAssessmentAveragesSchema,
+  targets: z.record(z.string(), targetStatSchema),
+  narrative: narrativeSchema,
+  computedAt: z.coerce.date(),
+})
+
+export const chatTrainingSchema = baseTrainingSchema.extend({
+  type: z.literal('chat'),
+  context: z.string(),
+  style: chatStyleSchema,
+  messages: z.array(chatMessageSchema),
+  finalAssessment: finalAssessmentSchema.optional(),
+})
+
+/** The union grows a member per drill type; the discriminator keeps one collection readable. */
+export const trainingSchema = z.discriminatedUnion('type', [chatTrainingSchema])
 
 export const trainingSummarySchema = baseTrainingSchema.omit({ srsEffects: true }).extend({
   type: trainingTypeSchema,
@@ -141,6 +157,9 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type ChatTraining = z.infer<typeof chatTrainingSchema>
 export type Training = z.infer<typeof trainingSchema>
 export type FinalAssessmentAverages = z.infer<typeof finalAssessmentAveragesSchema>
+export type TargetStat = z.infer<typeof targetStatSchema>
+export type Narrative = z.infer<typeof narrativeSchema>
+export type FinalAssessment = z.infer<typeof finalAssessmentSchema>
 export type TrainingSummary = z.infer<typeof trainingSummarySchema>
 export type TrainingListQuery = z.infer<typeof trainingListQuerySchema>
 export type TrainingListResponse = z.infer<typeof trainingListResponseSchema>

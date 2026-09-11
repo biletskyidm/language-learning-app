@@ -1,5 +1,12 @@
 import { ObjectId, type Db } from 'mongodb'
-import type { ChatMessage, SrsEffect, Training, TrainingListQuery, TrainingSummary } from '@contracts'
+import type {
+  ChatMessage,
+  FinalAssessment,
+  SrsEffect,
+  Training,
+  TrainingListQuery,
+  TrainingSummary,
+} from '@contracts'
 import { toDomain, toSummary, type TrainingDoc } from './mapper'
 import type { NewTraining, TrainingRepository } from './repository'
 
@@ -31,7 +38,7 @@ export class MongoTrainingRepository implements TrainingRepository {
     const doc = await this.db
       .collection<{ messages: ChatMessage[] }>(TRAININGS_COLLECTION)
       .findOneAndUpdate(
-        { ...filter, messages: { $size: expectedCount } },
+        { ...filter, status: 'ACTIVE', messages: { $size: expectedCount } },
         { $push: { messages: { $each: messages } } },
         { returnDocument: 'after' },
       )
@@ -46,6 +53,26 @@ export class MongoTrainingRepository implements TrainingRepository {
     await this.db
       .collection<{ srsEffects: SrsEffect[] }>(TRAININGS_COLLECTION)
       .updateOne(filter, { $push: { srsEffects: { $each: effects } } })
+  }
+
+  async complete(
+    userId: string,
+    id: string,
+    finalAssessment: FinalAssessment,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db
+      .collection(TRAININGS_COLLECTION)
+      .findOneAndUpdate(
+        { ...filter, status: 'ACTIVE', messages: { $size: expectedCount } },
+        { $set: { status: 'COMPLETED', completedAt: finalAssessment.computedAt, finalAssessment } },
+        { returnDocument: 'after' },
+      )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {

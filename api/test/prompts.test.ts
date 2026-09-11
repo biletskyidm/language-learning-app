@@ -88,6 +88,38 @@ describe('loadPrompt', () => {
     expect(rendered).not.toContain('{{')
   })
 
+  it('renders the narrative prompt with the session averages and how each target went', () => {
+    const rendered = renderPrompt(loadPrompt('narrative'), {
+      contextCorrectness: '7.0',
+      grammar: '8.0',
+      vocabularyDiversity: '6.5',
+      sentenceComplexity: '5.0',
+      sentenceNaturalness: '7.5',
+      targets: '- break the ice: used, avg score 8.0/10 (correct)\n- touch base: not used',
+    })
+
+    expect(rendered).toContain('Grammar: 8.0/10')
+    expect(rendered).toContain('Sentence naturalness: 7.5/10')
+    expect(rendered).toContain('- break the ice: used, avg score 8.0/10 (correct)')
+    expect(rendered).toContain('- touch base: not used')
+    expect(rendered).toContain('suggestedFocus')
+    expect(rendered).not.toContain('{{')
+  })
+
+  it('drops the target section of the narrative prompt when the session had none', () => {
+    const rendered = renderPrompt(loadPrompt('narrative'), {
+      contextCorrectness: '7.0',
+      grammar: '8.0',
+      vocabularyDiversity: '6.5',
+      sentenceComplexity: '5.0',
+      sentenceNaturalness: '7.5',
+      targets: '',
+    })
+
+    expect(rendered).not.toContain('Target expression results')
+    expect(rendered).not.toContain('{{')
+  })
+
   it('drops the target section of the tutor prompt when there is nothing to practice', () => {
     const rendered = renderPrompt(loadPrompt('tutor-first-message'), {
       context: 'a scrum standup',
