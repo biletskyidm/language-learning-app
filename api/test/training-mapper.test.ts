@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { describe, expect, it } from 'vitest'
 import type { ChatTraining } from '@contracts'
-import { toDoc, toDomain } from '../src/trainings/mapper'
+import { toDoc, toDomain, toSummary } from '../src/trainings/mapper'
 
 const id = '507f1f77bcf86cd799439022'
 
@@ -59,5 +59,40 @@ describe('training mapper', () => {
 
   it('ignores fields written by nothing in this codebase', () => {
     expect(toDomain({ ...toDoc(training), legacyNote: 'from an old importer' })).toEqual(training)
+  })
+
+  it('reads a list row keeping only the averages of the final assessment', () => {
+    const averages = {
+      contextCorrectness: 7,
+      grammarAndSyntax: 8,
+      vocabularyDiversity: 6,
+      sentenceComplexity: 5,
+      sentenceNaturalness: 7.5,
+    }
+    const { _id, type, status, context, style, targets, createdAt } = toDoc(training)
+
+    expect(
+      toSummary({
+        _id,
+        userId: 'me',
+        type,
+        status,
+        context,
+        style,
+        targets,
+        createdAt,
+        finalAssessment: { averages, narrative: { strengths: 'You opened confidently.' } },
+      }),
+    ).toEqual({
+      id,
+      userId: 'me',
+      type: 'chat',
+      status: 'ACTIVE',
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: training.targets,
+      createdAt: training.createdAt,
+      finalAssessment: { averages },
+    })
   })
 })

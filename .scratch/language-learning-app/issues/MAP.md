@@ -23,7 +23,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **15** [Assessment UI: compact badge, expandable breakdown, chip lighting](15-assessment-ui-compact-badge-expandable-breakdown-chip-lighti.md) — blocked by: 14
 - [x] **16** [SRS core: ladder, running average, per-turn write-back](16-srs-core-ladder-running-average-per-turn-write-back.md) — blocked by: 14
 - [x] **17** [SRS effect snapshots on the training](17-srs-effect-snapshots-on-the-training.md) — blocked by: 16
-- [ ] **18** [Trainings list with type/status filter and resume](18-trainings-list-with-type-status-filter-and-resume.md) — blocked by: 13
+- [x] **18** [Trainings list with type/status filter and resume](18-trainings-list-with-type-status-filter-and-resume.md) — blocked by: 13
 - [ ] **19** [End session nudge, completion with persistent averages and narrative](19-end-session-nudge-completion-with-persistent-averages-and-na.md) — blocked by: 16, 18
 - [ ] **20** [Cancel training](20-cancel-training.md) — blocked by: 18
 - [ ] **21** [Drill framework and Gaps drill as a round session](21-drill-framework-and-gaps-drill-as-a-round-session.md) — blocked by: 19
