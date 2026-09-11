@@ -38,7 +38,7 @@ export class MongoTrainingRepository implements TrainingRepository {
     const doc = await this.db
       .collection<{ messages: ChatMessage[] }>(TRAININGS_COLLECTION)
       .findOneAndUpdate(
-        { ...filter, messages: { $size: expectedCount } },
+        { ...filter, status: 'ACTIVE', messages: { $size: expectedCount } },
         { $push: { messages: { $each: messages } } },
         { returnDocument: 'after' },
       )
@@ -55,14 +55,19 @@ export class MongoTrainingRepository implements TrainingRepository {
       .updateOne(filter, { $push: { srsEffects: { $each: effects } } })
   }
 
-  async complete(userId: string, id: string, finalAssessment: FinalAssessment): Promise<Training | undefined> {
+  async complete(
+    userId: string,
+    id: string,
+    finalAssessment: FinalAssessment,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
     const filter = idFilter(userId, id)
     if (!filter) return undefined
 
     const doc = await this.db
       .collection(TRAININGS_COLLECTION)
       .findOneAndUpdate(
-        { ...filter, status: 'ACTIVE' },
+        { ...filter, status: 'ACTIVE', messages: { $size: expectedCount } },
         { $set: { status: 'COMPLETED', completedAt: finalAssessment.computedAt, finalAssessment } },
         { returnDocument: 'after' },
       )

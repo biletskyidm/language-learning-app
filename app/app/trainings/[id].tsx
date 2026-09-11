@@ -47,7 +47,7 @@ export default function Chat() {
 
   const submit = () => {
     const content = draft.trim()
-    if (!content || send.isPending) return
+    if (!content || send.isPending || complete.isPending) return
 
     setDraft('')
     setInputHeight(INPUT_MIN_HEIGHT)
@@ -124,8 +124,8 @@ export default function Chat() {
           />
           <Pressable
             onPress={submit}
-            disabled={!draft.trim() || send.isPending}
-            style={[styles.send, (!draft.trim() || send.isPending) && styles.sendOff]}
+            disabled={!draft.trim() || send.isPending || complete.isPending}
+            style={[styles.send, (!draft.trim() || send.isPending || complete.isPending) && styles.sendOff]}
           >
             <Text style={styles.sendLabel}>Send</Text>
           </Pressable>

@@ -15,5 +15,10 @@ export interface TrainingRepository {
   findById(userId: string, id: string): Promise<Training | undefined>
   appendMessages(userId: string, id: string, messages: ChatMessage[], expectedCount: number): Promise<Training | undefined>
   appendSrsEffects(userId: string, id: string, effects: SrsEffect[]): Promise<void>
-  complete(userId: string, id: string, finalAssessment: FinalAssessment): Promise<Training | undefined>
+  complete(
+    userId: string,
+    id: string,
+    finalAssessment: FinalAssessment,
+    expectedCount: number,
+  ): Promise<Training | undefined>
 }

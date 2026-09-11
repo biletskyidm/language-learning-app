@@ -215,12 +215,19 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         return c.json(apiError('LLM_UNAVAILABLE', 'Could not sum up this conversation'), 502)
       }
 
-      const completed = await deps.trainings.complete(userId, training.id, {
-        ...aggregate,
-        narrative,
-        computedAt: deps.clock(),
-      })
-      if (!completed) return c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+      const completed = await deps.trainings.complete(
+        userId,
+        training.id,
+        { ...aggregate, narrative, computedAt: deps.clock() },
+        training.messages.length,
+      )
+      if (!completed) {
+        const current = await deps.trainings.findById(userId, training.id)
+
+        return current?.status === 'ACTIVE'
+          ? c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
+          : c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+      }
 
       return c.json(trainingSchema.parse(completed))
     })

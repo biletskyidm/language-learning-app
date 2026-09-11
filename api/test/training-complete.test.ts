@@ -12,6 +12,7 @@ import {
 } from '@contracts'
 import { createApp } from '../src/app'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
+import type { SessionAggregate } from '../src/trainings/aggregator'
 import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
 import { bearer, NOW, TEST_SECRET, testDeps } from './deps'
 import { FakeLlmGateway } from './fake-llm'
@@ -96,6 +97,18 @@ const setup = (llm = new FakeLlmGateway({ narratives: [NARRATIVE] }), existing: 
   return { app, deps, llm, stored, vocabulary, complete }
 }
 
+class RacingNarrativeGateway extends FakeLlmGateway {
+  constructor(private readonly meanwhile: () => void) {
+    super({ narratives: [NARRATIVE] })
+  }
+
+  async summarizeSession(input: SessionAggregate): Promise<Narrative> {
+    this.meanwhile()
+
+    return super.summarizeSession(input)
+  }
+}
+
 describe('POST /trainings/:id/complete', () => {
   it('ends the session with its averages, per-target stats and the narrative', async () => {
     const { complete, stored } = setup()
@@ -177,6 +190,33 @@ describe('POST /trainings/:id/complete', () => {
     const res = await complete()
 
     expect(res.status).toBe(409)
+    expect(stored[0]).not.toHaveProperty('finalAssessment')
+  })
+
+  it('saves nothing when a turn landed while the narrative was being written', async () => {
+    const existing = training()
+    const turn: ChatMessage = { role: 'assistant', content: 'One more thing?', createdAt: NOW }
+    const { complete, stored } = setup(new RacingNarrativeGateway(() => existing.messages.push(turn)), existing)
+
+    const res = await complete()
+
+    expect(res.status).toBe(409)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('TURN_CONFLICT')
+    expect(stored[0]?.status).toBe('ACTIVE')
+    expect(stored[0]).not.toHaveProperty('finalAssessment')
+  })
+
+  it('refuses when the session ended another way while the narrative was being written', async () => {
+    const existing = training()
+    const { complete, stored } = setup(
+      new RacingNarrativeGateway(() => Object.assign(existing, { status: 'CANCELED', canceledAt: NOW })),
+      existing,
+    )
+
+    const res = await complete()
+
+    expect(res.status).toBe(409)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('TRAINING_NOT_ACTIVE')
     expect(stored[0]).not.toHaveProperty('finalAssessment')
   })
 

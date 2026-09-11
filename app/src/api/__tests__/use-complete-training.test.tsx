@@ -97,8 +97,11 @@ describe('useCompleteTraining', () => {
     expect(queryClient.getQueryState(LIST_KEY)?.isInvalidated).toBe(true)
   })
 
-  it('refetches the conversation when it had already ended elsewhere', async () => {
-    mockedApiPost.mockRejectedValue(new ApiError(409, 'TRAINING_NOT_ACTIVE', 'This conversation is already over'))
+  it.each([
+    ['it had already ended elsewhere', 'TRAINING_NOT_ACTIVE'],
+    ['a turn landed while it was ending', 'TURN_CONFLICT'],
+  ])('refetches the conversation when %s', async (_name, code) => {
+    mockedApiPost.mockRejectedValue(new ApiError(409, code, 'Refused'))
 
     const result = await end()
 

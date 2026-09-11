@@ -203,6 +203,20 @@ describe('POST /trainings/:id/messages', () => {
     expect(stored.messages).toEqual([{ role: 'assistant', content: OPENING, createdAt: NOW }, meanwhile])
   })
 
+  it('saves nothing when the session ended while the tutor was thinking', async () => {
+    const existing = training()
+
+    const { res, stored } = await send(
+      { content: CONTENT, turnId: TURN_ID },
+      new RacingLlmGateway(() => Object.assign(existing, { status: 'COMPLETED', completedAt: NOW })),
+      existing,
+    )
+
+    expect(res.status).toBe(409)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('TURN_CONFLICT')
+    expect(stored.messages).toHaveLength(1)
+  })
+
   it('replays a turn that already landed instead of answering the same message twice', async () => {
     const existing = training()
     const llm = new FakeLlmGateway({ replies: [REPLY], assessments: [assessment()] })

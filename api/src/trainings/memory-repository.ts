@@ -44,7 +44,7 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     expectedCount: number,
   ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
-    if (!training || training.messages.length !== expectedCount) return undefined
+    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
 
     training.messages = [...training.messages, ...messages]
 
@@ -56,9 +56,14 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     if (training) training.srsEffects = [...training.srsEffects, ...effects]
   }
 
-  async complete(userId: string, id: string, finalAssessment: FinalAssessment): Promise<Training | undefined> {
+  async complete(
+    userId: string,
+    id: string,
+    finalAssessment: FinalAssessment,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
-    if (!training || training.status !== 'ACTIVE') return undefined
+    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
 
     training.status = 'COMPLETED'
     training.completedAt = finalAssessment.computedAt
