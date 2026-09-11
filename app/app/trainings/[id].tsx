@@ -80,7 +80,7 @@ export default function Chat() {
           headerRight: active
             ? () => (
                 <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
-                  <Text style={[styles.headerAction, !canEnd && styles.sendOff]}>End session</Text>
+                  <Text style={[styles.headerAction, !canEnd && styles.sendOff]}>End</Text>
                 </Pressable>
               )
             : undefined,
