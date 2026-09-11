@@ -20,7 +20,7 @@ import { useTraining } from '../../src/api/use-training'
 import { readyToEnd } from '../../src/components/assessment'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
-import { openSessionMenu } from '../../src/components/session-menu'
+import { openEndMenu } from '../../src/components/session-menu'
 import { SessionSummary } from '../../src/components/session-summary'
 import { TargetChips } from '../../src/components/target-chips'
 import { TargetProgress } from '../../src/components/target-progress'
@@ -64,8 +64,8 @@ export default function Chat() {
   const end = () => {
     if (canEnd) complete.mutate()
   }
-  const menu = () => {
-    if (canEnd) openSessionMenu(() => cancel.mutate(id))
+  const endMenu = () => {
+    if (canEnd) openEndMenu({ onEnd: () => complete.mutate(), onCancel: () => cancel.mutate(id) })
   }
 
   return (
@@ -79,20 +79,9 @@ export default function Chat() {
           title: training.data.context,
           headerRight: active
             ? () => (
-                <View style={styles.headerActions}>
-                  <Pressable
-                    onPress={menu}
-                    disabled={!canEnd}
-                    accessibilityRole="button"
-                    accessibilityLabel="Session menu"
-                    hitSlop={12}
-                  >
-                    <Text style={[styles.headerMenu, !canEnd && styles.sendOff]}>⋯</Text>
-                  </Pressable>
-                  <Pressable onPress={end} disabled={!canEnd} accessibilityRole="button">
-                    <Text style={[styles.headerAction, !canEnd && styles.sendOff]}>End session</Text>
-                  </Pressable>
-                </View>
+                <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
+                  <Text style={[styles.headerAction, !canEnd && styles.sendOff]}>End session</Text>
+                </Pressable>
               )
             : undefined,
         }}
@@ -193,8 +182,6 @@ const styles = StyleSheet.create({
   },
   sendOff: { opacity: 0.4 },
   sendLabel: { color: '#fff', fontWeight: '600' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  headerMenu: { fontSize: 22 },
   headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },
   canceled: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.sm },
   nudge: {
