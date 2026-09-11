@@ -3,14 +3,17 @@ import { z } from 'zod'
 import {
   assessmentSchema,
   expressionDraftSchema,
+  narrativeSchema,
   partOfSpeechSchema,
   type Assessment,
   type ChatMessage,
   type ExpressionDraft,
+  type Narrative,
   type TrainingTarget,
 } from '@contracts'
 import type { Config } from '../config'
 import type { AssessmentInput, LlmGateway, TutorFirstMessageInput, TutorReplyInput } from '../deps'
+import type { SessionAggregate } from '../trainings/aggregator'
 import { loadPrompt, renderPrompt } from './prompts'
 
 const BASE_URL = 'https://openrouter.ai/api/v1'
@@ -34,6 +37,15 @@ const withMeanings = (targets: TrainingTarget[]) =>
 
 const transcript = (history: ChatMessage[]) =>
   history.map(({ role, content }) => `${role}: ${content}`).join('\n')
+
+const results = (targets: SessionAggregate['targets']) =>
+  Object.entries(targets)
+    .map(([expression, { used, usedCorrectly, score }]) =>
+      used
+        ? `- ${expression}: used, avg score ${score.toFixed(1)}/10 (${usedCorrectly ? 'correct' : 'needs work'})`
+        : `- ${expression}: not used`,
+    )
+    .join('\n')
 
 export class OpenRouterGateway implements LlmGateway {
   constructor(private readonly config: Config) {}
@@ -109,6 +121,24 @@ export class OpenRouterGateway implements LlmGateway {
         targetPhrasesCorrectness.map(({ expression, ...verdict }) => [expression, verdict]),
       ),
     }
+  }
+
+  async summarizeSession({ averages, targets }: SessionAggregate): Promise<Narrative> {
+    const model = this.model(this.config.NARRATIVE_MODEL).withStructuredOutput(narrativeSchema, {
+      name: 'narrative',
+    })
+
+    return model.invoke(
+      renderPrompt(loadPrompt('narrative'), {
+        contextCorrectness: averages.contextCorrectness.toFixed(1),
+        grammar: averages.grammarAndSyntax.toFixed(1),
+        vocabularyDiversity: averages.vocabularyDiversity.toFixed(1),
+        sentenceComplexity: averages.sentenceComplexity.toFixed(1),
+        sentenceNaturalness: averages.sentenceNaturalness.toFixed(1),
+        targets: results(targets),
+      }),
+      { tags: ['narrative'] },
+    )
   }
 
   private model(name: string | undefined) {

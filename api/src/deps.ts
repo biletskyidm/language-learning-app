@@ -3,12 +3,14 @@ import type {
   ChatMessage,
   ChatStyle,
   ExpressionDraft,
+  Narrative,
   TokenVerification,
   TrainingTarget,
 } from '@contracts'
 import type { ExpressionRepository } from './expressions/repository'
 import type { ScenarioRepository } from './scenarios/repository'
 import type { SettingsRepository } from './settings/repository'
+import type { SessionAggregate } from './trainings/aggregator'
 import type { TrainingRepository } from './trainings/repository'
 
 export type Clock = () => Date
@@ -39,6 +41,7 @@ export interface LlmGateway {
   tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
   tutorReply(input: TutorReplyInput): Promise<string>
   assessMessage(input: AssessmentInput): Promise<Assessment>
+  summarizeSession(input: SessionAggregate): Promise<Narrative>
 }
 
 export interface TokenVerifier {

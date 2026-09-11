@@ -1,7 +1,8 @@
 import { router } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import type { FinalAssessmentAverages, TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
+import type { TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
+import { averagesLine } from './assessment'
 
 export const TRAINING_TYPE_NAMES: Record<TrainingType, string> = {
   chat: 'Chat',
@@ -17,14 +18,6 @@ export const TRAINING_STATUS_NAMES: Record<TrainingStatus, string> = {
 }
 
 const TYPE_ICONS: Record<TrainingType, string> = { chat: '💬', gaps: '🧩', describe: '🗣️', smuggle: '🎒' }
-
-const AVERAGE_LABELS: [keyof FinalAssessmentAverages, string][] = [
-  ['contextCorrectness', 'Context'],
-  ['grammarAndSyntax', 'Grammar'],
-  ['vocabularyDiversity', 'Vocabulary'],
-  ['sentenceComplexity', 'Complexity'],
-  ['sentenceNaturalness', 'Naturalness'],
-]
 
 export const TrainingRow = ({ training }: { training: TrainingSummary }) => {
   const resumable = training.type === 'chat' && training.status === 'ACTIVE'
@@ -46,11 +39,7 @@ export const TrainingRow = ({ training }: { training: TrainingSummary }) => {
           <Text style={resumable ? styles.active : undefined}>{TRAINING_STATUS_NAMES[training.status]}</Text> ·{' '}
           {training.createdAt.toLocaleDateString()}
         </Text>
-        {averages ? (
-          <Text style={styles.meta}>
-            {AVERAGE_LABELS.map(([key, label]) => `${label} ${averages[key].toFixed(1)}`).join(' · ')}
-          </Text>
-        ) : null}
+        {averages ? <Text style={styles.meta}>{averagesLine(averages)}</Text> : null}
       </View>
     </Pressable>
   )
