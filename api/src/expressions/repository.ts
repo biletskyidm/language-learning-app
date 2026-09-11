@@ -25,7 +25,8 @@ export interface ExpressionRepository {
   findByExpression(userId: string, expression: string): Promise<Expression | undefined>
   create(userId: string, input: CreateExpressionInput, createdAt: Date): Promise<Expression>
   update(userId: string, id: string, patch: UpdateExpressionInput): Promise<Expression | undefined>
-  applySrs(userId: string, id: string, fields: SrsFields): Promise<void>
+  /** Writes only while timesPracticed still holds what the caller read; false means another write got there first. */
+  applySrs(userId: string, id: string, fields: SrsFields, expectedTimesPracticed?: number): Promise<boolean>
   delete(userId: string, id: string): Promise<boolean>
   tags(userId: string): Promise<string[]>
 }

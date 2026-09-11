@@ -165,24 +165,21 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       // The expression stays due and its next practice carries it forward.
       const source = { kind: 'message', index: messages.length } as const
       let srsEffects: SrsEffect[] = []
+      let stored = updated
       try {
         const { effects, failures } = await srs.apply(userId, targets, scoredTargets(assessment, targets))
         if (failures.length) console.error('srs.apply failed', { trainingId: training.id, turnId }, failures)
 
         srsEffects = effects.map((effect) => ({ ...effect, source }))
-        if (srsEffects.length) await deps.trainings.appendSrsEffects(userId, training.id, srsEffects)
+        if (srsEffects.length) {
+          await withRetry(() => deps.trainings.appendSrsEffects(userId, training.id, srsEffects), { attempts: 2 })
+          stored = { ...updated, srsEffects: [...updated.srsEffects, ...srsEffects] }
+        }
       } catch (error) {
-        console.error('srs write-back failed', { trainingId: training.id, turnId }, error)
+        console.error('srs write-back failed', { trainingId: training.id, turnId, srsEffects }, error)
       }
 
-      return c.json(
-        chatTurnResponseSchema.parse({
-          reply: turn[1],
-          assessment,
-          srsEffects,
-          training: { ...updated, srsEffects: [...updated.srsEffects, ...srsEffects] },
-        }),
-      )
+      return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, srsEffects, training: stored }))
     })
     .get('/trainings/:id', async (c) => {
       const training = await deps.trainings.findById(c.get('userId'), c.req.param('id'))

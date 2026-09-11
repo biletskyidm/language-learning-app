@@ -177,10 +177,10 @@ describe('SRS effect snapshots on the training', () => {
 
   it('records the effects it managed to write when one target cannot be written', async () => {
     class PartlyUnwritable extends InMemoryExpressionRepository {
-      async applySrs(userId: string, id: string, srs: Parameters<InMemoryExpressionRepository['applySrs']>[2]) {
-        if (id === 'e1') throw new Error('connection reset')
+      async applySrs(...args: Parameters<InMemoryExpressionRepository['applySrs']>) {
+        if (args[1] === 'e1') throw new Error('connection reset')
 
-        return super.applySrs(userId, id, srs)
+        return super.applySrs(...args)
       }
     }
 
@@ -201,5 +201,76 @@ describe('SRS effect snapshots on the training', () => {
 
     expect(res.status).toBe(200)
     expect((trainings[0] as ChatTraining).srsEffects.map(({ expressionId }) => expressionId)).toEqual(['e2'])
+  })
+
+  it('snapshots what the write really changed when another turn scored the phrase first', async () => {
+    const stored = [{ ...PRACTICED }]
+
+    class RacedOnce extends InMemoryExpressionRepository {
+      private raced = false
+
+      async applySrs(...args: Parameters<InMemoryExpressionRepository['applySrs']>) {
+        if (!this.raced) {
+          this.raced = true
+          stored[0] = { ...(stored[0] as Expression), score: 10, timesPracticed: 4, nextTrainingAt: daysAfter(14) }
+        }
+
+        return super.applySrs(...args)
+      }
+    }
+
+    const trainings = [{ ...training }]
+    const deps = testDeps({
+      expressions: new RacedOnce(stored),
+      trainings: new InMemoryTrainingRepository(trainings),
+      llm: new FakeLlmGateway({
+        replies: ['Any numbers back yet?'],
+        assessments: [assessment({ 'touch base': correctness(5) })],
+      }),
+    })
+    const res = await createApp(deps).request('/trainings/t1/messages', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'Then I touched base.', turnId: 'turn-1' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(stored[0]).toMatchObject({ score: 9, timesPracticed: 5 })
+    expect((trainings[0] as ChatTraining).srsEffects).toEqual([
+      expect.objectContaining({
+        before: { score: 10, timesPracticed: 4, nextTrainingAt: daysAfter(14) },
+        after: expect.objectContaining({ score: 9, timesPracticed: 5 }),
+      }),
+    ])
+  })
+
+  it('does not report effects on the training that could not be stored on it', async () => {
+    class UnappendableTrainings extends InMemoryTrainingRepository {
+      async appendSrsEffects(): Promise<void> {
+        throw new Error('connection reset')
+      }
+    }
+
+    const deps = testDeps({
+      expressions: new InMemoryExpressionRepository([{ ...NEVER_PRACTICED }, { ...PRACTICED }]),
+      trainings: new UnappendableTrainings([{ ...training }]),
+      llm: new FakeLlmGateway({
+        replies: ['Any numbers back yet?'],
+        assessments: [assessment({ 'break the ice': correctness(8) })],
+      }),
+    })
+    const app = createApp(deps)
+    const res = await app.request('/trainings/t1/messages', {
+      method: 'POST',
+      headers: { Authorization: bearer(TEST_SECRET, deps.clock), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'I broke the ice.', turnId: 'turn-1' }),
+    })
+    const body = await res.json()
+    const reopened = await (
+      await app.request('/trainings/t1', { headers: { Authorization: bearer(TEST_SECRET, deps.clock) } })
+    ).json()
+
+    expect(res.status).toBe(200)
+    expect(body.training.srsEffects).toEqual(reopened.srsEffects)
   })
 })
