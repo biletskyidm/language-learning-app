@@ -12,12 +12,13 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { ChatMessage } from '@contracts'
+import type { ChatMessage, TrainingTarget } from '@contracts'
 import { useSendMessage } from '../../src/api/use-send-message'
 import { useTraining } from '../../src/api/use-training'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
 import { TargetChips } from '../../src/components/target-chips'
+import { TargetProgress } from '../../src/components/target-progress'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
 
@@ -28,6 +29,7 @@ export default function Chat() {
   const send = useSendMessage(id)
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
+  const [progress, setProgress] = useState<TrainingTarget | null>(null)
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
   const list = useRef<FlatList<ChatMessage>>(null)
 
@@ -55,7 +57,7 @@ export default function Chat() {
       keyboardVerticalOffset={insets.top + 44}
     >
       <Stack.Screen options={{ title: training.data.context }} />
-      <TargetChips targets={training.data.targets} messages={messages} />
+      <TargetChips targets={training.data.targets} messages={messages} onPress={setProgress} />
       <FlatList
         ref={list}
         data={messages}
@@ -91,6 +93,9 @@ export default function Chat() {
       </View>
       {preview?.assessment ? (
         <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
+      ) : null}
+      {progress ? (
+        <TargetProgress target={progress} effects={training.data.srsEffects} onDismiss={() => setProgress(null)} />
       ) : null}
     </KeyboardAvoidingView>
   )

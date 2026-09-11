@@ -25,6 +25,7 @@ const created: Training = {
   style: 'informal',
   targets: [{ expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }],
   messages: [{ role: 'assistant', content: 'Morning — how did yesterday go?', createdAt: new Date() }],
+  srsEffects: [],
   createdAt: new Date(),
 }
 

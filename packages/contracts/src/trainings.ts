@@ -42,11 +42,31 @@ export const chatMessageSchema = z.object({
   turnId: z.string().optional(),
 })
 
+/** One SRS write, kept on the training that caused it so a phrase's schedule can be audited. */
+export const srsEffectSchema = z.object({
+  expressionId: z.string(),
+  expression: z.string(),
+  scoreWritten: z.number(),
+  source: z.object({ kind: z.enum(['message', 'round']), index: z.number().int().min(0) }),
+  before: z.object({
+    score: z.number().optional(),
+    timesPracticed: z.number().optional(),
+    nextTrainingAt: z.coerce.date().optional(),
+  }),
+  after: z.object({
+    score: z.number(),
+    timesPracticed: z.number(),
+    nextTrainingAt: z.coerce.date(),
+  }),
+  at: z.coerce.date(),
+})
+
 const baseTrainingSchema = z.object({
   id: z.string(),
   userId: z.string(),
   status: trainingStatusSchema,
   targets: z.array(trainingTargetSchema),
+  srsEffects: z.array(srsEffectSchema).default([]),
   createdAt: z.coerce.date(),
   completedAt: z.coerce.date().optional(),
   canceledAt: z.coerce.date().optional(),
@@ -79,6 +99,7 @@ export const sendMessageInputSchema = z.object({
 export const chatTurnResponseSchema = z.object({
   reply: chatMessageSchema,
   assessment: assessmentSchema,
+  srsEffects: z.array(srsEffectSchema),
   training: trainingSchema,
 })
 
@@ -86,6 +107,7 @@ export type TrainingType = z.infer<typeof trainingTypeSchema>
 export type TrainingStatus = z.infer<typeof trainingStatusSchema>
 export type ChatStyle = z.infer<typeof chatStyleSchema>
 export type TrainingTarget = z.infer<typeof trainingTargetSchema>
+export type SrsEffect = z.infer<typeof srsEffectSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type ChatTraining = z.infer<typeof chatTrainingSchema>
 export type Training = z.infer<typeof trainingSchema>

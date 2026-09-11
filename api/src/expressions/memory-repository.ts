@@ -102,11 +102,14 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     return updated
   }
 
-  async applySrs(userId: string, id: string, fields: SrsFields): Promise<void> {
+  async applySrs(userId: string, id: string, fields: SrsFields, expectedTimesPracticed?: number): Promise<boolean> {
     const index = this.expressions.findIndex((e) => e.userId === userId && e.id === id)
-    if (index < 0) return
+    const current = this.expressions[index]
+    if (!current || current.timesPracticed !== expectedTimesPracticed) return false
 
-    this.expressions[index] = { ...(this.expressions[index] as Expression), ...fields }
+    this.expressions[index] = { ...current, ...fields }
+
+    return true
   }
 
   async delete(userId: string, id: string): Promise<boolean> {

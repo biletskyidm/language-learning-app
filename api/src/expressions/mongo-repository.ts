@@ -178,11 +178,15 @@ export class MongoExpressionRepository implements ExpressionRepository {
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
-  async applySrs(userId: string, id: string, fields: SrsFields): Promise<void> {
+  async applySrs(userId: string, id: string, fields: SrsFields, expectedTimesPracticed?: number): Promise<boolean> {
     const filter = idFilter(userId, id)
-    if (!filter) return
+    if (!filter) return false
 
-    await this.db.collection(EXPRESSIONS_COLLECTION).updateOne(filter, { $set: fields })
+    const { matchedCount } = await this.db
+      .collection(EXPRESSIONS_COLLECTION)
+      .updateOne({ ...filter, timesPracticed: expectedTimesPracticed ?? null }, { $set: fields })
+
+    return matchedCount === 1
   }
 
   async delete(userId: string, id: string): Promise<boolean> {

@@ -1,4 +1,4 @@
-import type { ChatMessage, Training } from '@contracts'
+import type { ChatMessage, SrsEffect, Training } from '@contracts'
 import type { NewTraining, TrainingRepository } from './repository'
 
 export class InMemoryTrainingRepository implements TrainingRepository {
@@ -29,6 +29,11 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     return copy(training)
   }
 
+  async appendSrsEffects(userId: string, id: string, effects: SrsEffect[]): Promise<void> {
+    const training = this.stored(userId, id)
+    if (training) training.srsEffects = [...training.srsEffects, ...effects]
+  }
+
   private stored(userId: string, id: string) {
     return this.trainings.find((training) => training.userId === userId && training.id === id)
   }
@@ -36,4 +41,4 @@ export class InMemoryTrainingRepository implements TrainingRepository {
 
 /** Handed out like a decoded document, so a caller cannot reach the stored messages by reference. */
 const copy = (training?: Training): Training | undefined =>
-  training && { ...training, messages: [...training.messages] }
+  training && { ...training, messages: [...training.messages], srsEffects: [...training.srsEffects] }

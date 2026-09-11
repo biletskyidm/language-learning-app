@@ -49,6 +49,7 @@ const training = (overrides: Partial<ChatTraining> = {}): ChatTraining => ({
     { expressionId: 'e2', expression: 'touch base', meaning: 'to make brief contact' },
   ],
   messages: [{ role: 'assistant', content: OPENING, createdAt: NOW }],
+  srsEffects: [],
   createdAt: NOW,
   ...overrides,
 })

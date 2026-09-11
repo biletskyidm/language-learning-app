@@ -11,6 +11,7 @@ import {
   type ChatMessage,
   type ChatTraining,
   type Expression,
+  type SrsEffect,
   type TrainingTarget,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
@@ -48,7 +49,7 @@ const alreadyTaken = (training: ChatTraining, turnId: string) => {
   const sent = training.messages[index]
   const reply = training.messages[index + 1]
 
-  return sent?.assessment && reply ? { reply, assessment: sent.assessment } : undefined
+  return sent?.assessment && reply ? { reply, assessment: sent.assessment, index } : undefined
 }
 
 const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
@@ -97,6 +98,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         status: 'ACTIVE',
         targets,
         messages: [{ role: 'assistant', content: opening, createdAt: now }],
+        srsEffects: [],
         createdAt: now,
       })
 
@@ -118,7 +120,17 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const { content, turnId } = input.data
 
       const taken = alreadyTaken(training, turnId)
-      if (taken) return c.json(chatTurnResponseSchema.parse({ ...taken, training }))
+      if (taken) {
+        const { index, ...replayed } = taken
+
+        return c.json(
+          chatTurnResponseSchema.parse({
+            ...replayed,
+            srsEffects: training.srsEffects.filter(({ source }) => source.index === index),
+            training,
+          }),
+        )
+      }
       const tutorMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content
 
       let reply: string
@@ -149,15 +161,25 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       if (!updated) return c.json(apiError('TURN_CONFLICT', 'This conversation moved on — reopen it'), 409)
 
       // The turn is committed by this point, so a failure here must not answer with a retryable error:
-      // a replay exits at alreadyTaken and never reaches this, so the update is dropped for good. The
-      // expression stays due and its next practice carries it forward; ticket 17 makes the effects durable.
+      // a replay exits at alreadyTaken and never reaches this, so a dropped update is dropped for good.
+      // The expression stays due and its next practice carries it forward.
+      const source = { kind: 'message', index: messages.length } as const
+      let srsEffects: SrsEffect[] = []
+      let stored = updated
       try {
-        await srs.apply(userId, targets, scoredTargets(assessment, targets))
+        const { effects, failures } = await srs.apply(userId, targets, scoredTargets(assessment, targets))
+        if (failures.length) console.error('srs.apply failed', { trainingId: training.id, turnId }, failures)
+
+        srsEffects = effects.map((effect) => ({ ...effect, source }))
+        if (srsEffects.length) {
+          await withRetry(() => deps.trainings.appendSrsEffects(userId, training.id, srsEffects), { attempts: 2 })
+          stored = { ...updated, srsEffects: [...updated.srsEffects, ...srsEffects] }
+        }
       } catch (error) {
-        console.error('srs.apply failed', { userId, trainingId: training.id, turnId }, error)
+        console.error('srs write-back failed', { trainingId: training.id, turnId, srsEffects }, error)
       }
 
-      return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, training: updated }))
+      return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, srsEffects, training: stored }))
     })
     .get('/trainings/:id', async (c) => {
       const training = await deps.trainings.findById(c.get('userId'), c.req.param('id'))

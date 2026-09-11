@@ -65,6 +65,7 @@ const training: ChatTraining = {
     meaning,
   })),
   messages: [{ role: 'assistant', content: 'Morning — how did yesterday go?', createdAt: NOW }],
+  srsEffects: [],
   createdAt: NOW,
 }
 
@@ -85,7 +86,7 @@ const turn = async (scores: Assessment['targetPhrasesCorrectness'], expressions 
 }
 
 class UnwritableExpressionRepository extends InMemoryExpressionRepository {
-  async applySrs(): Promise<void> {
+  async applySrs(): Promise<boolean> {
     throw new Error('connection reset')
   }
 }
@@ -98,10 +99,10 @@ class PartlyUnwritableExpressionRepository extends InMemoryExpressionRepository 
     super(expressions)
   }
 
-  async applySrs(userId: string, id: string, srs: Parameters<InMemoryExpressionRepository['applySrs']>[2]) {
-    if (id === this.failingId) throw new Error('connection reset')
+  async applySrs(...args: Parameters<InMemoryExpressionRepository['applySrs']>) {
+    if (args[1] === this.failingId) throw new Error('connection reset')
 
-    return super.applySrs(userId, id, srs)
+    return super.applySrs(...args)
   }
 }
 
