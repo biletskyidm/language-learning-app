@@ -82,6 +82,35 @@ export const chatTrainingSchema = baseTrainingSchema.extend({
 /** The union grows a member per drill type; the discriminator keeps one collection readable. */
 export const trainingSchema = z.discriminatedUnion('type', [chatTrainingSchema])
 
+export const finalAssessmentAveragesSchema = z.object({
+  contextCorrectness: z.number(),
+  grammarAndSyntax: z.number(),
+  vocabularyDiversity: z.number(),
+  sentenceComplexity: z.number(),
+  sentenceNaturalness: z.number(),
+})
+
+export const trainingSummarySchema = baseTrainingSchema.omit({ srsEffects: true }).extend({
+  type: trainingTypeSchema,
+  context: z.string().optional(),
+  style: chatStyleSchema.optional(),
+  finalAssessment: z.object({ averages: finalAssessmentAveragesSchema }).optional(),
+})
+
+export const TRAININGS_PAGE_MAX = 50
+
+export const trainingListQuerySchema = z.object({
+  type: trainingTypeSchema.optional(),
+  status: trainingStatusSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(TRAININGS_PAGE_MAX).default(TRAININGS_PAGE_MAX),
+  before: z.coerce.date().optional(),
+})
+
+export const trainingListResponseSchema = z.object({
+  items: z.array(trainingSummarySchema),
+  nextBefore: z.coerce.date().optional(),
+})
+
 export const createTrainingInputSchema = z.object({
   type: z.literal('chat'),
   context: z.string().trim().min(1).max(500),
@@ -111,6 +140,10 @@ export type SrsEffect = z.infer<typeof srsEffectSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type ChatTraining = z.infer<typeof chatTrainingSchema>
 export type Training = z.infer<typeof trainingSchema>
+export type FinalAssessmentAverages = z.infer<typeof finalAssessmentAveragesSchema>
+export type TrainingSummary = z.infer<typeof trainingSummarySchema>
+export type TrainingListQuery = z.infer<typeof trainingListQuerySchema>
+export type TrainingListResponse = z.infer<typeof trainingListResponseSchema>
 export type CreateTrainingInput = z.infer<typeof createTrainingInputSchema>
 export type Assessment = z.infer<typeof assessmentSchema>
 export type AssessmentCategory = z.infer<typeof assessmentCategorySchema>

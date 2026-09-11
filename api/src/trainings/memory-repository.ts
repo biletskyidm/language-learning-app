@@ -1,4 +1,11 @@
-import type { ChatMessage, SrsEffect, Training } from '@contracts'
+import {
+  trainingSummarySchema,
+  type ChatMessage,
+  type SrsEffect,
+  type Training,
+  type TrainingListQuery,
+  type TrainingSummary,
+} from '@contracts'
 import type { NewTraining, TrainingRepository } from './repository'
 
 export class InMemoryTrainingRepository implements TrainingRepository {
@@ -9,6 +16,20 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     this.trainings.push(created)
 
     return created
+  }
+
+  async list(userId: string, { type, status, before, limit }: TrainingListQuery): Promise<TrainingSummary[]> {
+    return this.trainings
+      .filter(
+        (training) =>
+          training.userId === userId &&
+          (!type || training.type === type) &&
+          (!status || training.status === status) &&
+          (!before || training.createdAt < before),
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit)
+      .map((training) => trainingSummarySchema.parse(training))
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {

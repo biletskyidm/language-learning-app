@@ -1,6 +1,6 @@
 import { ObjectId, type Db } from 'mongodb'
-import type { ChatMessage, SrsEffect, Training } from '@contracts'
-import { toDomain } from './mapper'
+import type { ChatMessage, SrsEffect, Training, TrainingListQuery, TrainingSummary } from '@contracts'
+import { toDomain, toSummary, type TrainingDoc } from './mapper'
 import type { NewTraining, TrainingRepository } from './repository'
 
 export const TRAININGS_COLLECTION = 'trainings'
@@ -55,5 +55,22 @@ export class MongoTrainingRepository implements TrainingRepository {
     const doc = await this.db.collection(TRAININGS_COLLECTION).findOne(filter)
 
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async list(userId: string, { type, status, before, limit }: TrainingListQuery): Promise<TrainingSummary[]> {
+    const docs = await this.db
+      .collection(TRAININGS_COLLECTION)
+      .find({
+        userId,
+        ...(type && { type }),
+        ...(status && { status }),
+        ...(before && { createdAt: { $lt: before } }),
+      })
+      .project({ messages: 0, rounds: 0, srsEffects: 0 })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .toArray()
+
+    return docs.map((doc) => toSummary(doc as TrainingDoc))
   }
 }

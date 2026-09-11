@@ -6,6 +6,8 @@ import {
   createTrainingInputSchema,
   PICK_LIMIT_DEFAULT,
   sendMessageInputSchema,
+  trainingListQuerySchema,
+  trainingListResponseSchema,
   trainingSchema,
   type Assessment,
   type ChatMessage,
@@ -103,6 +105,17 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       })
 
       return c.json(trainingSchema.parse(created), 201)
+    })
+    .get('/trainings', async (c) => {
+      const query = trainingListQuerySchema.safeParse(c.req.query())
+      if (!query.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(query.error)), 400)
+
+      const { limit } = query.data
+      const found = await deps.trainings.list(c.get('userId'), { ...query.data, limit: limit + 1 })
+      const items = found.slice(0, limit)
+      const nextBefore = found.length > limit ? items.at(-1)?.createdAt : undefined
+
+      return c.json(trainingListResponseSchema.parse({ items, nextBefore }))
     })
     .post('/trainings/:id/messages', async (c) => {
       const body = await c.req.json().catch(() => undefined)
