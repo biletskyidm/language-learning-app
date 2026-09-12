@@ -4,6 +4,9 @@ import {
   apiError,
   chatTurnResponseSchema,
   createTrainingInputSchema,
+  drillAnswerResponseSchema,
+  drillRoundResponseSchema,
+  GAPS_TARGETS_DEFAULT,
   PICK_LIMIT_DEFAULT,
   sendMessageInputSchema,
   trainingListQuerySchema,
@@ -12,13 +15,16 @@ import {
   type Assessment,
   type ChatMessage,
   type ChatTraining,
+  type DrillRound,
   type Expression,
   type Narrative,
   type SrsEffect,
+  type Training,
   type TrainingTarget,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
+import { drillStrategies } from '../drills/registry'
 import { withRetry } from '../llm/retry'
 import { SrsService } from '../srs/service'
 import { aggregateSession } from './aggregator'
@@ -65,6 +71,18 @@ const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
 
 export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) => {
   const srs = new SrsService(deps.expressions, deps.clock)
+  const strategies = drillStrategies(deps.llm)
+
+  const roundsOf = (training: Training): DrillRound[] | undefined =>
+    training.type === 'chat' ? undefined : training.rounds
+
+  /** An answer key never leaves the server while its round is still open. */
+  const shown = (training: Training) => {
+    const rounds = roundsOf(training)
+    const strategy = strategies[training.type]
+
+    return rounds && strategy ? { ...training, rounds: rounds.map((round) => strategy.redact(round)) } : training
+  }
 
   return new Hono<AuthEnv>()
     .post('/trainings', async (c) => {
@@ -74,7 +92,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       const userId = c.get('userId')
       const now = deps.clock()
-      const { expressionIds, limit, ...chat } = input.data
+      const { expressionIds, limit, ...rest } = input.data
 
       let targets: TrainingTarget[]
       if (expressionIds) {
@@ -84,13 +102,27 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         }
         targets = found.map((expression) => snapshot(expression as Expression))
       } else {
-        const picked = await deps.expressions.pick(userId, { limit: limit ?? PICK_LIMIT_DEFAULT, now })
+        const fallback = rest.type === 'chat' ? PICK_LIMIT_DEFAULT : GAPS_TARGETS_DEFAULT
+        const picked = await deps.expressions.pick(userId, { limit: limit ?? fallback, now })
         targets = picked.map(snapshot)
+      }
+
+      if (rest.type !== 'chat') {
+        const created = await deps.trainings.create(userId, {
+          type: rest.type,
+          status: 'ACTIVE',
+          targets,
+          rounds: [],
+          srsEffects: [],
+          createdAt: now,
+        })
+
+        return c.json(trainingSchema.parse(shown(created)), 201)
       }
 
       let opening: string
       try {
-        opening = await deps.llm.tutorFirstMessage({ context: chat.context, style: chat.style, targets })
+        opening = await deps.llm.tutorFirstMessage({ context: rest.context, style: rest.style, targets })
       } catch (error) {
         console.error(error)
 
@@ -98,7 +130,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       }
 
       const created = await deps.trainings.create(userId, {
-        ...chat,
+        ...rest,
         status: 'ACTIVE',
         targets,
         messages: [{ role: 'assistant', content: opening, createdAt: now }],
@@ -106,7 +138,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         createdAt: now,
       })
 
-      return c.json(trainingSchema.parse(created), 201)
+      return c.json(trainingSchema.parse(shown(created)), 201)
     })
     .get('/trainings', async (c) => {
       const query = trainingListQuerySchema.safeParse(c.req.query())
@@ -127,6 +159,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const userId = c.get('userId')
       const training = await deps.trainings.findById(userId, c.req.param('id'))
       if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
+      if (training.type !== 'chat') return c.json(apiError('NOT_A_CHAT', 'This session takes rounds, not messages'), 409)
       if (training.status !== 'ACTIVE') {
         return c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
       }
@@ -196,12 +229,110 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       return c.json(chatTurnResponseSchema.parse({ reply: turn[1], assessment, srsEffects, training: stored }))
     })
+    .post('/trainings/:id/rounds', async (c) => {
+      const userId = c.get('userId')
+      const training = await deps.trainings.findById(userId, c.req.param('id'))
+      if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
+
+      const rounds = roundsOf(training)
+      const strategy = strategies[training.type]
+      if (!rounds || !strategy) return c.json(apiError('NOT_A_DRILL', 'This session has no rounds'), 409)
+      if (training.status !== 'ACTIVE') {
+        return c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
+      }
+
+      let round: DrillRound
+      try {
+        round = await strategy.generate({ index: rounds.length, targets: training.targets })
+      } catch (error) {
+        console.error(error)
+
+        return c.json(apiError('LLM_UNAVAILABLE', 'Could not put together a round'), 502)
+      }
+
+      const updated = await deps.trainings.appendRound(userId, training.id, round, rounds.length)
+      if (!updated) return c.json(apiError('TURN_CONFLICT', 'This session moved on — reopen it'), 409)
+
+      return c.json(drillRoundResponseSchema.parse({ round: strategy.redact(round), training: shown(updated) }))
+    })
+    .post('/trainings/:id/rounds/:index/answer', async (c) => {
+      const userId = c.get('userId')
+      const training = await deps.trainings.findById(userId, c.req.param('id'))
+      if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
+
+      const rounds = roundsOf(training)
+      const strategy = strategies[training.type]
+      if (!rounds || !strategy) return c.json(apiError('NOT_A_DRILL', 'This session has no rounds'), 409)
+      if (training.status !== 'ACTIVE') {
+        return c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
+      }
+
+      const index = Number(c.req.param('index'))
+      const round = Number.isInteger(index) ? rounds[index] : undefined
+      if (!round) return c.json(apiError('ROUND_NOT_FOUND', 'No such round in this session'), 404)
+      if (round.answeredAt) return c.json(apiError('ROUND_ALREADY_ANSWERED', 'This round is already checked'), 409)
+
+      const judged = strategy.judge(round, await c.req.json().catch(() => undefined))
+      if (!judged.ok) return c.json(apiError('VALIDATION_ERROR', judged.message), 400)
+
+      const now = deps.clock()
+      const updated = await deps.trainings.answerRound(userId, training.id, index, {
+        answer: judged.answer,
+        verdict: judged.verdict,
+        answeredAt: now,
+      })
+      if (!updated) return c.json(apiError('ROUND_ALREADY_ANSWERED', 'This round is already checked'), 409)
+
+      // Judging is committed by this point, so a failed SRS write must not answer with a retryable error:
+      // the expression simply stays due and its next practice carries it forward.
+      const source = { kind: 'round', index } as const
+      const scored = { ...round, answer: judged.answer, verdict: judged.verdict, answeredAt: now }
+      let srsEffects: SrsEffect[] = []
+      let stored = updated
+      try {
+        const { effects, failures } = await srs.apply(userId, round.targets, strategy.scoresFor(scored))
+        if (failures.length) console.error('srs.apply failed', { trainingId: training.id, index }, failures)
+
+        srsEffects = effects.map((effect) => ({ ...effect, source }))
+        if (srsEffects.length) {
+          await withRetry(() => deps.trainings.appendSrsEffects(userId, training.id, srsEffects), { attempts: 2 })
+          stored = { ...updated, srsEffects: [...updated.srsEffects, ...srsEffects] }
+        }
+      } catch (error) {
+        console.error('srs write-back failed', { trainingId: training.id, index, srsEffects }, error)
+      }
+
+      return c.json(
+        drillAnswerResponseSchema.parse({
+          round: strategy.redact(scored),
+          verdict: judged.verdict,
+          srsEffects,
+          training: shown(stored),
+        }),
+      )
+    })
     .post('/trainings/:id/complete', async (c) => {
       const userId = c.get('userId')
       const training = await deps.trainings.findById(userId, c.req.param('id'))
       if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
       if (training.status !== 'ACTIVE') {
         return c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+      }
+
+      if (training.type !== 'chat') {
+        const strategy = strategies[training.type]
+        if (!strategy) return c.json(apiError('NOT_A_DRILL', 'This session has no rounds'), 409)
+
+        const finished = await deps.trainings.completeDrill(
+          userId,
+          training.id,
+          strategy.aggregate(training.rounds),
+          deps.clock(),
+          training.rounds.length,
+        )
+        if (!finished) return c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
+
+        return c.json(trainingSchema.parse(shown(finished)))
       }
 
       const aggregate = aggregateSession(training.messages, training.targets)
@@ -229,14 +360,14 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
           : c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
       }
 
-      return c.json(trainingSchema.parse(completed))
+      return c.json(trainingSchema.parse(shown(completed)))
     })
     .post('/trainings/:id/cancel', async (c) => {
       const userId = c.get('userId')
       const id = c.req.param('id')
 
       const canceled = await deps.trainings.cancel(userId, id, deps.clock())
-      if (canceled) return c.json(trainingSchema.parse(canceled))
+      if (canceled) return c.json(trainingSchema.parse(shown(canceled)))
 
       return (await deps.trainings.findById(userId, id))
         ? c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
@@ -246,6 +377,6 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       const training = await deps.trainings.findById(c.get('userId'), c.req.param('id'))
       if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)
 
-      return c.json(trainingSchema.parse(training))
+      return c.json(trainingSchema.parse(shown(training)))
     })
 }

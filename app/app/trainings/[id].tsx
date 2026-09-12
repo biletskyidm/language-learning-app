@@ -43,10 +43,13 @@ export default function Chat() {
   if (training.isPending) return <ActivityIndicator style={styles.state} />
   if (training.isError) return <Text style={styles.error}>Could not open this conversation</Text>
 
+  const chat = training.data
+  if (chat.type !== 'chat') return <Text style={styles.error}>This session is not a conversation</Text>
+
   const messages: ChatMessage[] =
     send.isPending && send.variables
-      ? [...training.data.messages, { role: 'user', content: send.variables, createdAt: new Date() }]
-      : training.data.messages
+      ? [...chat.messages, { role: 'user', content: send.variables, createdAt: new Date() }]
+      : chat.messages
   const ending = complete.isPending || cancel.isPending
 
   const submit = () => {
@@ -58,7 +61,7 @@ export default function Chat() {
     send.mutate(content, { onError: () => setDraft((current) => current || content) })
   }
 
-  const { status, targets, finalAssessment } = training.data
+  const { status, targets, finalAssessment } = chat
   const active = status === 'ACTIVE'
   const canEnd = active && !send.isPending && !ending
   const end = () => {
@@ -76,7 +79,7 @@ export default function Chat() {
     >
       <Stack.Screen
         options={{
-          title: training.data.context,
+          title: chat.context,
           headerRight: active
             ? () => (
                 <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
@@ -144,7 +147,7 @@ export default function Chat() {
         <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
       ) : null}
       {progress ? (
-        <TargetProgress target={progress} effects={training.data.srsEffects} onDismiss={() => setProgress(null)} />
+        <TargetProgress target={progress} effects={chat.srsEffects} onDismiss={() => setProgress(null)} />
       ) : null}
     </KeyboardAvoidingView>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Stack, router } from 'expo-router'
+import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { createTrainingInputSchema, type ChatStyle, type Expression } from '@contracts'
 import { srsSummary } from '../src/api/expression-srs'
@@ -9,11 +9,19 @@ import { usePickedExpressions } from '../src/api/use-picked-expressions'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
+import { trainingRoute } from '../src/components/training-route'
 import { colors, spacing } from '../src/theme/tokens'
 
 const STYLES: [ChatStyle, string][] = [
   ['informal', 'informal'],
   ['formal', 'formal'],
+]
+
+type Mode = 'chat' | 'gaps'
+
+const MODES: [Mode, string][] = [
+  ['chat', 'Chat'],
+  ['gaps', 'Gaps'],
 ]
 
 type RowProps = {
@@ -44,56 +52,69 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   </View>
 )
 
-const StartChat = ({ targets }: { targets: Expression[] }) => {
+const StartSession = ({ targets, initialMode }: { targets: Expression[]; initialMode: Mode }) => {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>('informal')
   const create = useCreateTraining()
 
-  const input = createTrainingInputSchema.safeParse({
-    type: 'chat',
-    context,
-    style,
-    expressionIds: targets.map((target) => target.id),
-  })
+  const expressionIds = targets.map((target) => target.id)
+  const input = createTrainingInputSchema.safeParse(
+    mode === 'chat' ? { type: 'chat', context, style, expressionIds } : { type: 'gaps', expressionIds },
+  )
 
   const start = () =>
     input.success &&
     create.mutate(input.data, {
       onSuccess: (training) => {
+        const route = trainingRoute(training.type, training.id)
         router.replace('/trainings')
-        router.push(`/trainings/${training.id}`)
+        if (route) router.push(route)
       },
     })
 
   return (
     <View style={styles.start}>
-      <TextInput
-        style={styles.context}
-        value={context}
-        onChangeText={setContext}
-        placeholder="What is the situation? e.g. a scrum standup"
-        placeholderTextColor={colors.muted}
-        multiline
-      />
       <View style={styles.styles}>
-        {STYLES.map(([value, label]) => (
-          <Chip key={value} label={label} active={style === value} onPress={() => setStyle(value)} />
+        {MODES.map(([value, label]) => (
+          <Chip key={value} label={label} active={mode === value} onPress={() => setMode(value)} />
         ))}
       </View>
-      {create.isError ? <Text style={styles.error}>Could not start the conversation</Text> : null}
+      {mode === 'chat' ? (
+        <>
+          <TextInput
+            style={styles.context}
+            value={context}
+            onChangeText={setContext}
+            placeholder="What is the situation? e.g. a scrum standup"
+            placeholderTextColor={colors.muted}
+            multiline
+          />
+          <View style={styles.styles}>
+            {STYLES.map(([value, label]) => (
+              <Chip key={value} label={label} active={style === value} onPress={() => setStyle(value)} />
+            ))}
+          </View>
+        </>
+      ) : (
+        <Text style={styles.hint}>A short paragraph with these phrases cut out. Put them back.</Text>
+      )}
+      {create.isError ? <Text style={styles.error}>Could not start the session</Text> : null}
       <Pressable
         onPress={start}
         accessibilityRole="button"
         disabled={!input.success || create.isPending}
         style={[styles.startButton, (!input.success || create.isPending) && styles.startButtonOff]}
       >
-        <Text style={styles.startLabel}>{create.isPending ? 'Starting…' : 'Start chat'}</Text>
+        <Text style={styles.startLabel}>
+          {create.isPending ? 'Starting…' : mode === 'chat' ? 'Start chat' : 'Start gaps'}
+        </Text>
       </Pressable>
     </View>
   )
 }
 
-const Targets = ({ initial }: { initial: Expression[] }) => {
+const Targets = ({ initial, mode }: { initial: Expression[]; mode: Mode }) => {
   const vocabulary = useExpressions()
   const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState(false)
@@ -127,18 +148,23 @@ const Targets = ({ initial }: { initial: Expression[] }) => {
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
-      <StartChat targets={targets} />
+      <StartSession targets={targets} initialMode={mode} />
     </>
   )
 }
 
 export default function Practice() {
+  const { mode } = useLocalSearchParams<{ mode?: string }>()
   const picked = usePickedExpressions()
   const items = picked.data?.items
 
   const body = () => {
     if (items) {
-      return items.length ? <Targets initial={items} /> : <Text style={styles.state}>Nothing to practice right now</Text>
+      return items.length ? (
+        <Targets initial={items} mode={mode === 'gaps' ? 'gaps' : 'chat'} />
+      ) : (
+        <Text style={styles.state}>Nothing to practice right now</Text>
+      )
     }
     if (picked.isError) return <Text style={styles.error}>Could not work out what to practice</Text>
     return <ActivityIndicator style={styles.state} />
@@ -181,6 +207,7 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   styles: { flexDirection: 'row', gap: spacing.sm },
+  hint: { color: colors.muted },
   startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
   startButtonOff: { opacity: 0.4 },
   startLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },

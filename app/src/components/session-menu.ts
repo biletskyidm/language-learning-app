@@ -6,8 +6,18 @@ const confirmCancel = (onCancel: () => void) =>
     { text: 'Cancel session', style: 'destructive', onPress: onCancel },
   ])
 
-export const openEndMenu = ({ onEnd, onCancel }: { onEnd: () => void; onCancel: () => void }) =>
-  Alert.alert('End this session?', 'End sums it up with a final assessment. Cancel drops it without one.', [
+const CHAT_ENDING = 'End sums it up with a final assessment. Cancel drops it without one.'
+
+export const openEndMenu = ({
+  onEnd,
+  onCancel,
+  ending = CHAT_ENDING,
+}: {
+  onEnd: () => void
+  onCancel: () => void
+  ending?: string
+}) =>
+  Alert.alert('End this session?', ending, [
     { text: 'End session', onPress: onEnd },
     { text: 'Cancel session', style: 'destructive', onPress: onCancel },
     { text: 'Keep going', style: 'cancel' },

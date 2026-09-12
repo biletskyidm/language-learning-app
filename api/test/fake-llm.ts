@@ -1,5 +1,12 @@
 import type { Assessment, ExpressionDraft, Narrative } from '@contracts'
-import type { AssessmentInput, LlmGateway, TutorFirstMessageInput, TutorReplyInput } from '../src/deps'
+import type {
+  AssessmentInput,
+  GapsGeneration,
+  GapsGenerationInput,
+  LlmGateway,
+  TutorFirstMessageInput,
+  TutorReplyInput,
+} from '../src/deps'
 import type { SessionAggregate } from '../src/trainings/aggregator'
 
 interface Canned {
@@ -8,6 +15,7 @@ interface Canned {
   replies?: (string | Error)[]
   assessments?: (Assessment | Error)[]
   narratives?: (Narrative | Error)[]
+  gapsGenerations?: (GapsGeneration | Error)[]
 }
 
 /** Hands back one canned outcome per call, in order, so a test can spell out failures and retries. */
@@ -17,6 +25,7 @@ export class FakeLlmGateway implements LlmGateway {
   readonly replyCalls: TutorReplyInput[] = []
   readonly assessmentCalls: AssessmentInput[] = []
   readonly narrativeCalls: SessionAggregate[] = []
+  readonly gapsCalls: GapsGenerationInput[] = []
 
   constructor(private readonly canned: Canned = {}) {}
 
@@ -48,6 +57,12 @@ export class FakeLlmGateway implements LlmGateway {
     this.narrativeCalls.push(input)
 
     return next(this.canned.narratives)
+  }
+
+  async generateGaps(input: GapsGenerationInput): Promise<GapsGeneration> {
+    this.gapsCalls.push(input)
+
+    return next(this.canned.gapsGenerations)
   }
 }
 
