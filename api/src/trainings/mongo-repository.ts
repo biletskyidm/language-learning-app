@@ -75,6 +75,21 @@ export class MongoTrainingRepository implements TrainingRepository {
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
+  async cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db
+      .collection(TRAININGS_COLLECTION)
+      .findOneAndUpdate(
+        { ...filter, status: 'ACTIVE' },
+        { $set: { status: 'CANCELED', canceledAt } },
+        { returnDocument: 'after' },
+      )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
   async findById(userId: string, id: string): Promise<Training | undefined> {
     const filter = idFilter(userId, id)
     if (!filter) return undefined

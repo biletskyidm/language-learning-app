@@ -231,6 +231,17 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
 
       return c.json(trainingSchema.parse(completed))
     })
+    .post('/trainings/:id/cancel', async (c) => {
+      const userId = c.get('userId')
+      const id = c.req.param('id')
+
+      const canceled = await deps.trainings.cancel(userId, id, deps.clock())
+      if (canceled) return c.json(trainingSchema.parse(canceled))
+
+      return (await deps.trainings.findById(userId, id))
+        ? c.json(apiError('TRAINING_NOT_ACTIVE', 'This conversation is already over'), 409)
+        : c.json(apiError('NOT_FOUND', 'No such training'), 404)
+    })
     .get('/trainings/:id', async (c) => {
       const training = await deps.trainings.findById(c.get('userId'), c.req.param('id'))
       if (!training) return c.json(apiError('NOT_FOUND', 'No such training'), 404)

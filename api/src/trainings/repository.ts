@@ -21,4 +21,5 @@ export interface TrainingRepository {
     finalAssessment: FinalAssessment,
     expectedCount: number,
   ): Promise<Training | undefined>
+  cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined>
 }

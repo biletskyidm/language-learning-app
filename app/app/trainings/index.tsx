@@ -2,14 +2,17 @@ import { useState } from 'react'
 import { Stack } from 'expo-router'
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { trainingStatusSchema, trainingTypeSchema } from '@contracts'
+import { useCancelTraining } from '../../src/api/use-cancel-training'
 import { useTrainings, type TrainingFilters } from '../../src/api/use-trainings'
 import { Chip } from '../../src/components/chip'
+import { openSessionMenu } from '../../src/components/session-menu'
 import { TRAINING_STATUS_NAMES, TRAINING_TYPE_NAMES, TrainingRow } from '../../src/components/training-row'
 import { colors, spacing } from '../../src/theme/tokens'
 
 export default function Sessions() {
   const [filters, setFilters] = useState<TrainingFilters>({})
   const trainings = useTrainings(filters)
+  const cancel = useCancelTraining()
 
   const empty = () => {
     if (trainings.isPending) return <ActivityIndicator style={styles.state} />
@@ -44,10 +47,13 @@ export default function Sessions() {
           ))}
         </ScrollView>
       </View>
+      {cancel.isError ? <Text style={styles.error}>Could not cancel that session — try again</Text> : null}
       <FlatList
         data={trainings.data?.pages.flatMap((page) => page.items) ?? []}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TrainingRow training={item} />}
+        renderItem={({ item }) => (
+          <TrainingRow training={item} onMenu={() => openSessionMenu(() => cancel.mutate(item.id))} />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={empty()}
         ListFooterComponent={trainings.isFetchingNextPage ? <ActivityIndicator style={styles.state} /> : null}

@@ -58,7 +58,12 @@ const StartChat = ({ targets }: { targets: Expression[] }) => {
 
   const start = () =>
     input.success &&
-    create.mutate(input.data, { onSuccess: (training) => router.push(`/trainings/${training.id}`) })
+    create.mutate(input.data, {
+      onSuccess: (training) => {
+        router.replace('/trainings')
+        router.push(`/trainings/${training.id}`)
+      },
+    })
 
   return (
     <View style={styles.start}>
