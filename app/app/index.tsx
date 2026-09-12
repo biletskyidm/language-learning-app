@@ -28,6 +28,7 @@ export default function Home() {
       {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
       <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
       <Button title="What to practice" onPress={() => router.push('/practice')} />
+      <Button title="Drills" onPress={() => router.push({ pathname: '/practice', params: { mode: 'gaps' } })} />
       <Button title="Sessions" onPress={() => router.push('/trainings')} />
     </View>
   )

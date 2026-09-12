@@ -12,7 +12,14 @@ import {
   type TrainingTarget,
 } from '@contracts'
 import type { Config } from '../config'
-import type { AssessmentInput, LlmGateway, TutorFirstMessageInput, TutorReplyInput } from '../deps'
+import type {
+  AssessmentInput,
+  GapsGeneration,
+  GapsGenerationInput,
+  LlmGateway,
+  TutorFirstMessageInput,
+  TutorReplyInput,
+} from '../deps'
 import type { SessionAggregate } from '../trainings/aggregator'
 import { loadPrompt, renderPrompt } from './prompts'
 
@@ -22,6 +29,8 @@ const BASE_URL = 'https://openrouter.ai/api/v1'
 const draftSchema = expressionDraftSchema.extend({ partOfSpeech: partOfSpeechSchema.nullable() })
 
 const tutorMessageSchema = z.object({ message: z.string().min(1) })
+
+const gapsGenerationSchema = z.object({ story: z.string().min(1), answers: z.array(z.string().min(1)).min(1) })
 
 // Structured output has no map type, so the per-target verdicts come back as a list and are keyed here.
 const assessmentOutputSchema = assessmentSchema.omit({ targetPhrasesCorrectness: true }).extend({
@@ -139,6 +148,16 @@ export class OpenRouterGateway implements LlmGateway {
       }),
       { tags: ['narrative'] },
     )
+  }
+
+  async generateGaps({ targets }: GapsGenerationInput): Promise<GapsGeneration> {
+    const model = this.model(this.config.DRILL_GEN_MODEL).withStructuredOutput(gapsGenerationSchema, {
+      name: 'gaps_generation',
+    })
+
+    return model.invoke(renderPrompt(loadPrompt('gaps-generate'), { targets: bullets(targets) }), {
+      tags: ['gaps-generate'],
+    })
   }
 
   private model(name: string | undefined) {

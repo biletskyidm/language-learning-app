@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { averagesLine } from './assessment'
+import { trainingRoute } from './training-route'
 
 export const TRAINING_TYPE_NAMES: Record<TrainingType, string> = {
   chat: 'Chat',
@@ -20,14 +21,15 @@ export const TRAINING_STATUS_NAMES: Record<TrainingStatus, string> = {
 const TYPE_ICONS: Record<TrainingType, string> = { chat: '💬', gaps: '🧩', describe: '🗣️', smuggle: '🎒' }
 
 export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; onMenu?: () => void }) => {
-  const resumable = training.type === 'chat' && training.status === 'ACTIVE'
+  const route = trainingRoute(training.type, training.id)
+  const resumable = route !== undefined && training.status === 'ACTIVE'
   const averages = training.finalAssessment?.averages
 
   return (
     <Pressable
       style={styles.row}
       disabled={!resumable}
-      onPress={() => router.push(`/trainings/${training.id}`)}
+      onPress={() => route && router.push(route)}
       accessibilityRole={resumable ? 'button' : undefined}
     >
       <Text style={styles.icon}>{TYPE_ICONS[training.type]}</Text>

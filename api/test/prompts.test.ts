@@ -120,6 +120,15 @@ describe('loadPrompt', () => {
     expect(rendered).not.toContain('{{')
   })
 
+  it('renders the gaps prompt with the expressions to blank out', () => {
+    const rendered = renderPrompt(loadPrompt('gaps-generate'), { targets: '- break the ice\n- touch base' })
+
+    expect(rendered).toContain('- break the ice')
+    expect(rendered).toContain('- touch base')
+    expect(rendered).toContain('___')
+    expect(rendered).not.toContain('{{')
+  })
+
   it('drops the target section of the tutor prompt when there is nothing to practice', () => {
     const rendered = renderPrompt(loadPrompt('tutor-first-message'), {
       context: 'a scrum standup',

@@ -36,12 +36,23 @@ export interface AssessmentInput {
 
 export type TutorReplyInput = AssessmentInput & { history: ChatMessage[] }
 
+export interface GapsGenerationInput {
+  targets: TrainingTarget[]
+}
+
+/** answers are the blanked-out expressions in the order their blanks appear in the story. */
+export interface GapsGeneration {
+  story: string
+  answers: string[]
+}
+
 export interface LlmGateway {
   draftExpression(input: { text: string }): Promise<ExpressionDraft>
   tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
   tutorReply(input: TutorReplyInput): Promise<string>
   assessMessage(input: AssessmentInput): Promise<Assessment>
   summarizeSession(input: SessionAggregate): Promise<Narrative>
+  generateGaps(input: GapsGenerationInput): Promise<GapsGeneration>
 }
 
 export interface TokenVerifier {

@@ -1,6 +1,8 @@
 import { ObjectId, type Db } from 'mongodb'
 import type {
   ChatMessage,
+  DrillAggregates,
+  DrillRound,
   FinalAssessment,
   SrsEffect,
   Training,
@@ -40,6 +42,79 @@ export class MongoTrainingRepository implements TrainingRepository {
       .findOneAndUpdate(
         { ...filter, status: 'ACTIVE', messages: { $size: expectedCount } },
         { $push: { messages: { $each: messages } } },
+        { returnDocument: 'after' },
+      )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async appendRound(
+    userId: string,
+    id: string,
+    round: DrillRound,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db
+      .collection<{ rounds: DrillRound[] }>(TRAININGS_COLLECTION)
+      .findOneAndUpdate(
+        { ...filter, status: 'ACTIVE', rounds: { $size: expectedCount } },
+        { $push: { rounds: round } },
+        { returnDocument: 'after' },
+      )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async answerRound(
+    userId: string,
+    id: string,
+    index: number,
+    answered: Required<Pick<DrillRound, 'answer' | 'verdict' | 'answeredAt'>>,
+  ): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const doc = await this.db.collection(TRAININGS_COLLECTION).findOneAndUpdate(
+      { ...filter, status: 'ACTIVE', [`rounds.${index}.answeredAt`]: { $exists: false } },
+      {
+        $set: {
+          [`rounds.${index}.answer`]: answered.answer,
+          [`rounds.${index}.verdict`]: answered.verdict,
+          [`rounds.${index}.answeredAt`]: answered.answeredAt,
+        },
+      },
+      { returnDocument: 'after' },
+    )
+
+    return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
+  }
+
+  async completeDrill(
+    userId: string,
+    id: string,
+    aggregates: DrillAggregates,
+    completedAt: Date,
+    expected: { rounds: number; answered: number },
+  ): Promise<Training | undefined> {
+    const filter = idFilter(userId, id)
+    if (!filter) return undefined
+
+    const answered = {
+      $expr: {
+        $eq: [
+          { $size: { $filter: { input: '$rounds', cond: { $ne: ['$$this.answeredAt', null] } } } },
+          expected.answered,
+        ],
+      },
+    }
+    const doc = await this.db
+      .collection(TRAININGS_COLLECTION)
+      .findOneAndUpdate(
+        { ...filter, status: 'ACTIVE', rounds: { $size: expected.rounds }, ...answered },
+        { $set: { status: 'COMPLETED', completedAt, aggregates } },
         { returnDocument: 'after' },
       )
 

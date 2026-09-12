@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   apiErrorSchema,
+  chatTrainingSchema,
   trainingListResponseSchema,
   trainingSchema,
   type ChatTraining,
@@ -107,7 +108,7 @@ describe('POST /trainings/:id/cancel', () => {
 
     const res = await cancel()
 
-    const canceled = trainingSchema.parse(await res.json())
+    const canceled = chatTrainingSchema.parse(await res.json())
     expect(canceled.messages).toHaveLength(3)
     expect(canceled.srsEffects).toEqual([EFFECT])
     expect(stored[0]?.srsEffects).toEqual([EFFECT])

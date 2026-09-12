@@ -1,6 +1,8 @@
 import {
   trainingSummarySchema,
   type ChatMessage,
+  type DrillAggregates,
+  type DrillRound,
   type FinalAssessment,
   type SrsEffect,
   type Training,
@@ -44,9 +46,61 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     expectedCount: number,
   ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
-    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
+    if (training?.type !== 'chat' || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) {
+      return undefined
+    }
 
     training.messages = [...training.messages, ...messages]
+
+    return copy(training)
+  }
+
+  async appendRound(
+    userId: string,
+    id: string,
+    round: DrillRound,
+    expectedCount: number,
+  ): Promise<Training | undefined> {
+    const training = this.stored(userId, id)
+    const drill = asDrill(training)
+    if (!training || !drill || training.status !== 'ACTIVE' || drill.rounds.length !== expectedCount) return undefined
+
+    drill.rounds = [...drill.rounds, round]
+
+    return copy(training)
+  }
+
+  async answerRound(
+    userId: string,
+    id: string,
+    index: number,
+    answered: Required<Pick<DrillRound, 'answer' | 'verdict' | 'answeredAt'>>,
+  ): Promise<Training | undefined> {
+    const training = this.stored(userId, id)
+    const drill = asDrill(training)
+    const round = drill?.rounds[index]
+    if (!training || !drill || !round || training.status !== 'ACTIVE' || round.answeredAt) return undefined
+
+    drill.rounds = drill.rounds.map((one, at) => (at === index ? { ...one, ...answered } : one))
+
+    return copy(training)
+  }
+
+  async completeDrill(
+    userId: string,
+    id: string,
+    aggregates: DrillAggregates,
+    completedAt: Date,
+    expected: { rounds: number; answered: number },
+  ): Promise<Training | undefined> {
+    const training = this.stored(userId, id)
+    const drill = asDrill(training)
+    if (!training || !drill || training.status !== 'ACTIVE' || drill.rounds.length !== expected.rounds) return undefined
+    if (drill.rounds.filter((round) => round.answeredAt).length !== expected.answered) return undefined
+
+    training.status = 'COMPLETED'
+    training.completedAt = completedAt
+    drill.aggregates = aggregates
 
     return copy(training)
   }
@@ -63,7 +117,9 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     expectedCount: number,
   ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
-    if (!training || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) return undefined
+    if (training?.type !== 'chat' || training.status !== 'ACTIVE' || training.messages.length !== expectedCount) {
+      return undefined
+    }
 
     training.status = 'COMPLETED'
     training.completedAt = finalAssessment.computedAt
@@ -87,6 +143,16 @@ export class InMemoryTrainingRepository implements TrainingRepository {
   }
 }
 
-/** Handed out like a decoded document, so a caller cannot reach the stored messages by reference. */
-const copy = (training?: Training): Training | undefined =>
-  training && { ...training, messages: [...training.messages], srsEffects: [...training.srsEffects] }
+/** The repository is generic over drill types, so a stored round is only structurally typed here. */
+const asDrill = (training?: Training) =>
+  training && training.type !== 'chat'
+    ? (training as unknown as { rounds: DrillRound[]; aggregates?: DrillAggregates })
+    : undefined
+
+/** Handed out like a decoded document, so a caller cannot reach the stored turns by reference. */
+const copy = (training?: Training): Training | undefined => {
+  if (!training) return undefined
+  const base = { ...training, srsEffects: [...training.srsEffects] }
+
+  return base.type === 'chat' ? { ...base, messages: [...base.messages] } : { ...base, rounds: [...base.rounds] }
+}
