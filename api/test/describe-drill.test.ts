@@ -3,6 +3,7 @@ import {
   apiErrorSchema,
   describeMaterialSchema,
   describeTrainingSchema,
+  describeVerdictSchema,
   drillAnswerResponseSchema,
   drillRoundResponseSchema,
   PICK_LIMIT_DEFAULT,
@@ -40,7 +41,7 @@ const VOCABULARY = [
 /** Uses no word of "break the ice" or "touch base", so the guard lets it through to the judge. */
 const DESCRIPTION = 'saying something friendly first so a stiff room warms up'
 
-const judgement = (guess: string) => ({ guess, note: 'Clear and to the point.' })
+const judgement = (score: number) => ({ score, feedback: 'Clear and to the point.' })
 
 type Harness = {
   app: ReturnType<typeof createApp>
@@ -115,17 +116,13 @@ describe('POST /trainings for a describe session', () => {
 })
 
 describe('POST /trainings/:id/rounds for a describe session', () => {
-  it('asks for one target and offers every session target as a candidate', async () => {
+  it('asks for one target at a time', async () => {
     const { res, body } = await firstRound()
 
     expect(res.status).toBe(200)
     const { round } = drillRoundResponseSchema.parse(body)
     expect(round.index).toBe(0)
-    expect(materialOf(round)).toEqual({
-      targetExpressionId: 'e1',
-      expression: 'break the ice',
-      candidates: ['break the ice', 'touch base'],
-    })
+    expect(materialOf(round)).toEqual({ targetExpressionId: 'e1', expression: 'break the ice' })
     expect(round.targets).toEqual([
       { expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' },
     ])
@@ -138,7 +135,7 @@ describe('POST /trainings/:id/rounds for a describe session', () => {
   })
 
   it('moves to the next target rather than repeating one already dealt', async () => {
-    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }))
+    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(8)] }))
 
     const res = await post(session, `/trainings/${session.training.id}/rounds`)
 
@@ -149,7 +146,7 @@ describe('POST /trainings/:id/rounds for a describe session', () => {
 
   it('starts the pool again once every target has had a round', async () => {
     const llm = new FakeLlmGateway({
-      describeJudgements: [judgement('break the ice'), judgement('touch base')],
+      describeJudgements: [judgement(8), judgement(4)],
     })
     const session = await answered(DESCRIPTION, llm)
     await post(session, `/trainings/${session.training.id}/rounds`)
@@ -172,73 +169,60 @@ describe('POST /trainings/:id/rounds for a describe session', () => {
 })
 
 describe('POST /trainings/:id/rounds/:index/answer for a describe session', () => {
-  it('counts a guess that matches the target, ignoring case and punctuation', async () => {
-    const { answerRes, answer } = await answered(
-      DESCRIPTION,
-      new FakeLlmGateway({ describeJudgements: [judgement('Break the ice!')] }),
-    )
-
-    expect(answerRes.status).toBe(200)
-    expect(drillAnswerResponseSchema.parse(answer).verdict).toEqual({
-      guess: 'Break the ice!',
-      correct: true,
-      note: 'Clear and to the point.',
-    })
-  })
-
-  it('counts a guess for another candidate as wrong', async () => {
-    const { answer } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('touch base')] }))
-
-    expect(drillAnswerResponseSchema.parse(answer).verdict).toMatchObject({ guess: 'touch base', correct: false })
-  })
-
-  it('hands the judge the description and every session target to choose from', async () => {
-    const { llm } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }))
+  it('hands the judge the expression, its meaning and the description', async () => {
+    const { llm } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(8)] }))
 
     expect(llm.describeCalls).toEqual([
-      { description: DESCRIPTION, candidates: ['break the ice', 'touch base'] },
+      { expression: 'break the ice', meaning: 'to get a conversation started', description: DESCRIPTION },
     ])
   })
 
-  it('writes 8 for a target the judge recognised', async () => {
-    const { answer, vocabulary } = await answered(
-      DESCRIPTION,
-      new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }),
-    )
+  it('writes the tutor score into the SRS average', async () => {
+    const { answer, vocabulary } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(9)] }))
 
+    expect(drillAnswerResponseSchema.parse(answer).verdict).toEqual({ score: 9, feedback: 'Clear and to the point.' })
     expect(drillAnswerResponseSchema.parse(answer).srsEffects).toEqual([
       expect.objectContaining({
         expressionId: 'e1',
         expression: 'break the ice',
-        scoreWritten: 8,
+        scoreWritten: 9,
         source: { kind: 'round', index: 0 },
-        after: { score: 8, timesPracticed: 1, nextTrainingAt: daysAfter(1) },
+        after: { score: 9, timesPracticed: 1, nextTrainingAt: daysAfter(1.5) },
       }),
     ])
     expect(vocabulary.map(({ score, timesPracticed }) => [score, timesPracticed])).toEqual([
-      [8, 1],
+      [9, 1],
       [undefined, undefined],
     ])
   })
 
-  it('writes 2 for a target the judge did not recognise', async () => {
-    const { answer, vocabulary } = await answered(
-      DESCRIPTION,
-      new FakeLlmGateway({ describeJudgements: [judgement('touch base')] }),
-    )
+  it('brings a weak description straight back for review', async () => {
+    const { answer } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(3)] }))
 
     expect(drillAnswerResponseSchema.parse(answer).srsEffects).toEqual([
-      expect.objectContaining({ expressionId: 'e1', scoreWritten: 2, after: { score: 2, timesPracticed: 1, nextTrainingAt: NOW } }),
+      expect.objectContaining({
+        scoreWritten: 3,
+        after: { score: 3, timesPracticed: 1, nextTrainingAt: NOW },
+      }),
     ])
-    expect(vocabulary[1]?.score).toBeUndefined()
+  })
+
+  it('still counts a description the tutor scored zero as practice', async () => {
+    const { answer, vocabulary } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(0)] }))
+
+    expect(describeVerdictSchema.parse(drillAnswerResponseSchema.parse(answer).verdict).score).toBe(0)
+    expect(drillAnswerResponseSchema.parse(answer).srsEffects).toEqual([
+      expect.objectContaining({ scoreWritten: 1, after: { score: 1, timesPracticed: 1, nextTrainingAt: NOW } }),
+    ])
+    expect(vocabulary[0]?.timesPracticed).toBe(1)
   })
 
   it('keeps the description and verdict on the round it belongs to', async () => {
-    const { stored } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }))
+    const { stored } = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(8)] }))
 
     expect((stored[0] as DescribeTraining).rounds[0]).toMatchObject({
       answer: { description: DESCRIPTION },
-      verdict: { guess: 'break the ice', correct: true },
+      verdict: { score: 8, feedback: 'Clear and to the point.' },
       answeredAt: NOW,
     })
   })
@@ -259,7 +243,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a describe session', () =
   it('lets a function word of the target through, since it gives nothing away', async () => {
     const { answerRes } = await answered(
       'the moment a cold room warms up because someone said something light',
-      new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }),
+      new FakeLlmGateway({ describeJudgements: [judgement(8)] }),
     )
 
     expect(answerRes.status).toBe(200)
@@ -276,7 +260,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a describe session', () =
   })
 
   it('refuses a second answer to the same round', async () => {
-    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }))
+    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(8)] }))
 
     const again = await post(session, `/trainings/${session.training.id}/rounds/0/answer`, {
       description: DESCRIPTION,
@@ -289,7 +273,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a describe session', () =
   it('retries a judge that fails once', async () => {
     const { answerRes, llm } = await answered(
       DESCRIPTION,
-      new FakeLlmGateway({ describeJudgements: [new Error('nope'), judgement('break the ice')] }),
+      new FakeLlmGateway({ describeJudgements: [new Error('nope'), judgement(8)] }),
     )
 
     expect(answerRes.status).toBe(200)
@@ -309,8 +293,8 @@ describe('POST /trainings/:id/rounds/:index/answer for a describe session', () =
 })
 
 describe('POST /trainings/:id/complete for a describe session', () => {
-  it('counts the rounds the judge got right and wrong, without a narrative', async () => {
-    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('touch base')] }))
+  it('counts the rounds that passed and the ones that did not, without a narrative', async () => {
+    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(4)] }))
 
     const res = await post(session, `/trainings/${session.training.id}/complete`)
 
@@ -322,7 +306,7 @@ describe('POST /trainings/:id/complete for a describe session', () => {
   })
 
   it('leaves a round nobody answered out of the counts', async () => {
-    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement('break the ice')] }))
+    const session = await answered(DESCRIPTION, new FakeLlmGateway({ describeJudgements: [judgement(8)] }))
     await post(session, `/trainings/${session.training.id}/rounds`)
 
     const res = await post(session, `/trainings/${session.training.id}/complete`)

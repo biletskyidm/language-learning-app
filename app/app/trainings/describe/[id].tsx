@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { DESCRIBE_MAX_LENGTH } from '@contracts'
+import { DESCRIBE_MAX_LENGTH, DESCRIBE_PASS_SCORE } from '@contracts'
 import { ApiError } from '../../../src/api/client'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
@@ -75,7 +75,7 @@ export default function Describe() {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {session.aggregates ? (
           <Text style={styles.summary}>
-            {session.aggregates.rounds} rounds · {session.aggregates.correct} guessed · {session.aggregates.wrong} missed
+            {session.aggregates.rounds} rounds · {session.aggregates.correct} solid · {session.aggregates.wrong} shaky
           </Text>
         ) : null}
         {session.status === 'CANCELED' ? <Text style={styles.canceled}>Session canceled</Text> : null}
@@ -114,11 +114,10 @@ export default function Describe() {
         {draft.phase === 'judged' && verdict ? (
           <>
             <Text style={styles.description}>{draft.description}</Text>
-            <Text style={[styles.guess, verdict.correct ? styles.right : styles.wrong]}>
-              {verdict.correct ? 'Guessed it: ' : 'Guessed: '}
-              {verdict.guess}
+            <Text style={[styles.score, verdict.score >= DESCRIBE_PASS_SCORE ? styles.right : styles.wrong]}>
+              {verdict.score} / 10
             </Text>
-            <Text style={styles.note}>{verdict.note}</Text>
+            <Text style={styles.note}>{verdict.feedback}</Text>
             {active ? (
               <Pressable
                 onPress={() => next.mutate()}
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
   },
   secondaryLabel: { fontSize: 15, fontWeight: '600' },
   description: { fontSize: 16, lineHeight: 24 },
-  guess: { fontSize: 17, fontWeight: '600' },
+  score: { fontSize: 22, fontWeight: '700' },
   right: { color: colors.ok },
   wrong: { color: colors.error },
   note: { color: colors.muted },

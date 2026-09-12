@@ -5,11 +5,7 @@ import { useDescribeDraft } from '../describe-draft'
 const round = (overrides: Partial<DescribeRound> = {}): DescribeRound => ({
   index: 0,
   targets: [{ expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }],
-  material: {
-    targetExpressionId: 'e1',
-    expression: 'break the ice',
-    candidates: ['break the ice', 'touch base'],
-  },
+  material: { targetExpressionId: 'e1', expression: 'break the ice' },
   ...overrides,
 })
 
@@ -57,7 +53,7 @@ describe('useDescribeDraft', () => {
   it('shows what was submitted once the round is judged', async () => {
     const judged = round({
       answer: { description: 'saying something light to warm up a cold room' },
-      verdict: { guess: 'break the ice', correct: true, note: 'Clear and to the point.' },
+      verdict: { score: 9, feedback: 'Clear and to the point.' },
       answeredAt: new Date('2026-01-01T00:00:00.000Z'),
     })
 
@@ -70,7 +66,7 @@ describe('useDescribeDraft', () => {
   it('refuses to rewrite a round that is already judged', async () => {
     const judged = round({
       answer: { description: 'saying something light to warm up a cold room' },
-      verdict: { guess: 'touch base', correct: false, note: 'A bit vague.' },
+      verdict: { score: 4, feedback: 'A bit vague.' },
     })
     const { result } = await renderHook(() => useDescribeDraft(judged))
 

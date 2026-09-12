@@ -144,22 +144,23 @@ export const gapsTrainingSchema = baseTrainingSchema.extend({
 export const DESCRIBE_MIN_LENGTH = 10
 export const DESCRIBE_MAX_LENGTH = 600
 
-/** candidates are every target of the session: the judge picks among them, so the guess is always one of mine. */
 export const describeMaterialSchema = z.object({
   targetExpressionId: z.string(),
   expression: z.string(),
-  candidates: z.array(z.string()).min(1),
 })
 
 export const describeAnswerSchema = z.object({
   description: z.string().trim().min(DESCRIBE_MIN_LENGTH).max(DESCRIBE_MAX_LENGTH),
 })
 
+/** The tutor's own 0-10 for how well the description carried the meaning; it goes straight into the SRS average. */
 export const describeVerdictSchema = z.object({
-  guess: z.string(),
-  correct: z.boolean(),
-  note: z.string(),
+  score: z.number().min(0).max(10),
+  feedback: z.string(),
 })
+
+/** Matches the SRS ladder, where 7 is the first score that earns a full interval. */
+export const DESCRIBE_PASS_SCORE = 7
 
 export const describeRoundSchema = z.object({
   index: z.number().int().min(0),

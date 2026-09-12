@@ -47,14 +47,14 @@ export interface GapsGeneration {
 }
 
 export interface DescribeJudgeInput {
+  expression: string
+  meaning: string
   description: string
-  candidates: string[]
 }
 
-/** guess is one of the candidates as the model spelled it; matching it to a target is the drill's job. */
 export interface DescribeJudgement {
-  guess: string
-  note: string
+  score: number
+  feedback: string
 }
 
 export interface LlmGateway {
