@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { createTrainingInputSchema, GAPS_TARGETS_DEFAULT, type ChatStyle, type Expression } from '@contracts'
+import {
+  createTrainingInputSchema,
+  GAPS_TARGETS_DEFAULT,
+  PICK_LIMIT_DEFAULT,
+  SMUGGLE_TARGETS_DEFAULT,
+  type ChatStyle,
+  type Expression,
+} from '@contracts'
 import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
@@ -17,20 +24,34 @@ const STYLES: [ChatStyle, string][] = [
   ['formal', 'formal'],
 ]
 
-type Mode = 'chat' | 'gaps' | 'describe'
+type Mode = 'chat' | 'gaps' | 'describe' | 'smuggle'
 
 const MODES: [Mode, string][] = [
   ['chat', 'Chat'],
   ['gaps', 'Gaps'],
   ['describe', 'Describe it'],
+  ['smuggle', 'Smuggle'],
 ]
 
 const HINTS: Record<Exclude<Mode, 'chat'>, string> = {
   gaps: 'A short paragraph with these phrases cut out. Put them back.',
-  describe: 'One phrase at a time. Explain it without using its words and see if the tutor guesses.',
+  describe: 'One phrase at a time. Explain it without using its words and the tutor scores you.',
+  smuggle: 'Work all three phrases into one natural message and see which ones land.',
 }
 
-const START_LABELS: Record<Mode, string> = { chat: 'Start chat', gaps: 'Start gaps', describe: 'Start describe it' }
+const START_LABELS: Record<Mode, string> = {
+  chat: 'Start chat',
+  gaps: 'Start gaps',
+  describe: 'Start describe it',
+  smuggle: 'Start smuggle',
+}
+
+const INITIAL_TARGETS: Record<Mode, number> = {
+  chat: PICK_LIMIT_DEFAULT,
+  gaps: GAPS_TARGETS_DEFAULT,
+  describe: PICK_LIMIT_DEFAULT,
+  smuggle: SMUGGLE_TARGETS_DEFAULT,
+}
 
 type RowProps = {
   item: Expression
@@ -159,7 +180,9 @@ const Targets = ({ initial, mode }: { initial: Expression[]; mode: Mode }) => {
   )
 }
 
-const startMode = (mode?: string): Mode => (mode === 'gaps' || mode === 'describe' ? mode : 'chat')
+const MODE_NAMES = new Set<string>(MODES.map(([value]) => value))
+
+const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode as Mode) : 'chat')
 
 export default function Practice() {
   const { mode } = useLocalSearchParams<{ mode?: string }>()
@@ -169,7 +192,7 @@ export default function Practice() {
   const body = () => {
     if (items) {
       return items.length ? (
-        <Targets initial={mode === 'gaps' ? items.slice(0, GAPS_TARGETS_DEFAULT) : items} mode={startMode(mode)} />
+        <Targets initial={items.slice(0, INITIAL_TARGETS[startMode(mode)])} mode={startMode(mode)} />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )
