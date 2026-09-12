@@ -25,6 +25,7 @@ import {
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 import { drillStrategies } from '../drills/registry'
+import type { DrillJudgement } from '../drills/strategy'
 import { withRetry } from '../llm/retry'
 import { SrsService } from '../srs/service'
 import { aggregateSession } from './aggregator'
@@ -102,7 +103,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         }
         targets = found.map((expression) => snapshot(expression as Expression))
       } else {
-        const fallback = rest.type === 'chat' ? PICK_LIMIT_DEFAULT : GAPS_TARGETS_DEFAULT
+        const fallback = rest.type === 'gaps' ? GAPS_TARGETS_DEFAULT : PICK_LIMIT_DEFAULT
         const picked = await deps.expressions.pick(userId, { limit: limit ?? fallback, now })
         targets = picked.map(snapshot)
       }
@@ -278,8 +279,15 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
       if (!round) return c.json(apiError('ROUND_NOT_FOUND', 'No such round in this session'), 404)
       if (round.answeredAt) return c.json(apiError('ROUND_ALREADY_ANSWERED', 'This round is already checked'), 409)
 
-      const judged = strategy.judge(round, await c.req.json().catch(() => undefined))
-      if (!judged.ok) return c.json(apiError('VALIDATION_ERROR', judged.message), 400)
+      let judged: DrillJudgement
+      try {
+        judged = await strategy.judge(round, await c.req.json().catch(() => undefined))
+      } catch (error) {
+        console.error(error)
+
+        return c.json(apiError('LLM_UNAVAILABLE', 'Could not judge that answer'), 502)
+      }
+      if (!judged.ok) return c.json(apiError(judged.code, judged.message), 400)
 
       const now = deps.clock()
       const updated = await deps.trainings.answerRound(userId, training.id, index, {

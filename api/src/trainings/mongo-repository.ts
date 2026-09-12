@@ -105,7 +105,7 @@ export class MongoTrainingRepository implements TrainingRepository {
     const answered = {
       $expr: {
         $eq: [
-          { $size: { $filter: { input: '$rounds', cond: { $ne: ['$$this.answeredAt', null] } } } },
+          { $size: { $filter: { input: '$rounds', cond: { $ne: [{ $ifNull: ['$$this.answeredAt', null] }, null] } } } },
           expected.answered,
         ],
       },

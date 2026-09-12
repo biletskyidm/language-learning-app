@@ -17,12 +17,20 @@ const STYLES: [ChatStyle, string][] = [
   ['formal', 'formal'],
 ]
 
-type Mode = 'chat' | 'gaps'
+type Mode = 'chat' | 'gaps' | 'describe'
 
 const MODES: [Mode, string][] = [
   ['chat', 'Chat'],
   ['gaps', 'Gaps'],
+  ['describe', 'Describe it'],
 ]
+
+const HINTS: Record<Exclude<Mode, 'chat'>, string> = {
+  gaps: 'A short paragraph with these phrases cut out. Put them back.',
+  describe: 'One phrase at a time. Explain it without using its words and see if the tutor guesses.',
+}
+
+const START_LABELS: Record<Mode, string> = { chat: 'Start chat', gaps: 'Start gaps', describe: 'Start describe it' }
 
 type RowProps = {
   item: Expression
@@ -60,7 +68,7 @@ const StartSession = ({ targets, initialMode }: { targets: Expression[]; initial
 
   const expressionIds = targets.map((target) => target.id)
   const input = createTrainingInputSchema.safeParse(
-    mode === 'chat' ? { type: 'chat', context, style, expressionIds } : { type: 'gaps', expressionIds },
+    mode === 'chat' ? { type: 'chat', context, style, expressionIds } : { type: mode, expressionIds },
   )
 
   const start = () =>
@@ -97,7 +105,7 @@ const StartSession = ({ targets, initialMode }: { targets: Expression[]; initial
           </View>
         </>
       ) : (
-        <Text style={styles.hint}>A short paragraph with these phrases cut out. Put them back.</Text>
+        <Text style={styles.hint}>{HINTS[mode]}</Text>
       )}
       {create.isError ? <Text style={styles.error}>Could not start the session</Text> : null}
       <Pressable
@@ -106,9 +114,7 @@ const StartSession = ({ targets, initialMode }: { targets: Expression[]; initial
         disabled={!input.success || create.isPending}
         style={[styles.startButton, (!input.success || create.isPending) && styles.startButtonOff]}
       >
-        <Text style={styles.startLabel}>
-          {create.isPending ? 'Starting…' : mode === 'chat' ? 'Start chat' : 'Start gaps'}
-        </Text>
+        <Text style={styles.startLabel}>{create.isPending ? 'Starting…' : START_LABELS[mode]}</Text>
       </Pressable>
     </View>
   )
@@ -153,6 +159,8 @@ const Targets = ({ initial, mode }: { initial: Expression[]; mode: Mode }) => {
   )
 }
 
+const startMode = (mode?: string): Mode => (mode === 'gaps' || mode === 'describe' ? mode : 'chat')
+
 export default function Practice() {
   const { mode } = useLocalSearchParams<{ mode?: string }>()
   const picked = usePickedExpressions()
@@ -161,10 +169,7 @@ export default function Practice() {
   const body = () => {
     if (items) {
       return items.length ? (
-        <Targets
-          initial={mode === 'gaps' ? items.slice(0, GAPS_TARGETS_DEFAULT) : items}
-          mode={mode === 'gaps' ? 'gaps' : 'chat'}
-        />
+        <Targets initial={mode === 'gaps' ? items.slice(0, GAPS_TARGETS_DEFAULT) : items} mode={startMode(mode)} />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )

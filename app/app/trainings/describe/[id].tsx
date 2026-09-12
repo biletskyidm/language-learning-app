@@ -1,50 +1,23 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { GapsRound } from '@contracts'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { DESCRIBE_MAX_LENGTH, DESCRIBE_PASS_SCORE } from '@contracts'
+import { ApiError } from '../../../src/api/client'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
-import { useGapsBoard } from '../../../src/components/gaps-board'
+import { useDescribeDraft } from '../../../src/components/describe-draft'
 import { openEndMenu } from '../../../src/components/session-menu'
 import { colors, spacing } from '../../../src/theme/tokens'
 
-/** Drawn rather than left as whitespace, which collapses when a blank lands at a line wrap. */
-const BLANK = '______'
+const answerError = (error: unknown) =>
+  error instanceof ApiError && error.code === 'USES_TARGET_WORDS'
+    ? error.message
+    : 'Could not send that — try again'
 
-const Story = ({ round, board }: { round: GapsRound; board: ReturnType<typeof useGapsBoard> }) => {
-  const verdict = round.verdict?.perBlank
-
-  return (
-    <Text style={styles.story}>
-      {round.material.parts.map((part, blank) => (
-        <Text key={blank}>
-          {part}
-          {blank < round.material.parts.length - 1 ? (
-            <Text
-              onPress={() => board.clear(blank)}
-              accessibilityRole="button"
-              accessibilityLabel={`Blank ${blank + 1}, ${board.fills[blank] ?? 'empty'}`}
-              style={[
-                styles.blank,
-                board.fills[blank] ? styles.blankFilled : styles.blankEmpty,
-                verdict?.[blank] && (verdict[blank]?.correct ? styles.blankRight : styles.blankWrong),
-              ]}
-            >
-              {board.fills[blank] ?? BLANK}
-            </Text>
-          ) : null}
-        </Text>
-      ))}
-    </Text>
-  )
-}
-
-export default function Gaps() {
+export default function Describe() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const insets = useSafeAreaInsets()
   const training = useTraining(id)
   const next = useNextRound(id)
   const answer = useAnswerRound(id)
@@ -52,9 +25,9 @@ export default function Gaps() {
   const cancel = useCancelTraining()
   const dealt = useRef(false)
 
-  const session = training.data?.type === 'gaps' ? training.data : undefined
+  const session = training.data?.type === 'describe' ? training.data : undefined
   const round = session?.rounds.at(-1)
-  const board = useGapsBoard(round)
+  const draft = useDescribeDraft(round)
   const active = session?.status === 'ACTIVE'
   const busy = next.isPending || answer.isPending || complete.isPending || cancel.isPending
 
@@ -70,22 +43,26 @@ export default function Gaps() {
 
   const canEnd = active && !busy
   const endMenu = () => {
-    if (canEnd) openEndMenu({
-      onEnd: () => complete.mutate(),
-      onCancel: () => cancel.mutate(id),
-      ending: 'End keeps this session with its round counters. Cancel drops it.',
-    })
+    if (canEnd) {
+      openEndMenu({
+        onEnd: () => complete.mutate(),
+        onCancel: () => cancel.mutate(id),
+        ending: 'End keeps this session with its round counters. Cancel drops it.',
+      })
+    }
   }
-  const check = () => {
-    if (round && board.ready && !busy) answer.mutate({ index: round.index, answer: { fills: board.fills } })
+  const send = () => {
+    if (round && draft.ready && !busy) {
+      answer.mutate({ index: round.index, answer: { description: draft.description.trim() } })
+    }
   }
-  const right = round?.verdict?.perBlank.filter(({ correct }) => correct).length ?? 0
+  const verdict = round?.verdict
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Gaps',
+          title: 'Describe it',
           headerRight: active
             ? () => (
                 <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
@@ -95,48 +72,51 @@ export default function Gaps() {
             : undefined,
         }}
       />
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.md }]}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {session.aggregates ? (
           <Text style={styles.summary}>
-            {session.aggregates.rounds} rounds · {session.aggregates.correct} right · {session.aggregates.wrong} wrong
+            {session.aggregates.rounds} rounds · {session.aggregates.correct} solid · {session.aggregates.wrong} shaky
           </Text>
         ) : null}
         {session.status === 'CANCELED' ? <Text style={styles.canceled}>Session canceled</Text> : null}
 
-        {round ? <Story round={round} board={board} /> : null}
+        {round ? (
+          <View style={styles.card}>
+            <Text style={styles.prompt}>Explain this without using its words</Text>
+            <Text style={styles.expression}>{round.material.expression}</Text>
+          </View>
+        ) : null}
 
-        {active && board.phase === 'playing' ? (
+        {round && draft.phase === 'writing' && active ? (
           <>
-            <View style={styles.bank}>
-              {round?.material.bank.map((phrase) => (
-                <Pressable
-                  key={phrase}
-                  onPress={() => board.place(phrase)}
-                  disabled={board.placed(phrase)}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: board.placed(phrase) }}
-                  style={[styles.chip, board.placed(phrase) && styles.off]}
-                >
-                  <Text style={styles.chipLabel}>{phrase}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <TextInput
+              style={styles.input}
+              value={draft.description}
+              onChangeText={draft.write}
+              placeholder="Say what it means in your own words"
+              placeholderTextColor={colors.muted}
+              maxLength={DESCRIBE_MAX_LENGTH}
+              editable={!busy}
+              multiline
+            />
             <Pressable
-              onPress={check}
-              disabled={!board.ready || busy}
+              onPress={send}
+              disabled={!draft.ready || busy}
               accessibilityRole="button"
-              style={[styles.button, (!board.ready || busy) && styles.off]}
+              style={[styles.button, (!draft.ready || busy) && styles.off]}
             >
               <Text style={styles.buttonLabel}>Check</Text>
             </Pressable>
           </>
         ) : null}
 
-        {board.phase === 'checked' && round ? (
+        {draft.phase === 'judged' && verdict ? (
           <>
-            <Text style={styles.score}>
-              {right} of {round.verdict?.perBlank.length} in the right place.
+            <Text style={styles.description}>{draft.description}</Text>
+            <Text style={[styles.score, verdict.score >= DESCRIBE_PASS_SCORE ? styles.right : styles.wrong]}>
+              {verdict.score} / 10
             </Text>
+            <Text style={styles.note}>{verdict.feedback}</Text>
             {active ? (
               <Pressable
                 onPress={() => next.mutate()}
@@ -159,7 +139,7 @@ export default function Gaps() {
             </Pressable>
           </>
         ) : null}
-        {answer.isError ? <Text style={styles.error}>Could not check that — try again</Text> : null}
+        {answer.isError ? <Text style={styles.error}>{answerError(answer.error)}</Text> : null}
         {complete.isError ? <Text style={styles.error}>Could not end the session — try again</Text> : null}
         {cancel.isError ? <Text style={styles.error}>Could not cancel the session — try again</Text> : null}
       </ScrollView>
@@ -170,21 +150,18 @@ export default function Gaps() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   body: { padding: spacing.md, gap: spacing.md },
-  story: { fontSize: 17, lineHeight: 30 },
-  blank: { fontSize: 16 },
-  blankEmpty: { color: colors.border },
-  blankFilled: { color: colors.warn, fontWeight: '600', textDecorationLine: 'underline' },
-  blankRight: { color: colors.ok, fontWeight: '600' },
-  blankWrong: { color: colors.error, fontWeight: '600', textDecorationLine: 'line-through' },
-  bank: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
+  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.md, gap: 4 },
+  prompt: { color: colors.muted, fontSize: 13 },
+  expression: { fontSize: 22, fontWeight: '700' },
+  input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
+    borderRadius: 8,
+    padding: spacing.sm,
+    minHeight: 110,
+    fontSize: 16,
+    textAlignVertical: 'top',
   },
-  chipLabel: { fontSize: 13 },
   button: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
   buttonLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
   secondary: {
@@ -195,7 +172,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryLabel: { fontSize: 15, fontWeight: '600' },
-  score: { color: colors.muted, fontSize: 15 },
+  description: { fontSize: 16, lineHeight: 24 },
+  score: { fontSize: 22, fontWeight: '700' },
+  right: { color: colors.ok },
+  wrong: { color: colors.error },
+  note: { color: colors.muted },
   summary: { fontWeight: '600' },
   canceled: { color: colors.muted },
   headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },

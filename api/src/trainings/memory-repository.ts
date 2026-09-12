@@ -154,5 +154,7 @@ const copy = (training?: Training): Training | undefined => {
   if (!training) return undefined
   const base = { ...training, srsEffects: [...training.srsEffects] }
 
-  return base.type === 'chat' ? { ...base, messages: [...base.messages] } : { ...base, rounds: [...base.rounds] }
+  return base.type === 'chat'
+    ? { ...base, messages: [...base.messages] }
+    : ({ ...base, rounds: [...base.rounds] } as Training)
 }

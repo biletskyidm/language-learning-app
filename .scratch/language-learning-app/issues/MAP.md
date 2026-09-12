@@ -27,7 +27,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **19** [End session nudge, completion with persistent averages and narrative](19-end-session-nudge-completion-with-persistent-averages-and-na.md) — blocked by: 16, 18
 - [x] **20** [Cancel training](20-cancel-training.md) — blocked by: 18
 - [x] **21** [Drill framework and Gaps drill as a round session](21-drill-framework-and-gaps-drill-as-a-round-session.md) — blocked by: 19
-- [ ] **22** [Describe-it drill](22-describe-it-drill.md) — blocked by: 21
+- [x] **22** [Describe-it drill](22-describe-it-drill.md) — blocked by: 21
 - [ ] **23** [Smuggle drill](23-smuggle-drill.md) — blocked by: 21
 - [ ] **24** [Settings: target counts per mode and default style](24-settings-target-counts-per-mode-and-default-style.md) — blocked by: 21
 - [ ] **25** [Scenario presets](25-scenario-presets.md) — blocked by: 13

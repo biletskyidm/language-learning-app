@@ -11,6 +11,7 @@ import {
 } from '@contracts'
 import type { LlmGateway } from '../deps'
 import { withRetry } from '../llm/retry'
+import { norm } from './norm'
 import {
   DRILL_CORRECT_SCORE,
   DRILL_WRONG_SCORE,
@@ -20,14 +21,6 @@ import {
 } from './strategy'
 
 const GENERATE_ATTEMPTS = 2
-
-/** Letters, spaces and apostrophes only, so "Break the ice!" and "break the ice" are the same answer. */
-export const norm = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/[^a-z' ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
 
 const shuffled = <T>(items: T[]) => {
   const copy = [...items]
@@ -86,12 +79,14 @@ export class GapsDrill implements DrillStrategy {
     return { index, targets, material }
   }
 
-  judge(round: DrillRound, body: unknown): DrillJudgement {
+  async judge(round: DrillRound, body: unknown): Promise<DrillJudgement> {
     const answerKey = storedAnswerKey(round)
     const parsed = gapsAnswerSchema
       .extend({ fills: z.array(z.string()).length(answerKey.length) })
       .safeParse(body)
-    if (!parsed.success) return { ok: false, message: `fills: expected one phrase per blank (${answerKey.length})` }
+    if (!parsed.success) {
+      return { ok: false, code: 'VALIDATION_ERROR', message: `fills: expected one phrase per blank (${answerKey.length})` }
+    }
 
     const { fills } = parsed.data
 
