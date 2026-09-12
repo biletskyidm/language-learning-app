@@ -8,6 +8,7 @@ import {
   drillRoundResponseSchema,
   GAPS_TARGETS_DEFAULT,
   PICK_LIMIT_DEFAULT,
+  SMUGGLE_TARGETS_DEFAULT,
   sendMessageInputSchema,
   trainingListQuerySchema,
   trainingListResponseSchema,
@@ -21,6 +22,7 @@ import {
   type SrsEffect,
   type Training,
   type TrainingTarget,
+  type TrainingType,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
@@ -32,6 +34,14 @@ import { aggregateSession } from './aggregator'
 
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
+
+/** How many phrases a session picks when the client names none. */
+const DEFAULT_TARGETS: Record<TrainingType, number> = {
+  chat: PICK_LIMIT_DEFAULT,
+  gaps: GAPS_TARGETS_DEFAULT,
+  describe: PICK_LIMIT_DEFAULT,
+  smuggle: SMUGGLE_TARGETS_DEFAULT,
+}
 
 const snapshot = ({ id, expression, meaning }: Expression): TrainingTarget => ({
   expressionId: id,
@@ -103,7 +113,7 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         }
         targets = found.map((expression) => snapshot(expression as Expression))
       } else {
-        const fallback = rest.type === 'gaps' ? GAPS_TARGETS_DEFAULT : PICK_LIMIT_DEFAULT
+        const fallback = DEFAULT_TARGETS[rest.type]
         const picked = await deps.expressions.pick(userId, { limit: limit ?? fallback, now })
         targets = picked.map(snapshot)
       }

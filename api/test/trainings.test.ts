@@ -136,7 +136,7 @@ describe('POST /trainings', () => {
     ['an empty context', { ...chat, context: '  ' }],
     ['a context over 500 characters', { ...chat, context: 'a'.repeat(501) }],
     ['an unknown style', { ...chat, style: 'chatty' }],
-    ['a training type that does not exist yet', { ...chat, type: 'smuggle' }],
+    ['a training type that does not exist', { ...chat, type: 'story' }],
     ['an empty list of expression ids', { ...chat, expressionIds: [] }],
     [
       'more expression ids than a session can hold',

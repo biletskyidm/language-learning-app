@@ -16,6 +16,8 @@ import type {
   AssessmentInput,
   DescribeJudgement,
   DescribeJudgeInput,
+  SmuggleJudgement,
+  SmuggleJudgeInput,
   GapsGeneration,
   GapsGenerationInput,
   LlmGateway,
@@ -35,6 +37,11 @@ const tutorMessageSchema = z.object({ message: z.string().min(1) })
 const gapsGenerationSchema = z.object({ story: z.string().min(1), answers: z.array(z.string().min(1)).min(1) })
 
 const describeJudgementSchema = z.object({ score: z.number().min(0).max(10), feedback: z.string() })
+
+const smuggleJudgementSchema = z.object({
+  results: z.array(z.object({ expression: z.string(), ok: z.boolean(), note: z.string() })),
+  reply: z.string().min(1),
+})
 
 // Structured output has no map type, so the per-target verdicts come back as a list and are keyed here.
 const assessmentOutputSchema = assessmentSchema.omit({ targetPhrasesCorrectness: true }).extend({
@@ -173,6 +180,16 @@ export class OpenRouterGateway implements LlmGateway {
       renderPrompt(loadPrompt('describe-judge'), { expression, meaning, description }),
       { tags: ['describe-judge'] },
     )
+  }
+
+  async judgeSmuggle({ targets, message }: SmuggleJudgeInput): Promise<SmuggleJudgement> {
+    const model = this.model(this.config.DRILL_JUDGE_MODEL).withStructuredOutput(smuggleJudgementSchema, {
+      name: 'smuggle_judgement',
+    })
+
+    return model.invoke(renderPrompt(loadPrompt('smuggle-judge'), { targets: withMeanings(targets), message }), {
+      tags: ['smuggle-judge'],
+    })
   }
 
   private model(name: string | undefined) {

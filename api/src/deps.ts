@@ -57,6 +57,16 @@ export interface DescribeJudgement {
   feedback: string
 }
 
+export interface SmuggleJudgeInput {
+  targets: TrainingTarget[]
+  message: string
+}
+
+export interface SmuggleJudgement {
+  results: { expression: string; ok: boolean; note: string }[]
+  reply: string
+}
+
 export interface LlmGateway {
   draftExpression(input: { text: string }): Promise<ExpressionDraft>
   tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
@@ -65,6 +75,7 @@ export interface LlmGateway {
   summarizeSession(input: SessionAggregate): Promise<Narrative>
   generateGaps(input: GapsGenerationInput): Promise<GapsGeneration>
   judgeDescription(input: DescribeJudgeInput): Promise<DescribeJudgement>
+  judgeSmuggle(input: SmuggleJudgeInput): Promise<SmuggleJudgement>
 }
 
 export interface TokenVerifier {

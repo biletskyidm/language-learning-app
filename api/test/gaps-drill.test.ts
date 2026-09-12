@@ -105,15 +105,6 @@ describe('POST /trainings for a drill', () => {
     expect(res.status).toBe(201)
     expect(gapsTrainingSchema.parse(await res.json()).targets).toHaveLength(GAPS_TARGETS_DEFAULT)
   })
-
-  it('refuses a drill type that has no strategy yet', async () => {
-    const h = await harness(new FakeLlmGateway())
-
-    const res = await post(h, '/trainings', { type: 'smuggle', expressionIds: ['e1'] })
-
-    expect(res.status).toBe(400)
-    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
-  })
 })
 
 describe('POST /trainings/:id/rounds', () => {
