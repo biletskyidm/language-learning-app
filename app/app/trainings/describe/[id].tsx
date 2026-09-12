@@ -84,7 +84,6 @@ export default function Describe() {
           <View style={styles.card}>
             <Text style={styles.prompt}>Explain this without using its words</Text>
             <Text style={styles.expression}>{round.material.expression}</Text>
-            <Text style={styles.meaning}>{round.targets[0]?.meaning}</Text>
           </View>
         ) : null}
 
@@ -154,7 +153,6 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.md, gap: 4 },
   prompt: { color: colors.muted, fontSize: 13 },
   expression: { fontSize: 22, fontWeight: '700' },
-  meaning: { color: colors.muted },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
