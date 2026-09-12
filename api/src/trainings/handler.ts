@@ -241,6 +241,12 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         return c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
       }
 
+      // A retry after a lost response must replay the committed round rather than deal — and pay for — another.
+      const open = rounds.at(-1)
+      if (open && !open.answeredAt) {
+        return c.json(drillRoundResponseSchema.parse({ round: strategy.redact(open), training: shown(training) }))
+      }
+
       let round: DrillRound
       try {
         round = await strategy.generate({ index: rounds.length, targets: training.targets })
@@ -328,9 +334,18 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
           training.id,
           strategy.aggregate(training.rounds),
           deps.clock(),
-          training.rounds.length,
+          {
+            rounds: training.rounds.length,
+            answered: training.rounds.filter((round) => round.answeredAt).length,
+          },
         )
-        if (!finished) return c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
+        if (!finished) {
+          const current = await deps.trainings.findById(userId, training.id)
+
+          return current?.status === 'ACTIVE'
+            ? c.json(apiError('TURN_CONFLICT', 'This session moved on — reopen it'), 409)
+            : c.json(apiError('TRAINING_NOT_ACTIVE', 'This session is already over'), 409)
+        }
 
         return c.json(trainingSchema.parse(shown(finished)))
       }

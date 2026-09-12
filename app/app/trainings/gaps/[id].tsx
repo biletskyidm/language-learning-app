@@ -105,7 +105,7 @@ export default function Gaps() {
 
         {round ? <Story round={round} board={board} /> : null}
 
-        {board.phase === 'playing' ? (
+        {active && board.phase === 'playing' ? (
           <>
             <View style={styles.bank}>
               {round?.material.bank.map((phrase) => (
@@ -151,7 +151,7 @@ export default function Gaps() {
         ) : null}
 
         {busy ? <ActivityIndicator style={styles.state} /> : null}
-        {next.isError ? (
+        {active && next.isError ? (
           <>
             <Text style={styles.error}>Could not put together a round</Text>
             <Pressable onPress={() => next.mutate()} accessibilityRole="button" style={styles.secondary}>

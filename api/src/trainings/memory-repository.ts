@@ -91,11 +91,12 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     id: string,
     aggregates: DrillAggregates,
     completedAt: Date,
-    expectedCount: number,
+    expected: { rounds: number; answered: number },
   ): Promise<Training | undefined> {
     const training = this.stored(userId, id)
     const drill = asDrill(training)
-    if (!training || !drill || training.status !== 'ACTIVE' || drill.rounds.length !== expectedCount) return undefined
+    if (!training || !drill || training.status !== 'ACTIVE' || drill.rounds.length !== expected.rounds) return undefined
+    if (drill.rounds.filter((round) => round.answeredAt).length !== expected.answered) return undefined
 
     training.status = 'COMPLETED'
     training.completedAt = completedAt

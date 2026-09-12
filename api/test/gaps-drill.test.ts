@@ -159,14 +159,26 @@ describe('POST /trainings/:id/rounds', () => {
   })
 
   it('numbers a second round after the first', async () => {
-    const session = await startGaps(
+    const session = await played(
+      ['break the ice', 'touch base'],
       new FakeLlmGateway({ gapsGenerations: [generation, { ...generation }] }),
     )
-    await post(session, `/trainings/${session.training.id}/rounds`)
 
     const res = await post(session, `/trainings/${session.training.id}/rounds`)
 
     expect(drillRoundResponseSchema.parse(await res.json()).round.index).toBe(1)
+  })
+
+  it('replays the open round instead of dealing another when the response was lost', async () => {
+    const session = await firstRound(new FakeLlmGateway({ gapsGenerations: [generation, { ...generation }] }))
+
+    const res = await post(session, `/trainings/${session.training.id}/rounds`)
+
+    const body = drillRoundResponseSchema.parse(await res.json())
+    expect(body.round.index).toBe(0)
+    expect(body.round.material.answerKey).toBeUndefined()
+    expect(body.training.rounds).toHaveLength(1)
+    expect(session.llm.gapsCalls).toHaveLength(1)
   })
 
   it('retries a generation whose answers are not the session targets', async () => {
@@ -361,6 +373,19 @@ describe('POST /trainings/:id/complete for a drill', () => {
     const res = await post(session, `/trainings/${session.training.id}/complete`)
 
     expect(gapsTrainingSchema.parse(await res.json()).aggregates).toEqual({ rounds: 1, correct: 2, wrong: 0 })
+  })
+
+  it('refuses a completion whose counts were read before an answer landed', async () => {
+    const session = await played(['break the ice', 'touch base'])
+    const concurrent = new InMemoryTrainingRepository(session.stored)
+
+    const stale = await concurrent.completeDrill('me', session.training.id, { rounds: 0, correct: 0, wrong: 0 }, NOW, {
+      rounds: 1,
+      answered: 0,
+    })
+
+    expect(stale).toBeUndefined()
+    expect(session.stored[0]?.status).toBe('ACTIVE')
   })
 
   it('refuses to complete a session twice', async () => {

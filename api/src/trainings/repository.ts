@@ -32,12 +32,13 @@ export interface TrainingRepository {
     finalAssessment: FinalAssessment,
     expectedCount: number,
   ): Promise<Training | undefined>
+  /** Aggregates are computed from a read, so an answer landing since that read must lose the write. */
   completeDrill(
     userId: string,
     id: string,
     aggregates: DrillAggregates,
     completedAt: Date,
-    expectedCount: number,
+    expected: { rounds: number; answered: number },
   ): Promise<Training | undefined>
   cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined>
 }

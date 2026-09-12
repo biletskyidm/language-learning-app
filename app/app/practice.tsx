@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { createTrainingInputSchema, type ChatStyle, type Expression } from '@contracts'
+import { createTrainingInputSchema, GAPS_TARGETS_DEFAULT, type ChatStyle, type Expression } from '@contracts'
 import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
@@ -161,7 +161,10 @@ export default function Practice() {
   const body = () => {
     if (items) {
       return items.length ? (
-        <Targets initial={items} mode={mode === 'gaps' ? 'gaps' : 'chat'} />
+        <Targets
+          initial={mode === 'gaps' ? items.slice(0, GAPS_TARGETS_DEFAULT) : items}
+          mode={mode === 'gaps' ? 'gaps' : 'chat'}
+        />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )

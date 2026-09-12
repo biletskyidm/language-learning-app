@@ -97,15 +97,23 @@ export class MongoTrainingRepository implements TrainingRepository {
     id: string,
     aggregates: DrillAggregates,
     completedAt: Date,
-    expectedCount: number,
+    expected: { rounds: number; answered: number },
   ): Promise<Training | undefined> {
     const filter = idFilter(userId, id)
     if (!filter) return undefined
 
+    const answered = {
+      $expr: {
+        $eq: [
+          { $size: { $filter: { input: '$rounds', cond: { $ne: ['$$this.answeredAt', null] } } } },
+          expected.answered,
+        ],
+      },
+    }
     const doc = await this.db
       .collection(TRAININGS_COLLECTION)
       .findOneAndUpdate(
-        { ...filter, status: 'ACTIVE', rounds: { $size: expectedCount } },
+        { ...filter, status: 'ACTIVE', rounds: { $size: expected.rounds }, ...answered },
         { $set: { status: 'COMPLETED', completedAt, aggregates } },
         { returnDocument: 'after' },
       )
