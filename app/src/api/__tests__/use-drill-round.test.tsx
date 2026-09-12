@@ -135,7 +135,7 @@ describe('useAnswerRound', () => {
     const { result } = await renderHook(() => useAnswerRound('t1'), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ index: 0, fills: ['break the ice', 'touch base'] })
+      result.current.mutate({ index: 0, answer: { fills: ['break the ice', 'touch base'] } })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -151,7 +151,7 @@ describe('useAnswerRound', () => {
     const { result } = await renderHook(() => useAnswerRound('t1'), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ index: 0, fills: ['break the ice', 'touch base'] })
+      result.current.mutate({ index: 0, answer: { fills: ['break the ice', 'touch base'] } })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -163,7 +163,7 @@ describe('useAnswerRound', () => {
     const { result } = await renderHook(() => useAnswerRound('t1'), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ index: 0, fills: ['break the ice', 'touch base'] })
+      result.current.mutate({ index: 0, answer: { fills: ['break the ice', 'touch base'] } })
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -177,7 +177,7 @@ describe('useAnswerRound', () => {
     const { result } = await renderHook(() => useAnswerRound('t1'), { wrapper })
 
     await act(async () => {
-      result.current.mutate({ index: 0, fills: ['break the ice', 'touch base'] })
+      result.current.mutate({ index: 0, answer: { fills: ['break the ice', 'touch base'] } })
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))

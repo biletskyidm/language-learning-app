@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   apiErrorSchema,
   drillAnswerResponseSchema,
+  gapsMaterialSchema,
+  gapsVerdictSchema,
   drillRoundResponseSchema,
   gapsTrainingSchema,
   GAPS_TARGETS_DEFAULT,
@@ -121,14 +123,14 @@ describe('POST /trainings/:id/rounds', () => {
     expect(res.status).toBe(200)
     const { round } = drillRoundResponseSchema.parse(body)
     expect(round.index).toBe(0)
-    expect(round.material.parts).toEqual(PARTS)
+    expect(gapsMaterialSchema.parse(round.material).parts).toEqual(PARTS)
   })
 
   it('offers every target in the bank', async () => {
     const { body } = await firstRound()
 
     const { round } = drillRoundResponseSchema.parse(body)
-    expect([...round.material.bank].sort()).toEqual(['break the ice', 'touch base'])
+    expect([...gapsMaterialSchema.parse(round.material).bank].sort()).toEqual(['break the ice', 'touch base'])
   })
 
   it('keeps the answer key off an unanswered round, so the blanks cannot be read off the wire', async () => {
@@ -176,7 +178,7 @@ describe('POST /trainings/:id/rounds', () => {
 
     const body = drillRoundResponseSchema.parse(await res.json())
     expect(body.round.index).toBe(0)
-    expect(body.round.material.answerKey).toBeUndefined()
+    expect(gapsMaterialSchema.parse(body.round.material).answerKey).toBeUndefined()
     expect(body.training.rounds).toHaveLength(1)
     expect(session.llm.gapsCalls).toHaveLength(1)
   })
@@ -259,7 +261,7 @@ describe('POST /trainings/:id/rounds/:index/answer', () => {
     const { answerRes, answer } = await played(['break the ice', 'ballpark figure'])
 
     expect(answerRes.status).toBe(200)
-    expect(drillAnswerResponseSchema.parse(answer).verdict.perBlank).toEqual([
+    expect(gapsVerdictSchema.parse(drillAnswerResponseSchema.parse(answer).verdict).perBlank).toEqual([
       { expected: 'break the ice', given: 'break the ice', correct: true },
       { expected: 'touch base', given: 'ballpark figure', correct: false },
     ])

@@ -26,8 +26,8 @@ export const useAnswerRound = (trainingId: string) => {
   const detail = [TRAININGS_KEY, 'detail', trainingId]
 
   return useMutation({
-    mutationFn: ({ index, fills }: { index: number; fills: string[] }) =>
-      apiPost(`/trainings/${trainingId}/rounds/${index}/answer`, { fills }, drillAnswerResponseSchema),
+    mutationFn: ({ index, answer }: { index: number; answer: unknown }) =>
+      apiPost(`/trainings/${trainingId}/rounds/${index}/answer`, answer, drillAnswerResponseSchema),
     onSuccess: ({ training }) => {
       queryClient.setQueryData(detail, training)
       queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY] })

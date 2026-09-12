@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { norm } from '../src/drills/gaps'
+import { norm } from '../src/drills/norm'
 
 describe('norm', () => {
   it('ignores capitalisation', () => {

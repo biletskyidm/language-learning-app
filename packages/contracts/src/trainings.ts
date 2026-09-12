@@ -141,8 +141,47 @@ export const gapsTrainingSchema = baseTrainingSchema.extend({
   aggregates: drillAggregatesSchema.optional(),
 })
 
+export const DESCRIBE_MIN_LENGTH = 10
+export const DESCRIBE_MAX_LENGTH = 600
+
+/** candidates are every target of the session: the judge picks among them, so the guess is always one of mine. */
+export const describeMaterialSchema = z.object({
+  targetExpressionId: z.string(),
+  expression: z.string(),
+  candidates: z.array(z.string()).min(1),
+})
+
+export const describeAnswerSchema = z.object({
+  description: z.string().trim().min(DESCRIBE_MIN_LENGTH).max(DESCRIBE_MAX_LENGTH),
+})
+
+export const describeVerdictSchema = z.object({
+  guess: z.string(),
+  correct: z.boolean(),
+  note: z.string(),
+})
+
+export const describeRoundSchema = z.object({
+  index: z.number().int().min(0),
+  targets: z.array(trainingTargetSchema),
+  material: describeMaterialSchema,
+  answer: describeAnswerSchema.optional(),
+  verdict: describeVerdictSchema.optional(),
+  answeredAt: z.coerce.date().optional(),
+})
+
+export const describeTrainingSchema = baseTrainingSchema.extend({
+  type: z.literal('describe'),
+  rounds: z.array(describeRoundSchema).default([]),
+  aggregates: drillAggregatesSchema.optional(),
+})
+
 /** The union grows a member per drill type; the discriminator keeps one collection readable. */
-export const trainingSchema = z.discriminatedUnion('type', [chatTrainingSchema, gapsTrainingSchema])
+export const trainingSchema = z.discriminatedUnion('type', [
+  chatTrainingSchema,
+  gapsTrainingSchema,
+  describeTrainingSchema,
+])
 
 export const trainingSummarySchema = baseTrainingSchema.omit({ srsEffects: true }).extend({
   type: trainingTypeSchema,
@@ -178,9 +217,12 @@ export const createChatTrainingInputSchema = targetChoiceSchema.extend({
 
 export const createGapsTrainingInputSchema = targetChoiceSchema.extend({ type: z.literal('gaps') })
 
+export const createDescribeTrainingInputSchema = targetChoiceSchema.extend({ type: z.literal('describe') })
+
 export const createTrainingInputSchema = z.discriminatedUnion('type', [
   createChatTrainingInputSchema,
   createGapsTrainingInputSchema,
+  createDescribeTrainingInputSchema,
 ])
 
 /** turnId is the client's idempotency key: resending it replays the turn instead of starting a second one. */
@@ -201,12 +243,12 @@ export const chatTurnResponseSchema = z.object({
  * The round and training members grow into unions as drill types are added.
  */
 export const drillRoundResponseSchema = z.object({
-  round: gapsRoundSchema,
-  training: gapsTrainingSchema,
+  round: z.union([gapsRoundSchema, describeRoundSchema]),
+  training: z.discriminatedUnion('type', [gapsTrainingSchema, describeTrainingSchema]),
 })
 
 export const drillAnswerResponseSchema = drillRoundResponseSchema.extend({
-  verdict: gapsVerdictSchema,
+  verdict: z.union([gapsVerdictSchema, describeVerdictSchema]),
   srsEffects: z.array(srsEffectSchema),
 })
 
@@ -233,6 +275,12 @@ export type GapsAnswer = z.infer<typeof gapsAnswerSchema>
 export type GapsVerdict = z.infer<typeof gapsVerdictSchema>
 export type GapsRound = z.infer<typeof gapsRoundSchema>
 export type GapsTraining = z.infer<typeof gapsTrainingSchema>
+export type DescribeMaterial = z.infer<typeof describeMaterialSchema>
+export type DescribeAnswer = z.infer<typeof describeAnswerSchema>
+export type DescribeVerdict = z.infer<typeof describeVerdictSchema>
+export type DescribeRound = z.infer<typeof describeRoundSchema>
+export type DescribeTraining = z.infer<typeof describeTrainingSchema>
+export type CreateDescribeTrainingInput = z.infer<typeof createDescribeTrainingInputSchema>
 export type DrillAggregates = z.infer<typeof drillAggregatesSchema>
 export type DrillRoundResponse = z.infer<typeof drillRoundResponseSchema>
 export type DrillAnswerResponse = z.infer<typeof drillAnswerResponseSchema>

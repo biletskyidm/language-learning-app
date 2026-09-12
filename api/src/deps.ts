@@ -46,6 +46,17 @@ export interface GapsGeneration {
   answers: string[]
 }
 
+export interface DescribeJudgeInput {
+  description: string
+  candidates: string[]
+}
+
+/** guess is one of the candidates as the model spelled it; matching it to a target is the drill's job. */
+export interface DescribeJudgement {
+  guess: string
+  note: string
+}
+
 export interface LlmGateway {
   draftExpression(input: { text: string }): Promise<ExpressionDraft>
   tutorFirstMessage(input: TutorFirstMessageInput): Promise<string>
@@ -53,6 +64,7 @@ export interface LlmGateway {
   assessMessage(input: AssessmentInput): Promise<Assessment>
   summarizeSession(input: SessionAggregate): Promise<Narrative>
   generateGaps(input: GapsGenerationInput): Promise<GapsGeneration>
+  judgeDescription(input: DescribeJudgeInput): Promise<DescribeJudgement>
 }
 
 export interface TokenVerifier {

@@ -14,6 +14,8 @@ import {
 import type { Config } from '../config'
 import type {
   AssessmentInput,
+  DescribeJudgement,
+  DescribeJudgeInput,
   GapsGeneration,
   GapsGenerationInput,
   LlmGateway,
@@ -31,6 +33,8 @@ const draftSchema = expressionDraftSchema.extend({ partOfSpeech: partOfSpeechSch
 const tutorMessageSchema = z.object({ message: z.string().min(1) })
 
 const gapsGenerationSchema = z.object({ story: z.string().min(1), answers: z.array(z.string().min(1)).min(1) })
+
+const describeJudgementSchema = z.object({ guess: z.string().min(1), note: z.string() })
 
 // Structured output has no map type, so the per-target verdicts come back as a list and are keyed here.
 const assessmentOutputSchema = assessmentSchema.omit({ targetPhrasesCorrectness: true }).extend({
@@ -158,6 +162,20 @@ export class OpenRouterGateway implements LlmGateway {
     return model.invoke(renderPrompt(loadPrompt('gaps-generate'), { targets: bullets(targets) }), {
       tags: ['gaps-generate'],
     })
+  }
+
+  async judgeDescription({ description, candidates }: DescribeJudgeInput): Promise<DescribeJudgement> {
+    const model = this.model(this.config.DRILL_JUDGE_MODEL).withStructuredOutput(describeJudgementSchema, {
+      name: 'describe_judgement',
+    })
+
+    return model.invoke(
+      renderPrompt(loadPrompt('describe-judge'), {
+        candidates: candidates.map((candidate) => `- ${candidate}`).join('\n'),
+        description,
+      }),
+      { tags: ['describe-judge'] },
+    )
   }
 
   private model(name: string | undefined) {
