@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { SMUGGLE_MAX_LENGTH } from '@contracts'
+import { SMUGGLE_MAX_LENGTH, SMUGGLE_PASS_SCORE, SMUGGLE_WEAK_SCORE } from '@contracts'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
@@ -9,6 +9,9 @@ import { useTraining } from '../../../src/api/use-training'
 import { openEndMenu } from '../../../src/components/session-menu'
 import { useSmuggleDraft } from '../../../src/components/smuggle-draft'
 import { colors, spacing } from '../../../src/theme/tokens'
+
+const bandColor = (score: number) =>
+  score >= SMUGGLE_PASS_SCORE ? colors.ok : score <= SMUGGLE_WEAK_SCORE ? colors.error : colors.warn
 
 export default function Smuggle() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -79,17 +82,20 @@ export default function Smuggle() {
             <Text style={styles.prompt}>Work every phrase into one natural message</Text>
             <View style={styles.chips}>
               {round.material.targets.map((target) => {
-                const ok = draft.landed.get(target.expression)
+                const score = draft.scores.get(target.expression)
 
                 return (
                   <View
                     key={target.expressionId}
                     accessibilityLabel={`${target.expression}, ${
-                      ok === undefined ? 'not judged yet' : ok ? 'landed' : 'missed'
+                      score === undefined ? 'not judged yet' : `scored ${score} out of 10`
                     }`}
-                    style={[styles.chip, ok === true && styles.chipOk, ok === false && styles.chipBad]}
+                    style={[
+                      styles.chip,
+                      score !== undefined && { borderColor: bandColor(score), backgroundColor: bandColor(score) },
+                    ]}
                   >
-                    <Text style={[styles.chipLabel, ok !== undefined && styles.chipLabelJudged]}>
+                    <Text style={[styles.chipLabel, score !== undefined && styles.chipLabelJudged]}>
                       {target.expression}
                     </Text>
                   </View>
@@ -126,9 +132,12 @@ export default function Smuggle() {
           <>
             <Text style={styles.message}>{draft.message}</Text>
             <Text style={styles.reply}>{verdict.reply}</Text>
-            {verdict.results.map(({ expression, ok, note }) => (
+            {verdict.results.map(({ expression, score, note }) => (
               <Text key={expression} style={styles.note}>
-                <Text style={ok ? styles.right : styles.wrong}>{expression}</Text> — {note}
+                <Text style={[styles.noteLabel, { color: bandColor(score) }]}>
+                  {expression} {score}/10
+                </Text>{' '}
+                — {note}
               </Text>
             ))}
             {active ? (
@@ -173,8 +182,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 5,
   },
-  chipOk: { borderColor: colors.ok, backgroundColor: colors.ok },
-  chipBad: { borderColor: colors.error, backgroundColor: colors.error },
   chipLabel: { fontSize: 13, color: colors.muted },
   chipLabelJudged: { color: '#fff', fontWeight: '600' },
   input: {
@@ -205,8 +212,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   note: { color: colors.muted, fontSize: 13 },
-  right: { color: colors.ok, fontWeight: '600' },
-  wrong: { color: colors.error, fontWeight: '600' },
+  noteLabel: { fontWeight: '600' },
   summary: { fontWeight: '600' },
   canceled: { color: colors.muted },
   headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },

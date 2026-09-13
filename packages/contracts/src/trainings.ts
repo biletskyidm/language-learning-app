@@ -189,9 +189,13 @@ export const smuggleAnswerSchema = z.object({
 
 /** One result per target of the round, in the round's order; reply is the tutor answering in character. */
 export const smuggleVerdictSchema = z.object({
-  results: z.array(z.object({ expression: z.string(), ok: z.boolean(), note: z.string() })),
+  results: z.array(z.object({ expression: z.string(), score: z.number().min(0).max(10), note: z.string() })),
   reply: z.string(),
 })
+
+/** The SRS ladder's own bands: 7 earns a full interval, and 3 or less earns none. */
+export const SMUGGLE_PASS_SCORE = 7
+export const SMUGGLE_WEAK_SCORE = 3
 
 export const smuggleRoundSchema = z.object({
   index: z.number().int().min(0),

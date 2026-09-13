@@ -6,6 +6,7 @@ import {
   smuggleMaterialSchema,
   smuggleTrainingSchema,
   smuggleVerdictSchema,
+  SMUGGLE_PASS_SCORE,
   SMUGGLE_TARGETS_DEFAULT,
   type Expression,
   type SmuggleTraining,
@@ -42,17 +43,24 @@ const VOCABULARY = [
 const MESSAGE =
   'I tried to break the ice with a joke, then said we should touch base on Friday once I have a ballpark figure.'
 
-const result = (expression: string, ok: boolean) => ({ expression, ok, note: ok ? 'Natural fit.' : 'Not quite.' })
+const result = (expression: string, score: number) => ({
+  expression,
+  score,
+  note: score >= SMUGGLE_PASS_SCORE ? 'Natural fit.' : 'Not quite.',
+})
 
-const judgement = (results: { expression: string; ok: boolean; note: string }[], reply = 'Sounds good — Friday works.') => ({
+const judgement = (
+  results: { expression: string; score: number; note: string }[],
+  reply = 'Sounds good — Friday works.',
+) => ({
   results,
   reply,
 })
 
-const ALL_OK = judgement([
-  result('break the ice', true),
-  result('touch base', true),
-  result('a ballpark figure', true),
+const ALL_LANDED = judgement([
+  result('break the ice', 9),
+  result('touch base', 8),
+  result('a ballpark figure', 9),
 ])
 
 type Harness = {
@@ -155,7 +163,7 @@ describe('POST /trainings/:id/rounds for a smuggle session', () => {
   })
 
   it('deals a second round on the same three targets', async () => {
-    const session = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_OK] }))
+    const session = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_LANDED] }))
 
     const res = await post(session, `/trainings/${session.training.id}/rounds`)
 
@@ -165,7 +173,7 @@ describe('POST /trainings/:id/rounds for a smuggle session', () => {
 
 describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () => {
   it('hands the judge the round targets and the message', async () => {
-    const { llm } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_OK] }))
+    const { llm } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_LANDED] }))
 
     expect(llm.smuggleCalls).toEqual([
       {
@@ -180,7 +188,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
   })
 
   it('keeps the tutor reply on the verdict', async () => {
-    const { answerRes, answer } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_OK] }))
+    const { answerRes, answer } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_LANDED] }))
 
     expect(answerRes.status).toBe(200)
     const { verdict } = drillAnswerResponseSchema.parse(answer)
@@ -192,27 +200,27 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
       MESSAGE,
       new FakeLlmGateway({
         smuggleJudgements: [
-          judgement([result('touch base', true), result('break the ice', false), result('a ballpark figure', true)]),
+          judgement([result('touch base', 8), result('break the ice', 3), result('a ballpark figure', 9)]),
         ],
       }),
     )
 
     expect(smuggleVerdictSchema.parse(drillAnswerResponseSchema.parse(answer).verdict).results).toEqual([
-      result('break the ice', false),
-      result('touch base', true),
-      result('a ballpark figure', true),
+      result('break the ice', 3),
+      result('touch base', 8),
+      result('a ballpark figure', 9),
     ])
   })
 
   it('marks a target the judge said nothing about as not found', async () => {
     const { answer } = await answered(
       MESSAGE,
-      new FakeLlmGateway({ smuggleJudgements: [judgement([result('break the ice', true), result('touch base', true)])] }),
+      new FakeLlmGateway({ smuggleJudgements: [judgement([result('break the ice', 9), result('touch base', 8)])] }),
     )
 
     const { results } = smuggleVerdictSchema.parse(drillAnswerResponseSchema.parse(answer).verdict)
     expect(results).toHaveLength(3)
-    expect(results[2]).toEqual({ expression: 'a ballpark figure', ok: false, note: 'not found' })
+    expect(results[2]).toEqual({ expression: 'a ballpark figure', score: 0, note: 'not found' })
   })
 
   it('drops a result for a phrase that was never a target of this round', async () => {
@@ -221,10 +229,10 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
       new FakeLlmGateway({
         smuggleJudgements: [
           judgement([
-            result('break the ice', true),
-            result('touch base', true),
-            result('a ballpark figure', true),
-            result('raise the bar', true),
+            result('break the ice', 9),
+            result('touch base', 8),
+            result('a ballpark figure', 9),
+            result('raise the bar', 9),
           ]),
         ],
       }),
@@ -234,12 +242,12 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
     expect(results.map(({ expression }) => expression)).toEqual(['break the ice', 'touch base', 'a ballpark figure'])
   })
 
-  it('writes 8 for every target that landed and 2 for the one that did not', async () => {
+  it("writes the judge's score for each target, flooring a phrase that never landed at 1", async () => {
     const { answer, vocabulary } = await answered(
       MESSAGE,
       new FakeLlmGateway({
         smuggleJudgements: [
-          judgement([result('break the ice', true), result('touch base', false), result('a ballpark figure', true)]),
+          judgement([result('break the ice', 9), result('touch base', 5), result('a ballpark figure', 0)]),
         ],
       }),
     )
@@ -247,22 +255,26 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
     expect(drillAnswerResponseSchema.parse(answer).srsEffects).toEqual([
       expect.objectContaining({
         expressionId: 'e1',
-        scoreWritten: 8,
+        scoreWritten: 9,
         source: { kind: 'round', index: 0 },
-        after: { score: 8, timesPracticed: 1, nextTrainingAt: daysAfter(1) },
+        after: { score: 9, timesPracticed: 1, nextTrainingAt: daysAfter(1.5) },
       }),
       expect.objectContaining({
         expressionId: 'e2',
-        scoreWritten: 2,
-        after: { score: 2, timesPracticed: 1, nextTrainingAt: NOW },
+        scoreWritten: 5,
+        after: { score: 5, timesPracticed: 1, nextTrainingAt: daysAfter(0.5) },
       }),
-      expect.objectContaining({ expressionId: 'e3', scoreWritten: 8 }),
+      expect.objectContaining({
+        expressionId: 'e3',
+        scoreWritten: 1,
+        after: { score: 1, timesPracticed: 1, nextTrainingAt: NOW },
+      }),
     ])
-    expect(vocabulary.map(({ score }) => score)).toEqual([8, 2, 8])
+    expect(vocabulary.map(({ score }) => score)).toEqual([9, 5, 1])
   })
 
   it('keeps the message and verdict on the round it belongs to', async () => {
-    const { stored } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_OK] }))
+    const { stored } = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_LANDED] }))
 
     expect((stored[0] as SmuggleTraining).rounds[0]).toMatchObject({
       answer: { message: MESSAGE },
@@ -281,7 +293,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
   })
 
   it('refuses a second answer to the same round', async () => {
-    const session = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_OK] }))
+    const session = await answered(MESSAGE, new FakeLlmGateway({ smuggleJudgements: [ALL_LANDED] }))
 
     const again = await post(session, `/trainings/${session.training.id}/rounds/0/answer`, { message: MESSAGE })
 
@@ -292,7 +304,7 @@ describe('POST /trainings/:id/rounds/:index/answer for a smuggle session', () =>
   it('retries a judge that fails once', async () => {
     const { answerRes, llm } = await answered(
       MESSAGE,
-      new FakeLlmGateway({ smuggleJudgements: [new Error('nope'), ALL_OK] }),
+      new FakeLlmGateway({ smuggleJudgements: [new Error('nope'), ALL_LANDED] }),
     )
 
     expect(answerRes.status).toBe(200)
@@ -317,7 +329,7 @@ describe('POST /trainings/:id/complete for a smuggle session', () => {
       MESSAGE,
       new FakeLlmGateway({
         smuggleJudgements: [
-          judgement([result('break the ice', true), result('touch base', false), result('a ballpark figure', true)]),
+          judgement([result('break the ice', 9), result('touch base', 3), result('a ballpark figure', 7)]),
         ],
       }),
     )

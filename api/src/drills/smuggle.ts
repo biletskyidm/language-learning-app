@@ -4,6 +4,7 @@ import {
   smuggleVerdictSchema,
   SMUGGLE_MAX_LENGTH,
   SMUGGLE_MIN_LENGTH,
+  SMUGGLE_PASS_SCORE,
   type DrillAggregates,
   type DrillRound,
   type SmuggleVerdict,
@@ -12,15 +13,12 @@ import {
 import type { LlmGateway } from '../deps'
 import { withRetry } from '../llm/retry'
 import { norm } from './norm'
-import {
-  DRILL_CORRECT_SCORE,
-  DRILL_WRONG_SCORE,
-  type DrillContext,
-  type DrillJudgement,
-  type DrillStrategy,
-} from './strategy'
+import { type DrillContext, type DrillJudgement, type DrillStrategy } from './strategy'
 
 const JUDGE_ATTEMPTS = 2
+
+/** A written 0 means "not attempted" to the SRS service, so a phrase that never landed still counts as practice. */
+const SRS_FLOOR = 1
 
 /** The judge may skip a target, rename it or invent one; the round's own targets decide what is scored. */
 const resultsFor = (judged: SmuggleVerdict['results'], targets: TrainingTarget[]): SmuggleVerdict['results'] => {
@@ -29,7 +27,7 @@ const resultsFor = (judged: SmuggleVerdict['results'], targets: TrainingTarget[]
   return targets.map(({ expression }) => {
     const found = byNorm.get(norm(expression))
 
-    return found ? { ...found, expression } : { expression, ok: false, note: 'not found' }
+    return found ? { ...found, expression } : { expression, score: 0, note: 'not found' }
   })
 }
 
@@ -63,12 +61,12 @@ export class SmuggleDrill implements DrillStrategy {
 
   scoresFor(round: DrillRound): Map<string, number> {
     const { results } = smuggleVerdictSchema.parse(round.verdict)
-    const byNorm = new Map(results.map(({ expression, ok }) => [norm(expression), ok]))
+    const byNorm = new Map(results.map(({ expression, score }) => [norm(expression), score]))
 
     return new Map(
       round.targets.map(({ expressionId, expression }) => [
         expressionId,
-        byNorm.get(norm(expression)) ? DRILL_CORRECT_SCORE : DRILL_WRONG_SCORE,
+        Math.max(byNorm.get(norm(expression)) ?? 0, SRS_FLOOR),
       ]),
     )
   }
@@ -87,8 +85,8 @@ export class SmuggleDrill implements DrillStrategy {
 
     return {
       rounds: judged.length,
-      correct: results.filter(({ ok }) => ok).length,
-      wrong: results.filter(({ ok }) => !ok).length,
+      correct: results.filter(({ score }) => score >= SMUGGLE_PASS_SCORE).length,
+      wrong: results.filter(({ score }) => score < SMUGGLE_PASS_SCORE).length,
     }
   }
 }

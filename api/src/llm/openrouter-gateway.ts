@@ -39,7 +39,7 @@ const gapsGenerationSchema = z.object({ story: z.string().min(1), answers: z.arr
 const describeJudgementSchema = z.object({ score: z.number().min(0).max(10), feedback: z.string() })
 
 const smuggleJudgementSchema = z.object({
-  results: z.array(z.object({ expression: z.string(), ok: z.boolean(), note: z.string() })),
+  results: z.array(z.object({ expression: z.string(), score: z.number().min(0).max(10), note: z.string() })),
   reply: z.string().min(1),
 })
 

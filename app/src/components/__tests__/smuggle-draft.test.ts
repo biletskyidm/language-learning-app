@@ -21,9 +21,9 @@ const judged = round({
   answer: { message: MESSAGE },
   verdict: {
     results: [
-      { expression: 'break the ice', ok: true, note: 'Natural.' },
-      { expression: 'touch base', ok: false, note: 'Missing.' },
-      { expression: 'a ballpark figure', ok: true, note: 'Good fit.' },
+      { expression: 'break the ice', score: 9, note: 'Natural.' },
+      { expression: 'touch base', score: 0, note: 'Missing.' },
+      { expression: 'a ballpark figure', score: 7, note: 'Good fit.' },
     ],
     reply: 'Sounds good — Friday works.',
   },
@@ -43,7 +43,7 @@ describe('useSmuggleDraft', () => {
 
     expect(result.current.phase).toBe('writing')
     expect(result.current.message).toBe('')
-    expect(result.current.landed.size).toBe(0)
+    expect(result.current.scores.size).toBe(0)
   })
 
   it('holds back a message too short to have smuggled anything', async () => {
@@ -70,14 +70,14 @@ describe('useSmuggleDraft', () => {
     expect(result.current.ready).toBe(false)
   })
 
-  it('lights a chip per target the judge accepted', async () => {
+  it("keeps each judged phrase's score, including a zero", async () => {
     const { result } = await renderHook(() => useSmuggleDraft(judged))
 
     expect(result.current.phase).toBe('judged')
-    expect([...result.current.landed]).toEqual([
-      ['break the ice', true],
-      ['touch base', false],
-      ['a ballpark figure', true],
+    expect([...result.current.scores]).toEqual([
+      ['break the ice', 9],
+      ['touch base', 0],
+      ['a ballpark figure', 7],
     ])
   })
 

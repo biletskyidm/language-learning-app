@@ -63,7 +63,7 @@ export interface SmuggleJudgeInput {
 }
 
 export interface SmuggleJudgement {
-  results: { expression: string; ok: boolean; note: string }[]
+  results: { expression: string; score: number; note: string }[]
   reply: string
 }
 
