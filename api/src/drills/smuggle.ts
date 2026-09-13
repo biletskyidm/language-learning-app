@@ -49,7 +49,7 @@ export class SmuggleDrill implements DrillStrategy {
       return {
         ok: false,
         code: 'VALIDATION_ERROR',
-        message: `message: work all three in, ${SMUGGLE_MIN_LENGTH} to ${SMUGGLE_MAX_LENGTH} characters`,
+        message: `message: work every phrase in, ${SMUGGLE_MIN_LENGTH} to ${SMUGGLE_MAX_LENGTH} characters`,
       }
     }
 

@@ -76,7 +76,7 @@ export default function Smuggle() {
 
         {round ? (
           <>
-            <Text style={styles.prompt}>Work all three into one natural message</Text>
+            <Text style={styles.prompt}>Work every phrase into one natural message</Text>
             <View style={styles.chips}>
               {round.material.targets.map((target) => {
                 const ok = draft.landed.get(target.expression)
@@ -105,7 +105,7 @@ export default function Smuggle() {
               style={styles.input}
               value={draft.message}
               onChangeText={draft.write}
-              placeholder="Write one message that uses all three"
+              placeholder="Write one message that uses them all"
               placeholderTextColor={colors.muted}
               maxLength={SMUGGLE_MAX_LENGTH}
               editable={!busy}

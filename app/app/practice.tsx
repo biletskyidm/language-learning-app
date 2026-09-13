@@ -36,7 +36,7 @@ const MODES: [Mode, string][] = [
 const HINTS: Record<Exclude<Mode, 'chat'>, string> = {
   gaps: 'A short paragraph with these phrases cut out. Put them back.',
   describe: 'One phrase at a time. Explain it without using its words and the tutor scores you.',
-  smuggle: 'Work all three phrases into one natural message and see which ones land.',
+  smuggle: 'Work every phrase into one natural message and see which ones land.',
 }
 
 const START_LABELS: Record<Mode, string> = {
