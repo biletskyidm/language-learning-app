@@ -39,7 +39,9 @@ const rows = () => screen.queryAllByText(/^phrase e/)
 
 const picked = () => mockedApiGet.mock.calls.map(([path]) => path).filter((path) => path.startsWith('/expressions/pick'))
 
-const renderPractice = () => {
+const context = () => screen.getByPlaceholderText(/What is the situation/)
+
+const renderPractice = async () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
   return render(
@@ -60,27 +62,42 @@ describe('Practice', () => {
   })
 
   it('picks as many phrases as the chat setting asks for', async () => {
-    renderPractice()
+    await renderPractice()
 
     await waitFor(() => expect(rows()).toHaveLength(5))
     expect(picked()).toEqual(['/expressions/pick?limit=5'])
   })
 
   it('re-picks for the mode the user switched to', async () => {
-    renderPractice()
+    await renderPractice()
     await waitFor(() => expect(rows()).toHaveLength(5))
 
-    fireEvent.press(screen.getByText('Gaps'))
+    await fireEvent.press(screen.getByText('Gaps'))
 
     await waitFor(() => expect(rows()).toHaveLength(4))
     expect(picked()).toEqual(['/expressions/pick?limit=5', '/expressions/pick?limit=4'])
   })
 
-  it('starts the drill named in the route and re-picks only when it changes', async () => {
-    renderPractice()
+  it('keeps the chat draft while another mode re-picks its targets', async () => {
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await fireEvent.changeText(context(), 'a scrum standup')
+    await fireEvent.press(screen.getByText('formal'))
+
+    await fireEvent.press(screen.getByText('Gaps'))
+    await waitFor(() => expect(rows()).toHaveLength(4))
+    await fireEvent.press(screen.getByText('Chat'))
+
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    expect(context().props.value).toBe('a scrum standup')
+    expect(screen.getByText('formal').parent?.props.accessibilityState).toEqual({ selected: true })
+  })
+
+  it('re-picks only when the mode actually changes', async () => {
+    await renderPractice()
     await waitFor(() => expect(rows()).toHaveLength(5))
 
-    fireEvent.press(screen.getByText('Chat'))
+    await fireEvent.press(screen.getByText('Chat'))
 
     await waitFor(() => expect(picked()).toEqual(['/expressions/pick?limit=5']))
   })

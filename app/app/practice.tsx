@@ -7,7 +7,6 @@ import {
   TARGETS_SETTING,
   type ChatStyle,
   type Expression,
-  type Settings,
 } from '@contracts'
 import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
@@ -75,16 +74,24 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   </View>
 )
 
-type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; initialStyle: ChatStyle }
+/** Lives above the target list so switching modes re-picks the phrases without throwing the draft away. */
+type Draft = {
+  context: string
+  onContext: (context: string) => void
+  style: ChatStyle
+  onStyle: (style: ChatStyle) => void
+}
 
-const StartSession = ({ targets, mode, onMode, initialStyle }: StartProps) => {
-  const [context, setContext] = useState('')
-  const [style, setStyle] = useState<ChatStyle>(initialStyle)
+type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
+
+const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
   const create = useCreateTraining()
 
   const expressionIds = targets.map((target) => target.id)
   const input = createTrainingInputSchema.safeParse(
-    mode === 'chat' ? { type: 'chat', context, style, expressionIds } : { type: mode, expressionIds },
+    mode === 'chat'
+      ? { type: 'chat', context: draft.context, style: draft.style, expressionIds }
+      : { type: mode, expressionIds },
   )
 
   const start = () =>
@@ -108,15 +115,15 @@ const StartSession = ({ targets, mode, onMode, initialStyle }: StartProps) => {
         <>
           <TextInput
             style={styles.context}
-            value={context}
-            onChangeText={setContext}
+            value={draft.context}
+            onChangeText={draft.onContext}
             placeholder="What is the situation? e.g. a scrum standup"
             placeholderTextColor={colors.muted}
             multiline
           />
           <View style={styles.styles}>
             {STYLES.map(([value, label]) => (
-              <Chip key={value} label={label} active={style === value} onPress={() => setStyle(value)} />
+              <Chip key={value} label={label} active={draft.style === value} onPress={() => draft.onStyle(value)} />
             ))}
           </View>
         </>
@@ -136,9 +143,9 @@ const StartSession = ({ targets, mode, onMode, initialStyle }: StartProps) => {
   )
 }
 
-type TargetsProps = { initial: Expression[]; mode: Mode; onMode: (mode: Mode) => void; settings: Settings }
+type TargetsProps = { initial: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
 
-const Targets = ({ initial, mode, onMode, settings }: TargetsProps) => {
+const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
   const vocabulary = useExpressions()
   const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState(false)
@@ -172,7 +179,7 @@ const Targets = ({ initial, mode, onMode, settings }: TargetsProps) => {
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
-      <StartSession targets={targets} mode={mode} onMode={onMode} initialStyle={settings.defaultStyle} />
+      <StartSession targets={targets} mode={mode} onMode={onMode} draft={draft} />
     </>
   )
 }
@@ -184,6 +191,8 @@ const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode
 export default function Practice() {
   const params = useLocalSearchParams<{ mode?: string }>()
   const [mode, setMode] = useState<Mode>(startMode(params.mode))
+  const [context, setContext] = useState('')
+  const [style, setStyle] = useState<ChatStyle>()
   const saved = useSettings()
   // The form seeds its targets and style once, so it must not mount before the saved ones are known.
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
@@ -194,7 +203,13 @@ export default function Practice() {
     if (settings && items) {
       return items.length ? (
         // Each mode picks its own number of phrases, so a switch re-seeds the selection from a fresh pick.
-        <Targets key={mode} initial={items} mode={mode} onMode={setMode} settings={settings} />
+        <Targets
+          key={mode}
+          initial={items}
+          mode={mode}
+          onMode={setMode}
+          draft={{ context, onContext: setContext, style: style ?? settings.defaultStyle, onStyle: setStyle }}
+        />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )
