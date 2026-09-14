@@ -8,7 +8,6 @@ type ScenarioDoc = { _id: ObjectId } & Record<string, unknown>
 
 const toDomain = ({ _id, ...rest }: ScenarioDoc): Scenario => scenarioSchema.parse({ ...rest, id: _id.toHexString() })
 
-/** An id the driver would reject is not a lookup failure worth a 500 — it is simply nothing to find. */
 const idFilter = (userId: string, id: string) => (ObjectId.isValid(id) ? { userId, _id: new ObjectId(id) } : undefined)
 
 export class MongoScenarioRepository implements ScenarioRepository {

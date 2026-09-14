@@ -28,7 +28,6 @@ export type CreateScenarioInput = z.infer<typeof createScenarioInputSchema>
 export type UpdateScenarioInput = z.infer<typeof updateScenarioInputSchema>
 export type ScenarioListResponse = z.infer<typeof scenarioListResponseSchema>
 
-/** Seeded for a user whose list is still empty, so a first chat is one tap away. */
 export const DEFAULT_SCENARIOS: { name: string; context: string; style: ChatStyle }[] = [
   {
     name: 'Scrum standup',

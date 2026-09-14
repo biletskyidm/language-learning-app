@@ -244,7 +244,6 @@ const targetChoiceSchema = z.object({
   limit: z.number().int().min(1).max(PICK_LIMIT_MAX).optional(),
 })
 
-/** A chat is grounded either by free text or by a saved scenario, whose context and style the server copies. */
 export const createChatTrainingInputSchema = targetChoiceSchema
   .extend({
     type: z.literal('chat'),

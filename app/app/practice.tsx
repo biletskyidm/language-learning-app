@@ -216,7 +216,6 @@ export default function Practice() {
   const saved = useSettings()
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
   const presets = useScenarios().data?.items ?? []
-  // The preset may have been edited or deleted on the manage screen, so the saved copy wins over the draft.
   const chosen = presets.find((scenario) => scenario.id === scenarioId)
   const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
   const items = picked.data?.items
