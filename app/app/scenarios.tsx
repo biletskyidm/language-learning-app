@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   createScenarioInputSchema,
   SCENARIO_CONTEXT_MAX,
@@ -107,6 +107,12 @@ export default function Scenarios() {
   const remove = useDeleteScenario()
   const [editing, setEditing] = useState<Scenario | 'new'>()
 
+  const confirmDelete = ({ id, name }: Scenario) =>
+    Alert.alert(`Delete ${name}?`, 'Chats you already started from it keep their situation.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => remove.mutate(id) },
+    ])
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Scenarios' }} />
@@ -128,7 +134,7 @@ export default function Scenarios() {
         data={scenarios.data?.items ?? []}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Row scenario={item} onEdit={() => setEditing(item)} onDelete={() => remove.mutate(item.id)} />
+          <Row scenario={item} onEdit={() => setEditing(item)} onDelete={() => confirmDelete(item)} />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
