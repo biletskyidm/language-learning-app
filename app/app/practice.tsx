@@ -98,9 +98,6 @@ const Presets = ({ presets, selected, onSelect }: PresetsProps) => (
         onPress={() => onSelect(scenario)}
       />
     ))}
-    <Pressable onPress={() => router.push('/scenarios')} accessibilityRole="button" style={styles.manage}>
-      <Text style={styles.manageLabel}>Manage</Text>
-    </Pressable>
   </ScrollView>
 )
 
@@ -298,8 +295,6 @@ const styles = StyleSheet.create({
   },
   styles: { flexDirection: 'row', gap: spacing.sm },
   presets: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  manage: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
-  manageLabel: { color: colors.ok, fontWeight: '600' },
   hint: { color: colors.muted },
   startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
   startButtonOff: { opacity: 0.4 },
