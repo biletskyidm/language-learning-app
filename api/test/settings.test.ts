@@ -151,6 +151,25 @@ describe('settings as the default target count', () => {
     expect(gapsTrainingSchema.parse(await res.json()).targets).toHaveLength(DEFAULT_SETTINGS.gapsTargets)
   })
 
+  it('never reads the settings when the request carries its own limit', async () => {
+    const unreadable = {
+      get: async () => {
+        throw new Error('settings are unreadable')
+      },
+      put: async (_userId: string, settings: Settings) => settings,
+    }
+    const deps = testDeps({
+      expressions: new InMemoryExpressionRepository(Array.from({ length: 12 }, (_, i) => expression(`e${i}`))),
+      settings: unreadable,
+      llm: new FakeLlmGateway({ firstMessages: ['Morning.'] }),
+    })
+
+    const res = await send(createApp(deps), 'POST', '/trainings', { type: 'gaps', limit: 2 })
+
+    expect(res.status).toBe(201)
+    expect(gapsTrainingSchema.parse(await res.json()).targets).toHaveLength(2)
+  })
+
   it('still takes an explicit limit over the saved setting', async () => {
     const { app } = harness({ ...DEFAULT_SETTINGS, chatTargets: 2 })
 

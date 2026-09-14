@@ -102,8 +102,8 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 's
         }
         targets = found.map((expression) => snapshot(expression as Expression))
       } else {
-        const settings = await deps.settings.get(userId)
-        const picked = await deps.expressions.pick(userId, { limit: limit ?? settings[TARGETS_SETTING[rest.type]], now })
+        const size = limit ?? (await deps.settings.get(userId))[TARGETS_SETTING[rest.type]]
+        const picked = await deps.expressions.pick(userId, { limit: size, now })
         targets = picked.map(snapshot)
       }
 
