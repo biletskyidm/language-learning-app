@@ -77,6 +77,7 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
 )
 
 type Draft = {
+  presets: Scenario[]
   context: string
   onContext: (context: string) => void
   style: ChatStyle
@@ -85,25 +86,23 @@ type Draft = {
   onScenario: (scenario: Scenario) => void
 }
 
-const Presets = ({ selected, onSelect }: { selected?: string; onSelect: (scenario: Scenario) => void }) => {
-  const scenarios = useScenarios()
+type PresetsProps = { presets: Scenario[]; selected?: string; onSelect: (scenario: Scenario) => void }
 
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>
-      {scenarios.data?.items.map((scenario) => (
-        <Chip
-          key={scenario.id}
-          label={scenario.name}
-          active={selected === scenario.id}
-          onPress={() => onSelect(scenario)}
-        />
-      ))}
-      <Pressable onPress={() => router.push('/scenarios')} accessibilityRole="button" style={styles.manage}>
-        <Text style={styles.manageLabel}>Manage</Text>
-      </Pressable>
-    </ScrollView>
-  )
-}
+const Presets = ({ presets, selected, onSelect }: PresetsProps) => (
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>
+    {presets.map((scenario) => (
+      <Chip
+        key={scenario.id}
+        label={scenario.name}
+        active={selected === scenario.id}
+        onPress={() => onSelect(scenario)}
+      />
+    ))}
+    <Pressable onPress={() => router.push('/scenarios')} accessibilityRole="button" style={styles.manage}>
+      <Text style={styles.manageLabel}>Manage</Text>
+    </Pressable>
+  </ScrollView>
+)
 
 type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
 
@@ -135,7 +134,7 @@ const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
       </View>
       {mode === 'chat' ? (
         <>
-          <Presets selected={draft.scenarioId} onSelect={draft.onScenario} />
+          <Presets presets={draft.presets} selected={draft.scenarioId} onSelect={draft.onScenario} />
           <TextInput
             style={styles.context}
             value={draft.context}
@@ -219,6 +218,9 @@ export default function Practice() {
   const [scenarioId, setScenarioId] = useState<string>()
   const saved = useSettings()
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
+  const presets = useScenarios().data?.items ?? []
+  // The preset may have been edited or deleted on the manage screen, so the saved copy wins over the draft.
+  const chosen = presets.find((scenario) => scenario.id === scenarioId)
   const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
   const items = picked.data?.items
 
@@ -231,17 +233,18 @@ export default function Practice() {
           mode={mode}
           onMode={setMode}
           draft={{
-            context,
+            presets,
+            context: chosen?.context ?? context,
             onContext: (next) => {
               setContext(next)
               setScenarioId(undefined)
             },
-            style: style ?? settings.defaultStyle,
+            style: chosen?.style ?? style ?? settings.defaultStyle,
             onStyle: (next) => {
               setStyle(next)
               setScenarioId(undefined)
             },
-            scenarioId,
+            scenarioId: chosen?.id,
             onScenario: (scenario) => {
               setContext(scenario.context)
               setStyle(scenario.style)

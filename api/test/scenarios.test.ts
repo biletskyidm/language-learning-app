@@ -77,6 +77,16 @@ describe('GET /scenarios', () => {
     expect(second.map(({ id }) => id)).toEqual(first.map(({ id }) => id))
   })
 
+  it('leaves one set of defaults behind when two first reads race each other', async () => {
+    const { app, scenarios } = harness()
+
+    const [first, second] = await Promise.all([list(app), list(app)])
+
+    expect(first).toHaveLength(DEFAULT_SCENARIOS.length)
+    expect(second).toHaveLength(DEFAULT_SCENARIOS.length)
+    expect(await scenarios.list('me')).toHaveLength(DEFAULT_SCENARIOS.length)
+  })
+
   it('leaves a user who already has scenarios alone', async () => {
     const { app } = harness([scenario('s1', 'me')])
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import type { Expression, Scenario } from '@contracts'
 import Practice from '../../app/practice'
 import { apiGet, apiPost } from '../api/client'
@@ -51,8 +51,10 @@ const picked = () => mockedApiGet.mock.calls.map(([path]) => path).filter((path)
 
 const context = () => screen.getByPlaceholderText(/What is the situation/)
 
+let queryClient: QueryClient
+
 const renderPractice = async () => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -137,6 +139,41 @@ describe('Practice', () => {
       style: 'formal',
     })
     expect(mockedApiPost.mock.calls[0]?.[1]).not.toHaveProperty('scenarioId')
+  })
+
+  it('drops a preset that is no longer saved and falls back to its text', async () => {
+    mockedApiPost.mockResolvedValue({ id: 't1', type: 'chat' })
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await fireEvent.press(await screen.findByText('Scrum standup'))
+
+    await act(async () => {
+      queryClient.setQueryData(['scenarios'], { items: [] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await fireEvent.press(screen.getByText('Start chat'))
+
+    await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
+    expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({
+      type: 'chat',
+      context: 'a scrum standup with my team',
+      style: 'formal',
+    })
+    expect(mockedApiPost.mock.calls[0]?.[1]).not.toHaveProperty('scenarioId')
+  })
+
+  it('follows an edit made on the manage screen', async () => {
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await fireEvent.press(await screen.findByText('Scrum standup'))
+
+    await act(async () => {
+      queryClient.setQueryData(['scenarios'], { items: [{ ...scenario, context: 'a retro', style: 'informal' }] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(context().props.value).toBe('a retro')
+    expect(screen.getByText('informal').parent?.props.accessibilityState).toEqual({ selected: true })
   })
 
   it('re-picks only when the mode actually changes', async () => {

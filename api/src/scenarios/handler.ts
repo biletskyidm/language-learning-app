@@ -19,9 +19,7 @@ export const scenarioRoutes = (deps: Pick<Deps, 'scenarios' | 'clock'>) =>
     .get('/scenarios', async (c) => {
       const userId = c.get('userId')
       const saved = await deps.scenarios.list(userId)
-      const items = saved.length
-        ? saved
-        : await Promise.all(DEFAULT_SCENARIOS.map((preset) => deps.scenarios.create(userId, preset, deps.clock())))
+      const items = saved.length ? saved : await deps.scenarios.seedDefaults(userId, DEFAULT_SCENARIOS, deps.clock())
 
       return c.json(scenarioListResponseSchema.parse({ items }))
     })

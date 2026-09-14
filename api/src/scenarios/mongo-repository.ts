@@ -40,6 +40,20 @@ export class MongoScenarioRepository implements ScenarioRepository {
     return toDomain({ ...doc, _id: insertedId })
   }
 
+  async seedDefaults(userId: string, presets: CreateScenarioInput[], createdAt: Date): Promise<Scenario[]> {
+    await this.db.collection(SCENARIOS_COLLECTION).bulkWrite(
+      presets.map((preset) => ({
+        updateOne: {
+          filter: { userId, name: preset.name },
+          update: { $setOnInsert: { userId, createdAt, ...preset } },
+          upsert: true,
+        },
+      })),
+    )
+
+    return this.list(userId)
+  }
+
   async update(userId: string, id: string, patch: UpdateScenarioInput): Promise<Scenario | undefined> {
     const filter = idFilter(userId, id)
     if (!filter) return undefined

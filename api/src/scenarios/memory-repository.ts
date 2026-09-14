@@ -19,6 +19,15 @@ export class InMemoryScenarioRepository implements ScenarioRepository {
     return created
   }
 
+  async seedDefaults(userId: string, presets: CreateScenarioInput[], createdAt: Date): Promise<Scenario[]> {
+    for (const preset of presets) {
+      const taken = this.scenarios.some((scenario) => scenario.userId === userId && scenario.name === preset.name)
+      if (!taken) await this.create(userId, preset, createdAt)
+    }
+
+    return this.list(userId)
+  }
+
   async update(userId: string, id: string, patch: UpdateScenarioInput): Promise<Scenario | undefined> {
     const index = this.scenarios.findIndex((scenario) => scenario.userId === userId && scenario.id === id)
     const current = this.scenarios[index]
