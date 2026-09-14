@@ -182,20 +182,17 @@ const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode
 
 export default function Practice() {
   const { mode } = useLocalSearchParams<{ mode?: string }>()
-  const picked = usePickedExpressions()
-  const settings = useSettings().data ?? DEFAULT_SETTINGS
+  const started = startMode(mode)
+  const saved = useSettings()
+  // The form seeds its targets and style once, so it must not mount before the saved ones are known.
+  const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
+  const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[started]])
   const items = picked.data?.items
 
   const body = () => {
-    if (items) {
-      const started = startMode(mode)
-
+    if (settings && items) {
       return items.length ? (
-        <Targets
-          initial={items.slice(0, settings[TARGETS_SETTING[started]])}
-          mode={started}
-          settings={settings}
-        />
+        <Targets initial={items} mode={started} settings={settings} />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )

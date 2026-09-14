@@ -40,17 +40,48 @@ describe('usePickedExpressions', () => {
   afterEach(() => queryClient.clear())
 
   it('asks the backend what to practice next', async () => {
-    const { result } = await renderHook(() => usePickedExpressions(), { wrapper })
+    const { result } = await renderHook(() => usePickedExpressions(5), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data?.items).toEqual(items)
-    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/expressions/pick'])
+    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/expressions/pick?limit=5'])
+  })
+
+  it('asks for nothing until the session size is known', async () => {
+    const { result } = await renderHook(() => usePickedExpressions(undefined), { wrapper })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(mockedApiGet).not.toHaveBeenCalled()
+  })
+
+  it('asks for as many as the session will need', async () => {
+    const { result } = await renderHook(() => usePickedExpressions(8), { wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/expressions/pick?limit=8'])
+  })
+
+  it('keeps a pick of one size apart from a pick of another', async () => {
+    const { rerender, result } = await renderHook(({ limit }: { limit: number }) => usePickedExpressions(limit), {
+      wrapper,
+      initialProps: { limit: 4 },
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    await rerender({ limit: 9 })
+
+    await waitFor(() =>
+      expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual([
+        '/expressions/pick?limit=4',
+        '/expressions/pick?limit=9',
+      ]),
+    )
   })
 
   it('surfaces a failed pick', async () => {
     mockedApiGet.mockRejectedValue(new Error('down'))
 
-    const { result } = await renderHook(() => usePickedExpressions(), { wrapper })
+    const { result } = await renderHook(() => usePickedExpressions(5), { wrapper })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
   })

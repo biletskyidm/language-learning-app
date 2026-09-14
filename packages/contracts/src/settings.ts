@@ -8,15 +8,28 @@ export const TARGETS_BOUNDS = {
   smuggleTargets: { min: 1, max: 10, fallback: 3 },
 } as const
 
-const targets = ({ min, max, fallback }: { min: number; max: number; fallback: number }) =>
-  z.number().int().min(min).max(max).default(fallback)
+type Bounds = { min: number; max: number; fallback: number }
 
+const bounded = ({ min, max }: Bounds) => z.number().int().min(min).max(max)
+
+const shape = {
+  chatTargets: bounded(TARGETS_BOUNDS.chatTargets),
+  gapsTargets: bounded(TARGETS_BOUNDS.gapsTargets),
+  describeTargets: bounded(TARGETS_BOUNDS.describeTargets),
+  smuggleTargets: bounded(TARGETS_BOUNDS.smuggleTargets),
+  defaultStyle: chatStyleSchema,
+}
+
+/** A PUT carries the whole document: a missing field is a bad request, never a reset to the default. */
+export const settingsInputSchema = z.object(shape)
+
+/** A stored document may predate a field, so a read fills the gaps instead of failing. */
 export const settingsSchema = z.object({
-  chatTargets: targets(TARGETS_BOUNDS.chatTargets),
-  gapsTargets: targets(TARGETS_BOUNDS.gapsTargets),
-  describeTargets: targets(TARGETS_BOUNDS.describeTargets),
-  smuggleTargets: targets(TARGETS_BOUNDS.smuggleTargets),
-  defaultStyle: chatStyleSchema.default('informal'),
+  chatTargets: shape.chatTargets.default(TARGETS_BOUNDS.chatTargets.fallback),
+  gapsTargets: shape.gapsTargets.default(TARGETS_BOUNDS.gapsTargets.fallback),
+  describeTargets: shape.describeTargets.default(TARGETS_BOUNDS.describeTargets.fallback),
+  smuggleTargets: shape.smuggleTargets.default(TARGETS_BOUNDS.smuggleTargets.fallback),
+  defaultStyle: shape.defaultStyle.default('informal'),
 })
 
 export type Settings = z.infer<typeof settingsSchema>

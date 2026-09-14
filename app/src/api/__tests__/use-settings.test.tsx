@@ -93,6 +93,27 @@ describe('useUpdateSettings', () => {
     expect(cached()).toEqual(saved)
   })
 
+  it('does not let a slow earlier save overwrite a later one', async () => {
+    const first: Settings = { ...saved, chatTargets: 6 }
+    const second: Settings = { ...saved, chatTargets: 7 }
+    const answers: ((settings: Settings) => void)[] = []
+    mockedApiPut.mockImplementation(() => new Promise<Settings>((resolve) => answers.push(resolve)))
+    mockedApiGet.mockResolvedValue(second)
+
+    const { result } = await renderHook(() => useUpdateSettings(), { wrapper })
+    await act(async () => {
+      result.current.mutate(first)
+      result.current.mutate(second)
+    })
+
+    await act(async () => {
+      answers[1]?.(second)
+      answers[0]?.(first)
+    })
+
+    await waitFor(() => expect(cached()).toEqual(second))
+  })
+
   it('keeps what the API actually saved', async () => {
     const clamped: Settings = { ...wanted, chatTargets: 20 }
     mockedApiPut.mockResolvedValue(clamped)

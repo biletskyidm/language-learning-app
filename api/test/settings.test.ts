@@ -95,6 +95,17 @@ describe('PUT /settings', () => {
     expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
   })
 
+  it('rejects a body that leaves a field out, rather than resetting it', async () => {
+    const { app } = harness({ ...DEFAULT_SETTINGS, chatTargets: 8, gapsTargets: 9 })
+
+    const res = await send(app, 'PUT', '/settings', { chatTargets: 8 })
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
+    const after = await send(app, 'GET', '/settings')
+    expect(settingsSchema.parse(await after.json())).toMatchObject({ chatTargets: 8, gapsTargets: 9 })
+  })
+
   it('rejects a style it does not know', async () => {
     const { app } = harness()
 

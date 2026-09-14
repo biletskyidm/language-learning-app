@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { settingsSchema, type Settings } from '@contracts'
 import { apiGet, apiPut } from './client'
@@ -12,19 +13,30 @@ export const useSettings = () =>
 
 export const useUpdateSettings = () => {
   const queryClient = useQueryClient()
+  // Taps come faster than the API answers, and the answers can land out of order, so only the
+  // newest write is allowed to decide what the screen shows.
+  const newest = useRef(0)
 
   return useMutation({
+    mutationKey: [SETTINGS_KEY],
     mutationFn: (settings: Settings) => apiPut('/settings', settings, settingsSchema),
     onMutate: async (settings) => {
       await queryClient.cancelQueries({ queryKey: [SETTINGS_KEY] })
       const previous = queryClient.getQueryData<Settings>([SETTINGS_KEY])
       queryClient.setQueryData([SETTINGS_KEY], settings)
 
-      return { previous }
+      return { previous, id: ++newest.current }
+    },
+    onSuccess: (saved, _settings, context) => {
+      if (context.id === newest.current) queryClient.setQueryData([SETTINGS_KEY], saved)
     },
     onError: (_error, _settings, context) => {
-      queryClient.setQueryData([SETTINGS_KEY], context?.previous)
+      if (context?.id === newest.current) queryClient.setQueryData([SETTINGS_KEY], context.previous)
     },
-    onSuccess: (saved) => queryClient.setQueryData([SETTINGS_KEY], saved),
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey: [SETTINGS_KEY] }) === 1) {
+        void queryClient.invalidateQueries({ queryKey: [SETTINGS_KEY] })
+      }
+    },
   })
 }

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { ZodError } from 'zod'
-import { apiError, settingsSchema } from '@contracts'
+import { apiError, settingsInputSchema, settingsSchema } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 
@@ -12,7 +12,7 @@ export const settingsRoutes = (deps: Pick<Deps, 'settings'>) =>
     .get('/settings', async (c) => c.json(settingsSchema.parse(await deps.settings.get(c.get('userId')))))
     .put('/settings', async (c) => {
       const body = await c.req.json().catch(() => undefined)
-      const input = settingsSchema.safeParse(body)
+      const input = settingsInputSchema.safeParse(body)
       if (!input.success) return c.json(apiError('VALIDATION_ERROR', fieldMessage(input.error)), 400)
 
       return c.json(settingsSchema.parse(await deps.settings.put(c.get('userId'), input.data)))
