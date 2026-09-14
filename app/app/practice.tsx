@@ -75,10 +75,9 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   </View>
 )
 
-type StartProps = { targets: Expression[]; initialMode: Mode; initialStyle: ChatStyle }
+type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; initialStyle: ChatStyle }
 
-const StartSession = ({ targets, initialMode, initialStyle }: StartProps) => {
-  const [mode, setMode] = useState<Mode>(initialMode)
+const StartSession = ({ targets, mode, onMode, initialStyle }: StartProps) => {
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>(initialStyle)
   const create = useCreateTraining()
@@ -102,7 +101,7 @@ const StartSession = ({ targets, initialMode, initialStyle }: StartProps) => {
     <View style={styles.start}>
       <View style={styles.styles}>
         {MODES.map(([value, label]) => (
-          <Chip key={value} label={label} active={mode === value} onPress={() => setMode(value)} />
+          <Chip key={value} label={label} active={mode === value} onPress={() => onMode(value)} />
         ))}
       </View>
       {mode === 'chat' ? (
@@ -137,7 +136,9 @@ const StartSession = ({ targets, initialMode, initialStyle }: StartProps) => {
   )
 }
 
-const Targets = ({ initial, mode, settings }: { initial: Expression[]; mode: Mode; settings: Settings }) => {
+type TargetsProps = { initial: Expression[]; mode: Mode; onMode: (mode: Mode) => void; settings: Settings }
+
+const Targets = ({ initial, mode, onMode, settings }: TargetsProps) => {
   const vocabulary = useExpressions()
   const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState(false)
@@ -171,7 +172,7 @@ const Targets = ({ initial, mode, settings }: { initial: Expression[]; mode: Mod
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
-      <StartSession targets={targets} initialMode={mode} initialStyle={settings.defaultStyle} />
+      <StartSession targets={targets} mode={mode} onMode={onMode} initialStyle={settings.defaultStyle} />
     </>
   )
 }
@@ -181,18 +182,19 @@ const MODE_NAMES = new Set<string>(MODES.map(([value]) => value))
 const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode as Mode) : 'chat')
 
 export default function Practice() {
-  const { mode } = useLocalSearchParams<{ mode?: string }>()
-  const started = startMode(mode)
+  const params = useLocalSearchParams<{ mode?: string }>()
+  const [mode, setMode] = useState<Mode>(startMode(params.mode))
   const saved = useSettings()
   // The form seeds its targets and style once, so it must not mount before the saved ones are known.
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
-  const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[started]])
+  const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
   const items = picked.data?.items
 
   const body = () => {
     if (settings && items) {
       return items.length ? (
-        <Targets initial={items} mode={started} settings={settings} />
+        // Each mode picks its own number of phrases, so a switch re-seeds the selection from a fresh pick.
+        <Targets key={mode} initial={items} mode={mode} onMode={setMode} settings={settings} />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )
