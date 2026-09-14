@@ -81,7 +81,9 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
   }
 
   async findByExpression(userId: string, expression: string): Promise<Expression | undefined> {
-    return this.expressions.find((e) => e.userId === userId && e.expression === expression)
+    const same = (text: string) => text.trim().toLowerCase()
+
+    return this.expressions.find((e) => e.userId === userId && same(e.expression) === same(expression))
   }
 
   async create(userId: string, input: CreateExpressionInput, createdAt: Date): Promise<Expression> {

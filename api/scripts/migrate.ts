@@ -20,6 +20,7 @@ const report = await migrateExpressions(db.collection(EXPRESSIONS_COLLECTION), c
 console.log(`  userId stamped:     ${report.ownership}`)
 console.log(`  tags defaulted:     ${report.tags}`)
 console.log(`  examples defaulted: ${report.examples}`)
+console.log(`  duplicates removed: ${report.duplicates}`)
 if (dryRun) console.log('nothing written — re-run without --dry-run to apply')
 
 await client.close()
