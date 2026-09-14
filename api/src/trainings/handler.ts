@@ -69,7 +69,9 @@ const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
       .filter((entry): entry is [string, number] => entry[1] !== undefined),
   )
 
-export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'settings' | 'llm' | 'clock'>) => {
+export const trainingRoutes = (
+  deps: Pick<Deps, 'trainings' | 'expressions' | 'settings' | 'scenarios' | 'llm' | 'clock'>,
+) => {
   const srs = new SrsService(deps.expressions, deps.clock)
   const strategies = drillStrategies(deps.llm)
 
@@ -120,9 +122,16 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 's
         return c.json(trainingSchema.parse(shown(created)), 201)
       }
 
+      const { scenarioId, ...chat } = rest
+      const scene = scenarioId ? await deps.scenarios.findById(userId, scenarioId) : chat
+      if (!scene?.context || !scene.style) {
+        return c.json(apiError('SCENARIO_NOT_FOUND', 'That scenario is no longer saved'), 404)
+      }
+      const { context, style } = scene
+
       let opening: string
       try {
-        opening = await deps.llm.tutorFirstMessage({ context: rest.context, style: rest.style, targets })
+        opening = await deps.llm.tutorFirstMessage({ context, style, targets })
       } catch (error) {
         console.error(error)
 
@@ -130,7 +139,9 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 's
       }
 
       const created = await deps.trainings.create(userId, {
-        ...rest,
+        type: 'chat',
+        context,
+        style,
         status: 'ACTIVE',
         targets,
         messages: [{ role: 'assistant', content: opening, createdAt: now }],

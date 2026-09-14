@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   createTrainingInputSchema,
   DEFAULT_SETTINGS,
   TARGETS_SETTING,
   type ChatStyle,
   type Expression,
+  type Scenario,
 } from '@contracts'
 import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
+import { useScenarios } from '../src/api/use-scenarios'
 import { useSettings } from '../src/api/use-settings'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { Chip } from '../src/components/chip'
@@ -79,6 +81,28 @@ type Draft = {
   onContext: (context: string) => void
   style: ChatStyle
   onStyle: (style: ChatStyle) => void
+  scenarioId?: string
+  onScenario: (scenario: Scenario) => void
+}
+
+const Presets = ({ selected, onSelect }: { selected?: string; onSelect: (scenario: Scenario) => void }) => {
+  const scenarios = useScenarios()
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presets}>
+      {scenarios.data?.items.map((scenario) => (
+        <Chip
+          key={scenario.id}
+          label={scenario.name}
+          active={selected === scenario.id}
+          onPress={() => onSelect(scenario)}
+        />
+      ))}
+      <Pressable onPress={() => router.push('/scenarios')} accessibilityRole="button" style={styles.manage}>
+        <Text style={styles.manageLabel}>Manage</Text>
+      </Pressable>
+    </ScrollView>
+  )
 }
 
 type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
@@ -87,10 +111,9 @@ const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
   const create = useCreateTraining()
 
   const expressionIds = targets.map((target) => target.id)
+  const scene = draft.scenarioId ? { scenarioId: draft.scenarioId } : { context: draft.context, style: draft.style }
   const input = createTrainingInputSchema.safeParse(
-    mode === 'chat'
-      ? { type: 'chat', context: draft.context, style: draft.style, expressionIds }
-      : { type: mode, expressionIds },
+    mode === 'chat' ? { type: 'chat', ...scene, expressionIds } : { type: mode, expressionIds },
   )
 
   const start = () =>
@@ -112,6 +135,7 @@ const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
       </View>
       {mode === 'chat' ? (
         <>
+          <Presets selected={draft.scenarioId} onSelect={draft.onScenario} />
           <TextInput
             style={styles.context}
             value={draft.context}
@@ -192,6 +216,7 @@ export default function Practice() {
   const [mode, setMode] = useState<Mode>(startMode(params.mode))
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>()
+  const [scenarioId, setScenarioId] = useState<string>()
   const saved = useSettings()
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
   const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
@@ -205,7 +230,24 @@ export default function Practice() {
           initial={items}
           mode={mode}
           onMode={setMode}
-          draft={{ context, onContext: setContext, style: style ?? settings.defaultStyle, onStyle: setStyle }}
+          draft={{
+            context,
+            onContext: (next) => {
+              setContext(next)
+              setScenarioId(undefined)
+            },
+            style: style ?? settings.defaultStyle,
+            onStyle: (next) => {
+              setStyle(next)
+              setScenarioId(undefined)
+            },
+            scenarioId,
+            onScenario: (scenario) => {
+              setContext(scenario.context)
+              setStyle(scenario.style)
+              setScenarioId(scenario.id)
+            },
+          }}
         />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
@@ -252,6 +294,9 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   styles: { flexDirection: 'row', gap: spacing.sm },
+  presets: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  manage: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
+  manageLabel: { color: colors.ok, fontWeight: '600' },
   hint: { color: colors.muted },
   startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
   startButtonOff: { opacity: 0.4 },
