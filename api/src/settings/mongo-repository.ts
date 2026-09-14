@@ -4,7 +4,6 @@ import type { SettingsRepository } from './repository'
 
 export const SETTINGS_COLLECTION = 'settings'
 
-/** The userId is the _id, so a racing upsert cannot leave a user with two settings documents. */
 type SettingsDoc = Settings & { _id: string; userId: string }
 
 export class MongoSettingsRepository implements SettingsRepository {

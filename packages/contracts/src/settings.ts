@@ -20,10 +20,8 @@ const shape = {
   defaultStyle: chatStyleSchema,
 }
 
-/** A PUT carries the whole document: a missing field is a bad request, never a reset to the default. */
 export const settingsInputSchema = z.object(shape)
 
-/** A stored document may predate a field, so a read fills the gaps instead of failing. */
 export const settingsSchema = z.object({
   chatTargets: shape.chatTargets.default(TARGETS_BOUNDS.chatTargets.fallback),
   gapsTargets: shape.gapsTargets.default(TARGETS_BOUNDS.gapsTargets.fallback),

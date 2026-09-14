@@ -74,7 +74,6 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   </View>
 )
 
-/** Lives above the target list so switching modes re-picks the phrases without throwing the draft away. */
 type Draft = {
   context: string
   onContext: (context: string) => void
@@ -194,7 +193,6 @@ export default function Practice() {
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>()
   const saved = useSettings()
-  // The form seeds its targets and style once, so it must not mount before the saved ones are known.
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
   const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
   const items = picked.data?.items
@@ -202,7 +200,6 @@ export default function Practice() {
   const body = () => {
     if (settings && items) {
       return items.length ? (
-        // Each mode picks its own number of phrases, so a switch re-seeds the selection from a fresh pick.
         <Targets
           key={mode}
           initial={items}

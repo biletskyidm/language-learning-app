@@ -13,8 +13,6 @@ export const useSettings = () =>
 
 export const useUpdateSettings = () => {
   const queryClient = useQueryClient()
-  // Taps come faster than the API answers, and the answers can land out of order, so only the
-  // newest write is allowed to decide what the screen shows.
   const newest = useRef(0)
 
   return useMutation({
