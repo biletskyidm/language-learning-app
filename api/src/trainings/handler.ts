@@ -35,7 +35,6 @@ import { aggregateSession } from './aggregator'
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
 
-/** How many phrases a session picks when the client names none. */
 const DEFAULT_TARGETS: Record<TrainingType, number> = {
   chat: PICK_LIMIT_DEFAULT,
   gaps: GAPS_TARGETS_DEFAULT,

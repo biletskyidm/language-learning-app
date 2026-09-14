@@ -8,7 +8,6 @@ export type SmuggleDraft = {
   message: string
   write: (text: string) => void
   ready: boolean
-  /** Keyed by expression, so a chip knows how its phrase scored. */
   scores: Map<string, number>
 }
 
