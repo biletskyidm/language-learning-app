@@ -10,6 +10,7 @@ export type PromptRole =
   | 'narrative'
   | 'gaps-generate'
   | 'describe-judge'
+  | 'smuggle-judge'
 
 /** The Lambda bundle carries the prompts next to the handler, so the path is set in the environment there. */
 const directory = process.env.PROMPTS_DIR ?? fileURLToPath(new URL('../../prompts', import.meta.url))

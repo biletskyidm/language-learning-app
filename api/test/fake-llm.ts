@@ -3,6 +3,8 @@ import type {
   AssessmentInput,
   DescribeJudgement,
   DescribeJudgeInput,
+  SmuggleJudgement,
+  SmuggleJudgeInput,
   GapsGeneration,
   GapsGenerationInput,
   LlmGateway,
@@ -19,6 +21,7 @@ interface Canned {
   narratives?: (Narrative | Error)[]
   gapsGenerations?: (GapsGeneration | Error)[]
   describeJudgements?: (DescribeJudgement | Error)[]
+  smuggleJudgements?: (SmuggleJudgement | Error)[]
 }
 
 /** Hands back one canned outcome per call, in order, so a test can spell out failures and retries. */
@@ -30,6 +33,7 @@ export class FakeLlmGateway implements LlmGateway {
   readonly narrativeCalls: SessionAggregate[] = []
   readonly gapsCalls: GapsGenerationInput[] = []
   readonly describeCalls: DescribeJudgeInput[] = []
+  readonly smuggleCalls: SmuggleJudgeInput[] = []
 
   constructor(private readonly canned: Canned = {}) {}
 
@@ -73,6 +77,12 @@ export class FakeLlmGateway implements LlmGateway {
     this.describeCalls.push(input)
 
     return next(this.canned.describeJudgements)
+  }
+
+  async judgeSmuggle(input: SmuggleJudgeInput): Promise<SmuggleJudgement> {
+    this.smuggleCalls.push(input)
+
+    return next(this.canned.smuggleJudgements)
   }
 }
 

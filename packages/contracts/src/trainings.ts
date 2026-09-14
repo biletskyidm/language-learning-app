@@ -177,11 +177,47 @@ export const describeTrainingSchema = baseTrainingSchema.extend({
   aggregates: drillAggregatesSchema.optional(),
 })
 
+export const SMUGGLE_TARGETS_DEFAULT = 3
+export const SMUGGLE_MIN_LENGTH = 20
+export const SMUGGLE_MAX_LENGTH = 1500
+
+export const smuggleMaterialSchema = z.object({ targets: z.array(trainingTargetSchema).min(1) })
+
+export const smuggleAnswerSchema = z.object({
+  message: z.string().trim().min(SMUGGLE_MIN_LENGTH).max(SMUGGLE_MAX_LENGTH),
+})
+
+/** One result per target of the round, in the round's order; reply is the tutor answering in character. */
+export const smuggleVerdictSchema = z.object({
+  results: z.array(z.object({ expression: z.string(), score: z.number().min(0).max(10), note: z.string() })),
+  reply: z.string(),
+})
+
+/** The SRS ladder's own bands: 7 earns a full interval, and 3 or less earns none. */
+export const SMUGGLE_PASS_SCORE = 7
+export const SMUGGLE_WEAK_SCORE = 3
+
+export const smuggleRoundSchema = z.object({
+  index: z.number().int().min(0),
+  targets: z.array(trainingTargetSchema),
+  material: smuggleMaterialSchema,
+  answer: smuggleAnswerSchema.optional(),
+  verdict: smuggleVerdictSchema.optional(),
+  answeredAt: z.coerce.date().optional(),
+})
+
+export const smuggleTrainingSchema = baseTrainingSchema.extend({
+  type: z.literal('smuggle'),
+  rounds: z.array(smuggleRoundSchema).default([]),
+  aggregates: drillAggregatesSchema.optional(),
+})
+
 /** The union grows a member per drill type; the discriminator keeps one collection readable. */
 export const trainingSchema = z.discriminatedUnion('type', [
   chatTrainingSchema,
   gapsTrainingSchema,
   describeTrainingSchema,
+  smuggleTrainingSchema,
 ])
 
 export const trainingSummarySchema = baseTrainingSchema.omit({ srsEffects: true }).extend({
@@ -220,10 +256,13 @@ export const createGapsTrainingInputSchema = targetChoiceSchema.extend({ type: z
 
 export const createDescribeTrainingInputSchema = targetChoiceSchema.extend({ type: z.literal('describe') })
 
+export const createSmuggleTrainingInputSchema = targetChoiceSchema.extend({ type: z.literal('smuggle') })
+
 export const createTrainingInputSchema = z.discriminatedUnion('type', [
   createChatTrainingInputSchema,
   createGapsTrainingInputSchema,
   createDescribeTrainingInputSchema,
+  createSmuggleTrainingInputSchema,
 ])
 
 /** turnId is the client's idempotency key: resending it replays the turn instead of starting a second one. */
@@ -244,12 +283,12 @@ export const chatTurnResponseSchema = z.object({
  * The round and training members grow into unions as drill types are added.
  */
 export const drillRoundResponseSchema = z.object({
-  round: z.union([gapsRoundSchema, describeRoundSchema]),
-  training: z.discriminatedUnion('type', [gapsTrainingSchema, describeTrainingSchema]),
+  round: z.union([gapsRoundSchema, describeRoundSchema, smuggleRoundSchema]),
+  training: z.discriminatedUnion('type', [gapsTrainingSchema, describeTrainingSchema, smuggleTrainingSchema]),
 })
 
 export const drillAnswerResponseSchema = drillRoundResponseSchema.extend({
-  verdict: z.union([gapsVerdictSchema, describeVerdictSchema]),
+  verdict: z.union([gapsVerdictSchema, describeVerdictSchema, smuggleVerdictSchema]),
   srsEffects: z.array(srsEffectSchema),
 })
 
@@ -282,6 +321,12 @@ export type DescribeVerdict = z.infer<typeof describeVerdictSchema>
 export type DescribeRound = z.infer<typeof describeRoundSchema>
 export type DescribeTraining = z.infer<typeof describeTrainingSchema>
 export type CreateDescribeTrainingInput = z.infer<typeof createDescribeTrainingInputSchema>
+export type SmuggleMaterial = z.infer<typeof smuggleMaterialSchema>
+export type SmuggleAnswer = z.infer<typeof smuggleAnswerSchema>
+export type SmuggleVerdict = z.infer<typeof smuggleVerdictSchema>
+export type SmuggleRound = z.infer<typeof smuggleRoundSchema>
+export type SmuggleTraining = z.infer<typeof smuggleTrainingSchema>
+export type CreateSmuggleTrainingInput = z.infer<typeof createSmuggleTrainingInputSchema>
 export type DrillAggregates = z.infer<typeof drillAggregatesSchema>
 export type DrillRoundResponse = z.infer<typeof drillRoundResponseSchema>
 export type DrillAnswerResponse = z.infer<typeof drillAnswerResponseSchema>

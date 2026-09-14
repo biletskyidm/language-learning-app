@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb'
 
-export const createClient = (uri: string) => new MongoClient(uri)
+export const createClient = (uri: string) => new MongoClient(uri, { ignoreUndefined: true })
 
 export const connect = async (uri: string, dbName: string) => {
   const client = createClient(uri)

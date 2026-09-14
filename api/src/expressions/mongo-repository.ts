@@ -1,6 +1,7 @@
 import { ObjectId, type Db, type Document } from 'mongodb'
 import type { CreateExpressionInput, Expression, Frequency, UpdateExpressionInput } from '@contracts'
 import { toDomain } from './mapper'
+import { DUPLICATE_INDEX } from './migration'
 import { EXCLUDED_PRIORITY, FREQUENCY_TIERS } from './picker'
 import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository, SrsFields } from './repository'
 
@@ -152,7 +153,9 @@ export class MongoExpressionRepository implements ExpressionRepository {
   }
 
   async findByExpression(userId: string, expression: string): Promise<Expression | undefined> {
-    const doc = await this.db.collection(EXPRESSIONS_COLLECTION).findOne({ userId, expression })
+    const doc = await this.db
+      .collection(EXPRESSIONS_COLLECTION)
+      .findOne({ userId, expression }, { collation: DUPLICATE_INDEX.collation })
 
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
