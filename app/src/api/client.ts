@@ -70,6 +70,9 @@ export const apiPost = <T>(path: string, body: unknown, schema: ZodType<T>): Pro
 export const apiPatch = <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
   request('PATCH', path, schema, body)
 
+export const apiPut = <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
+  request('PUT', path, schema, body)
+
 export const apiDelete = async (path: string): Promise<void> => {
   await send('DELETE', path)
 }

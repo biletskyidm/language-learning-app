@@ -30,6 +30,7 @@ export default function Home() {
       <Button title="What to practice" onPress={() => router.push('/practice')} />
       <Button title="Drills" onPress={() => router.push({ pathname: '/practice', params: { mode: 'gaps' } })} />
       <Button title="Sessions" onPress={() => router.push('/trainings')} />
+      <Button title="Settings" onPress={() => router.push('/settings')} />
     </View>
   )
 }

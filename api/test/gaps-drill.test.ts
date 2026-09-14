@@ -6,7 +6,7 @@ import {
   gapsVerdictSchema,
   drillRoundResponseSchema,
   gapsTrainingSchema,
-  GAPS_TARGETS_DEFAULT,
+  DEFAULT_SETTINGS,
   type Expression,
   type GapsTraining,
   type Training,
@@ -103,7 +103,7 @@ describe('POST /trainings for a drill', () => {
     const res = await post(h, '/trainings', { type: 'gaps' })
 
     expect(res.status).toBe(201)
-    expect(gapsTrainingSchema.parse(await res.json()).targets).toHaveLength(GAPS_TARGETS_DEFAULT)
+    expect(gapsTrainingSchema.parse(await res.json()).targets).toHaveLength(DEFAULT_SETTINGS.gapsTargets)
   })
 })
 
