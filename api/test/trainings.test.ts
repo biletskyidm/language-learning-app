@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   apiErrorSchema,
   chatTrainingSchema,
-  PICK_LIMIT_DEFAULT,
+  DEFAULT_SETTINGS,
   PICK_LIMIT_MAX,
   type Expression,
   type Training,
@@ -90,7 +90,7 @@ describe('POST /trainings', () => {
 
     const { res } = await start({ ...chat }, new FakeLlmGateway({ firstMessages: [OPENING] }), plenty)
 
-    expect(chatTrainingSchema.parse(await res.json()).targets).toHaveLength(PICK_LIMIT_DEFAULT)
+    expect(chatTrainingSchema.parse(await res.json()).targets).toHaveLength(DEFAULT_SETTINGS.chatTargets)
   })
 
   it('refuses an expression id that is not in the vocabulary', async () => {

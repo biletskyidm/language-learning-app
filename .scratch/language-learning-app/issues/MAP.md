@@ -29,7 +29,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **21** [Drill framework and Gaps drill as a round session](21-drill-framework-and-gaps-drill-as-a-round-session.md) — blocked by: 19
 - [x] **22** [Describe-it drill](22-describe-it-drill.md) — blocked by: 21
 - [x] **23** [Smuggle drill](23-smuggle-drill.md) — blocked by: 21
-- [ ] **24** [Settings: target counts per mode and default style](24-settings-target-counts-per-mode-and-default-style.md) — blocked by: 21
+- [x] **24** [Settings: target counts per mode and default style](24-settings-target-counts-per-mode-and-default-style.md) — blocked by: 21
 - [ ] **25** [Scenario presets](25-scenario-presets.md) — blocked by: 13
 - [ ] **26** [Home: due today and active sessions](26-home-due-today-and-active-sessions.md) — blocked by: 18
 - [ ] **27** [Per-phrase progress list](27-per-phrase-progress-list.md) — blocked by: 16

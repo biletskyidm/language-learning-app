@@ -3,9 +3,8 @@ import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   createTrainingInputSchema,
-  GAPS_TARGETS_DEFAULT,
-  PICK_LIMIT_DEFAULT,
-  SMUGGLE_TARGETS_DEFAULT,
+  DEFAULT_SETTINGS,
+  TARGETS_SETTING,
   type ChatStyle,
   type Expression,
 } from '@contracts'
@@ -13,6 +12,7 @@ import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
+import { useSettings } from '../src/api/use-settings'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
@@ -46,13 +46,6 @@ const START_LABELS: Record<Mode, string> = {
   smuggle: 'Start smuggle',
 }
 
-const INITIAL_TARGETS: Record<Mode, number> = {
-  chat: PICK_LIMIT_DEFAULT,
-  gaps: GAPS_TARGETS_DEFAULT,
-  describe: PICK_LIMIT_DEFAULT,
-  smuggle: SMUGGLE_TARGETS_DEFAULT,
-}
-
 type RowProps = {
   item: Expression
   suggested: boolean
@@ -81,15 +74,23 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
   </View>
 )
 
-const StartSession = ({ targets, initialMode }: { targets: Expression[]; initialMode: Mode }) => {
-  const [mode, setMode] = useState<Mode>(initialMode)
-  const [context, setContext] = useState('')
-  const [style, setStyle] = useState<ChatStyle>('informal')
+type Draft = {
+  context: string
+  onContext: (context: string) => void
+  style: ChatStyle
+  onStyle: (style: ChatStyle) => void
+}
+
+type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
+
+const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
   const create = useCreateTraining()
 
   const expressionIds = targets.map((target) => target.id)
   const input = createTrainingInputSchema.safeParse(
-    mode === 'chat' ? { type: 'chat', context, style, expressionIds } : { type: mode, expressionIds },
+    mode === 'chat'
+      ? { type: 'chat', context: draft.context, style: draft.style, expressionIds }
+      : { type: mode, expressionIds },
   )
 
   const start = () =>
@@ -106,22 +107,22 @@ const StartSession = ({ targets, initialMode }: { targets: Expression[]; initial
     <View style={styles.start}>
       <View style={styles.styles}>
         {MODES.map(([value, label]) => (
-          <Chip key={value} label={label} active={mode === value} onPress={() => setMode(value)} />
+          <Chip key={value} label={label} active={mode === value} onPress={() => onMode(value)} />
         ))}
       </View>
       {mode === 'chat' ? (
         <>
           <TextInput
             style={styles.context}
-            value={context}
-            onChangeText={setContext}
+            value={draft.context}
+            onChangeText={draft.onContext}
             placeholder="What is the situation? e.g. a scrum standup"
             placeholderTextColor={colors.muted}
             multiline
           />
           <View style={styles.styles}>
             {STYLES.map(([value, label]) => (
-              <Chip key={value} label={label} active={style === value} onPress={() => setStyle(value)} />
+              <Chip key={value} label={label} active={draft.style === value} onPress={() => draft.onStyle(value)} />
             ))}
           </View>
         </>
@@ -141,7 +142,9 @@ const StartSession = ({ targets, initialMode }: { targets: Expression[]; initial
   )
 }
 
-const Targets = ({ initial, mode }: { initial: Expression[]; mode: Mode }) => {
+type TargetsProps = { initial: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
+
+const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
   const vocabulary = useExpressions()
   const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState(false)
@@ -175,7 +178,7 @@ const Targets = ({ initial, mode }: { initial: Expression[]; mode: Mode }) => {
           <Text style={styles.addLabel}>Add an expression</Text>
         </Pressable>
       ) : null}
-      <StartSession targets={targets} initialMode={mode} />
+      <StartSession targets={targets} mode={mode} onMode={onMode} draft={draft} />
     </>
   )
 }
@@ -185,14 +188,25 @@ const MODE_NAMES = new Set<string>(MODES.map(([value]) => value))
 const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode as Mode) : 'chat')
 
 export default function Practice() {
-  const { mode } = useLocalSearchParams<{ mode?: string }>()
-  const picked = usePickedExpressions()
+  const params = useLocalSearchParams<{ mode?: string }>()
+  const [mode, setMode] = useState<Mode>(startMode(params.mode))
+  const [context, setContext] = useState('')
+  const [style, setStyle] = useState<ChatStyle>()
+  const saved = useSettings()
+  const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
+  const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
   const items = picked.data?.items
 
   const body = () => {
-    if (items) {
+    if (settings && items) {
       return items.length ? (
-        <Targets initial={items.slice(0, INITIAL_TARGETS[startMode(mode)])} mode={startMode(mode)} />
+        <Targets
+          key={mode}
+          initial={items}
+          mode={mode}
+          onMode={setMode}
+          draft={{ context, onContext: setContext, style: style ?? settings.defaultStyle, onStyle: setStyle }}
+        />
       ) : (
         <Text style={styles.state}>Nothing to practice right now</Text>
       )

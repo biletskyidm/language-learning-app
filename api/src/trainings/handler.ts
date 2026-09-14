@@ -6,10 +6,8 @@ import {
   createTrainingInputSchema,
   drillAnswerResponseSchema,
   drillRoundResponseSchema,
-  GAPS_TARGETS_DEFAULT,
-  PICK_LIMIT_DEFAULT,
-  SMUGGLE_TARGETS_DEFAULT,
   sendMessageInputSchema,
+  TARGETS_SETTING,
   trainingListQuerySchema,
   trainingListResponseSchema,
   trainingSchema,
@@ -22,7 +20,6 @@ import {
   type SrsEffect,
   type Training,
   type TrainingTarget,
-  type TrainingType,
 } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
@@ -34,13 +31,6 @@ import { aggregateSession } from './aggregator'
 
 const fieldMessage = ({ issues }: ZodError) =>
   issues.map(({ path, message }) => (path.length ? `${path.join('.')}: ${message}` : message)).join('; ')
-
-const DEFAULT_TARGETS: Record<TrainingType, number> = {
-  chat: PICK_LIMIT_DEFAULT,
-  gaps: GAPS_TARGETS_DEFAULT,
-  describe: PICK_LIMIT_DEFAULT,
-  smuggle: SMUGGLE_TARGETS_DEFAULT,
-}
 
 const snapshot = ({ id, expression, meaning }: Expression): TrainingTarget => ({
   expressionId: id,
@@ -79,7 +69,7 @@ const scoredTargets = (assessment: Assessment, targets: TrainingTarget[]) =>
       .filter((entry): entry is [string, number] => entry[1] !== undefined),
   )
 
-export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'llm' | 'clock'>) => {
+export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'settings' | 'llm' | 'clock'>) => {
   const srs = new SrsService(deps.expressions, deps.clock)
   const strategies = drillStrategies(deps.llm)
 
@@ -112,8 +102,8 @@ export const trainingRoutes = (deps: Pick<Deps, 'trainings' | 'expressions' | 'l
         }
         targets = found.map((expression) => snapshot(expression as Expression))
       } else {
-        const fallback = DEFAULT_TARGETS[rest.type]
-        const picked = await deps.expressions.pick(userId, { limit: limit ?? fallback, now })
+        const size = limit ?? (await deps.settings.get(userId))[TARGETS_SETTING[rest.type]]
+        const picked = await deps.expressions.pick(userId, { limit: size, now })
         targets = picked.map(snapshot)
       }
 

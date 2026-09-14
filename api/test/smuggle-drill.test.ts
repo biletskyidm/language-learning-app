@@ -7,7 +7,7 @@ import {
   smuggleTrainingSchema,
   smuggleVerdictSchema,
   SMUGGLE_PASS_SCORE,
-  SMUGGLE_TARGETS_DEFAULT,
+  DEFAULT_SETTINGS,
   type Expression,
   type SmuggleTraining,
   type Training,
@@ -132,7 +132,7 @@ describe('POST /trainings for a smuggle session', () => {
     const res = await post(h, '/trainings', { type: 'smuggle' })
 
     expect(res.status).toBe(201)
-    expect(smuggleTrainingSchema.parse(await res.json()).targets).toHaveLength(SMUGGLE_TARGETS_DEFAULT)
+    expect(smuggleTrainingSchema.parse(await res.json()).targets).toHaveLength(DEFAULT_SETTINGS.smuggleTargets)
   })
 })
 

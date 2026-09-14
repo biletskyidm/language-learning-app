@@ -6,7 +6,7 @@ import {
   describeVerdictSchema,
   drillAnswerResponseSchema,
   drillRoundResponseSchema,
-  PICK_LIMIT_DEFAULT,
+  DEFAULT_SETTINGS,
   type DescribeTraining,
   type Expression,
   type Training,
@@ -111,7 +111,7 @@ describe('POST /trainings for a describe session', () => {
     const res = await post(h, '/trainings', { type: 'describe' })
 
     expect(res.status).toBe(201)
-    expect(describeTrainingSchema.parse(await res.json()).targets).toHaveLength(PICK_LIMIT_DEFAULT)
+    expect(describeTrainingSchema.parse(await res.json()).targets).toHaveLength(DEFAULT_SETTINGS.describeTargets)
   })
 })
 

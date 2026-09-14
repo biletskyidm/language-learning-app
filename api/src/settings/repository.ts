@@ -1,2 +1,6 @@
-/** Gains its methods in ticket 24. */
-export interface SettingsRepository {}
+import type { Settings } from '@contracts'
+
+export interface SettingsRepository {
+  get(userId: string): Promise<Settings>
+  put(userId: string, settings: Settings): Promise<Settings>
+}

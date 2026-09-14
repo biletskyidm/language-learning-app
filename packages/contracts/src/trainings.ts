@@ -104,7 +104,6 @@ export const chatTrainingSchema = baseTrainingSchema.extend({
 })
 
 export const GAPS_BLANK = '___'
-export const GAPS_TARGETS_DEFAULT = 4
 
 /** answerKey holds the blanks in order; it is server-only and stripped from a round nobody has answered yet. */
 export const gapsMaterialSchema = z.object({
@@ -177,7 +176,6 @@ export const describeTrainingSchema = baseTrainingSchema.extend({
   aggregates: drillAggregatesSchema.optional(),
 })
 
-export const SMUGGLE_TARGETS_DEFAULT = 3
 export const SMUGGLE_MIN_LENGTH = 20
 export const SMUGGLE_MAX_LENGTH = 1500
 

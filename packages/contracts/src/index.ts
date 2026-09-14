@@ -1,5 +1,6 @@
 export * from './error'
 export * from './expressions'
 export * from './health'
+export * from './settings'
 export * from './token'
 export * from './trainings'

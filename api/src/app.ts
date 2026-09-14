@@ -4,6 +4,7 @@ import { requireAuth, type AuthEnv } from './auth/middleware'
 import type { Deps } from './deps'
 import { expressionRoutes } from './expressions/handler'
 import { healthRoutes } from './health/handler'
+import { settingsRoutes } from './settings/handler'
 import { trainingRoutes } from './trainings/handler'
 
 export const createApp = (deps: Deps) => {
@@ -14,6 +15,7 @@ export const createApp = (deps: Deps) => {
   app.use('*', requireAuth(deps))
   app.route('/', expressionRoutes(deps))
   app.route('/', trainingRoutes(deps))
+  app.route('/', settingsRoutes(deps))
 
   app.notFound((c) => c.json(apiError('NOT_FOUND', 'Unknown route'), 404))
   app.onError((err, c) => {
