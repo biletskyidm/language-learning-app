@@ -62,7 +62,9 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
       )
       .filter((e) => !query.tag || e.tags.includes(query.tag))
       .filter((e) => !query.frequency || e.frequency === query.frequency)
-      .filter((e) => !query.due || (e.nextTrainingAt !== undefined && e.nextTrainingAt <= query.now))
+      .filter(
+        (e) => !query.due || (e.score !== undefined && e.nextTrainingAt !== undefined && e.nextTrainingAt <= query.now),
+      )
       .sort(comparator(query))
   }
 
