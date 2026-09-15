@@ -43,8 +43,12 @@ describe('listFilter', () => {
     })
   })
 
-  it('turns the due flag into a next-training cutoff at the injected time', () => {
-    expect(listFilter('me', query({ due: true }))).toEqual({ userId: 'me', nextTrainingAt: { $lte: NOW } })
+  it('turns the due flag into a next-training cutoff at the injected time, for practiced expressions only', () => {
+    expect(listFilter('me', query({ due: true }))).toEqual({
+      userId: 'me',
+      score: { $ne: null },
+      nextTrainingAt: { $lte: NOW },
+    })
   })
 })
 

@@ -3,7 +3,13 @@ import type { CreateExpressionInput, Expression, Frequency, UpdateExpressionInpu
 import { toDomain } from './mapper'
 import { DUPLICATE_INDEX } from './migration'
 import { EXCLUDED_PRIORITY, FREQUENCY_TIERS } from './picker'
-import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository, SrsFields } from './repository'
+import type {
+  ExpressionListParams,
+  ExpressionPickParams,
+  ExpressionRepository,
+  ProgressCounts,
+  SrsFields,
+} from './repository'
 
 export const EXPRESSIONS_COLLECTION = 'expressions'
 
@@ -14,6 +20,7 @@ export type ExpressionListFilter = {
   $or?: [{ expression: Regex }, { meaning: Regex }]
   tags?: string
   frequency?: Frequency
+  score?: { $ne: null }
   nextTrainingAt?: { $lte: Date }
 }
 
@@ -38,7 +45,10 @@ export const listFilter = (userId: string, query: ExpressionListParams): Express
   }
   if (query.tag) filter.tags = query.tag
   if (query.frequency) filter.frequency = query.frequency
-  if (query.due) filter.nextTrainingAt = { $lte: query.now }
+  if (query.due) {
+    filter.score = { $ne: null }
+    filter.nextTrainingAt = { $lte: query.now }
+  }
 
   return filter
 }
@@ -205,5 +215,15 @@ export class MongoExpressionRepository implements ExpressionRepository {
     const tags = await this.db.collection(EXPRESSIONS_COLLECTION).distinct('tags', { userId })
 
     return tags.filter((tag): tag is string => typeof tag === 'string').sort()
+  }
+
+  async progressCounts(userId: string, now: Date): Promise<ProgressCounts> {
+    const collection = this.db.collection(EXPRESSIONS_COLLECTION)
+    const [dueNow, unpracticed] = await Promise.all([
+      collection.countDocuments({ userId, score: { $ne: null }, nextTrainingAt: { $lte: now } }),
+      collection.countDocuments({ userId, score: null }),
+    ])
+
+    return { dueNow, unpracticed }
   }
 }

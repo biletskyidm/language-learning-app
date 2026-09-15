@@ -174,6 +174,20 @@ export class MongoTrainingRepository implements TrainingRepository {
     return doc ? toDomain(doc as Parameters<typeof toDomain>[0]) : undefined
   }
 
+  async srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at'>[]> {
+    const range = { $gte: from, $lt: to }
+
+    return this.db
+      .collection(TRAININGS_COLLECTION)
+      .aggregate<Pick<SrsEffect, 'expressionId' | 'at'>>([
+        { $match: { userId, 'srsEffects.at': range } },
+        { $unwind: '$srsEffects' },
+        { $match: { 'srsEffects.at': range } },
+        { $project: { _id: 0, expressionId: '$srsEffects.expressionId', at: '$srsEffects.at' } },
+      ])
+      .toArray()
+  }
+
   async list(userId: string, { type, status, before, limit }: TrainingListQuery): Promise<TrainingSummary[]> {
     const docs = await this.db
       .collection(TRAININGS_COLLECTION)

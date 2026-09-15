@@ -133,6 +133,7 @@ describe('GET /expressions filters', () => {
         expression({ id: 'overdue', score: 5, nextTrainingAt: new Date('2026-02-01T00:00:00.000Z') }),
         expression({ id: 'later', score: 5, nextTrainingAt: new Date('2026-04-01T00:00:00.000Z') }),
         expression({ id: 'never-practiced' }),
+        expression({ id: 'scheduled-unpracticed', nextTrainingAt: new Date('2026-02-01T00:00:00.000Z') }),
       ],
       '?due=true',
       { clock },
