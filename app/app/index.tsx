@@ -50,7 +50,12 @@ export default function Home() {
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ title: 'Home', headerShown: false }} />
-      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.md },
+        ]}
+      >
         {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
         <View style={styles.section}>{progress()}</View>
         <View style={styles.row}>
