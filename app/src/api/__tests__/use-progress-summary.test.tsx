@@ -1,10 +1,10 @@
 import React, { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react-native'
-import { apiGet } from '../client'
+import { apiGet, UnauthorizedError } from '../client'
 import { useProgressSummary } from '../use-progress-summary'
 
-jest.mock('../client', () => ({ apiGet: jest.fn() }))
+jest.mock('../client', () => ({ UnauthorizedError: class extends Error {}, apiGet: jest.fn() }))
 
 const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
 
@@ -33,6 +33,16 @@ describe('useProgressSummary', () => {
       `/progress/summary?tzOffset=${new Date().getTimezoneOffset()}`,
     ])
     expect(result.current.data).toEqual({ dueNow: 3, unpracticed: 12, week })
+  })
+
+  it('fails at once when the api rejects the secret, so setup is offered without waiting on retries', async () => {
+    queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: 0 } } })
+    mockedApiGet.mockRejectedValue(new UnauthorizedError())
+
+    const { result } = await renderHook(() => useProgressSummary(), { wrapper })
+
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 500 })
+    expect(mockedApiGet).toHaveBeenCalledTimes(1)
   })
 
   it('waits until it is enabled', async () => {
