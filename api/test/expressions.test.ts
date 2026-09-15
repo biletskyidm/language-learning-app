@@ -148,6 +148,35 @@ describe('GET /expressions filters', () => {
     expect(items.map((e) => e.id)).toEqual(['never-practiced'])
   })
 
+  it('keeps only scored expressions when practiced is true, weakest first with sort=score&dir=asc', async () => {
+    const items = await list(
+      [
+        expression({ id: 'strong', score: 9, timesPracticed: 3 }),
+        expression({ id: 'never-practiced' }),
+        expression({ id: 'weak', score: 0, timesPracticed: 1 }),
+      ],
+      '?sort=score&dir=asc&practiced=true',
+    )
+
+    expect(items.map((e) => e.id)).toEqual(['weak', 'strong'])
+  })
+
+  it('keeps only unscored expressions when practiced is false', async () => {
+    const items = await list(
+      [expression({ id: 'weak', score: 0, timesPracticed: 1 }), expression({ id: 'never-practiced' })],
+      '?practiced=false',
+    )
+
+    expect(items.map((e) => e.id)).toEqual(['never-practiced'])
+  })
+
+  it('rejects a practiced value that is not a boolean', async () => {
+    const res = await request(seed, '/expressions?practiced=maybe')
+
+    expect(res.status).toBe(400)
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('VALIDATION_ERROR')
+  })
+
   it('rejects an unknown frequency', async () => {
     const res = await request(seed, '/expressions?frequency=sometimes')
 

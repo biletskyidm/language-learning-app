@@ -65,6 +65,7 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
       .filter(
         (e) => !query.due || (e.score !== undefined && e.nextTrainingAt !== undefined && e.nextTrainingAt <= query.now),
       )
+      .filter((e) => query.practiced === undefined || (e.score !== undefined) === query.practiced)
       .sort(comparator(query))
   }
 

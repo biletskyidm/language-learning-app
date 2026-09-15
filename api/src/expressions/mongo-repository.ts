@@ -20,7 +20,7 @@ export type ExpressionListFilter = {
   $or?: [{ expression: Regex }, { meaning: Regex }]
   tags?: string
   frequency?: Frequency
-  score?: { $ne: null }
+  score?: { $ne: null } | null
   nextTrainingAt?: { $lte: Date }
 }
 
@@ -49,6 +49,7 @@ export const listFilter = (userId: string, query: ExpressionListParams): Express
     filter.score = { $ne: null }
     filter.nextTrainingAt = { $lte: query.now }
   }
+  if (query.practiced !== undefined) filter.score = query.practiced ? { $ne: null } : null
 
   return filter
 }

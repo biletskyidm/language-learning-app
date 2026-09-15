@@ -66,6 +66,7 @@ export default function Home() {
         <View style={styles.row}>
           <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
           <Button title="Sessions" onPress={() => router.push('/trainings')} />
+          <Button title="Progress" onPress={() => router.push('/progress')} />
           <Button title="Settings" onPress={() => router.push('/settings')} />
         </View>
         {summary.data ? <WeekChart week={summary.data.week} today={(new Date().getDay() + 6) % 7} /> : null}
