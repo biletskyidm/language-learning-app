@@ -4,6 +4,28 @@ import type { ScenarioRepository } from './repository'
 
 export const SCENARIOS_COLLECTION = 'scenarios'
 
+/**
+ * Seeded presets carry a `seedKey` that the user can never change, and the index covers only those
+ * docs — so the upserts below converge on one set of defaults without constraining the names of
+ * scenarios the user creates or renames himself.
+ */
+export const SEED_INDEX = {
+  name: 'userId_seedKey_unique',
+  keys: { userId: 1, seedKey: 1 } as const,
+  partialFilterExpression: { seedKey: { $exists: true } },
+}
+
+const DUPLICATE_KEY = 11000
+
+const isDuplicateKey = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false
+  const { code, writeErrors } = error as { code?: unknown; writeErrors?: { code?: unknown }[] }
+
+  if (code === DUPLICATE_KEY) return true
+
+  return Array.isArray(writeErrors) && writeErrors.length > 0 && writeErrors.every((e) => e.code === DUPLICATE_KEY)
+}
+
 type ScenarioDoc = { _id: ObjectId } & Record<string, unknown>
 
 const toDomain = ({ _id, ...rest }: ScenarioDoc): Scenario => scenarioSchema.parse({ ...rest, id: _id.toHexString() })
@@ -40,15 +62,23 @@ export class MongoScenarioRepository implements ScenarioRepository {
   }
 
   async seedDefaults(userId: string, presets: CreateScenarioInput[], createdAt: Date): Promise<Scenario[]> {
-    await this.db.collection(SCENARIOS_COLLECTION).bulkWrite(
-      presets.map((preset) => ({
-        updateOne: {
-          filter: { userId, name: preset.name },
-          update: { $setOnInsert: { userId, createdAt, ...preset } },
-          upsert: true,
-        },
-      })),
-    )
+    const collection = this.db.collection(SCENARIOS_COLLECTION)
+    await collection.createIndex(SEED_INDEX.keys, { ...SEED_INDEX, unique: true })
+
+    try {
+      await collection.bulkWrite(
+        presets.map((preset) => ({
+          updateOne: {
+            filter: { userId, seedKey: preset.name },
+            update: { $setOnInsert: { userId, createdAt, seedKey: preset.name, ...preset } },
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      )
+    } catch (error) {
+      if (!isDuplicateKey(error)) throw error
+    }
 
     return this.list(userId)
   }
