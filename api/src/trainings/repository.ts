@@ -41,4 +41,5 @@ export interface TrainingRepository {
     expected: { rounds: number; answered: number },
   ): Promise<Training | undefined>
   cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined>
+  srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at'>[]>
 }

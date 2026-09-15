@@ -22,14 +22,17 @@ describe('useProgressSummary', () => {
 
   afterEach(() => queryClient.clear())
 
-  it('loads the due and unpracticed counts with the active sessions', async () => {
-    mockedApiGet.mockResolvedValue({ dueNow: 3, unpracticed: 12, active: [] })
+  it("loads the counts and the week in the device's timezone", async () => {
+    const week = [1, 2, 0, 0, 0, 0, 0]
+    mockedApiGet.mockResolvedValue({ dueNow: 3, unpracticed: 12, week })
 
     const { result } = await renderHook(() => useProgressSummary(), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/progress/summary'])
-    expect(result.current.data).toEqual({ dueNow: 3, unpracticed: 12, active: [] })
+    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual([
+      `/progress/summary?tzOffset=${new Date().getTimezoneOffset()}`,
+    ])
+    expect(result.current.data).toEqual({ dueNow: 3, unpracticed: 12, week })
   })
 
   it('waits until it is enabled', async () => {

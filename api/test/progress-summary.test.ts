@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { progressSummarySchema, type ChatTraining, type Expression, type Training } from '@contracts'
+import { progressSummarySchema, type ChatTraining, type Expression, type SrsEffect, type Training } from '@contracts'
 import { createApp } from '../src/app'
 import { InMemoryExpressionRepository } from '../src/expressions/memory-repository'
 import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
@@ -37,19 +37,35 @@ const training = (id: string, overrides: Partial<ChatTraining> = {}): Training =
   ...overrides,
 })
 
-const summary = async ({
+const effect = (expressionId: string, at: string): SrsEffect => ({
+  expressionId,
+  expression: `phrase ${expressionId}`,
+  scoreWritten: 7,
+  source: { kind: 'message', index: 0 },
+  before: {},
+  after: { score: 7, timesPracticed: 1, nextTrainingAt: new Date(at) },
+  at: new Date(at),
+})
+
+const request = ({
   expressions = [] as Expression[],
   trainings = [] as Training[],
   now = NOW,
+  query = '',
 } = {}) => {
   const deps = testDeps({
     expressions: new InMemoryExpressionRepository(expressions),
     trainings: new InMemoryTrainingRepository(trainings),
     clock: () => now,
   })
-  const res = await createApp(deps).request('/progress/summary', {
+
+  return createApp(deps).request(`/progress/summary${query}`, {
     headers: { Authorization: bearer(TEST_SECRET, deps.clock) },
   })
+}
+
+const summary = async (options: Parameters<typeof request>[0] = {}) => {
+  const res = await request(options)
   expect(res.status).toBe(200)
 
   return progressSummarySchema.parse(await res.json())
@@ -87,22 +103,67 @@ describe('GET /progress/summary', () => {
     expect(result).toMatchObject({ dueNow: 0, unpracticed: 1 })
   })
 
-  it('lists only active trainings, newest first', async () => {
-    const result = await summary({
-      trainings: [
-        training('t1', { createdAt: day(1) }),
-        training('t2', { createdAt: day(3), status: 'COMPLETED', completedAt: day(4) }),
-        training('t3', { createdAt: day(4) }),
-        training('t4', { createdAt: day(2), status: 'CANCELED', canceledAt: day(2) }),
-        training('t5', { createdAt: day(2) }),
-      ],
+  describe('week', () => {
+    const wednesday = new Date('2026-03-11T12:00:00.000Z')
+
+    it('counts distinct phrases practiced each day from Monday to Sunday', async () => {
+      const result = await summary({
+        now: wednesday,
+        trainings: [
+          training('t1', {
+            srsEffects: [
+              effect('e1', '2026-03-09T08:00:00.000Z'),
+              effect('e1', '2026-03-09T09:00:00.000Z'),
+              effect('e2', '2026-03-09T23:59:59.999Z'),
+              effect('e1', '2026-03-11T10:00:00.000Z'),
+            ],
+          }),
+          training('t2', {
+            status: 'COMPLETED',
+            srsEffects: [effect('e1', '2026-03-09T20:00:00.000Z'), effect('e3', '2026-03-11T11:00:00.000Z')],
+          }),
+        ],
+      })
+
+      expect(result.week).toEqual([2, 0, 2, 0, 0, 0, 0])
     })
 
-    expect(result.active.map(({ id }) => id)).toEqual(['t3', 't5', 't1'])
-    expect(result.active[0]).not.toHaveProperty('messages')
+    it('leaves out practice from before this Monday', async () => {
+      const result = await summary({
+        now: wednesday,
+        trainings: [training('t1', { srsEffects: [effect('e1', '2026-03-08T23:59:59.999Z')] })],
+      })
+
+      expect(result.week).toEqual([0, 0, 0, 0, 0, 0, 0])
+    })
+
+    it('splits days at local midnight of the given timezone offset', async () => {
+      const trainings = [training('t1', { srsEffects: [effect('e1', '2026-03-08T22:30:00.000Z')] })]
+
+      expect((await summary({ now: wednesday, trainings })).week).toEqual([0, 0, 0, 0, 0, 0, 0])
+      expect((await summary({ now: wednesday, trainings, query: '?tzOffset=-180' })).week).toEqual([
+        1, 0, 0, 0, 0, 0, 0,
+      ])
+    })
+
+    it('starts a new week once local time passes Sunday midnight', async () => {
+      const result = await summary({
+        now: new Date('2026-03-15T21:30:00.000Z'),
+        query: '?tzOffset=-180',
+        trainings: [training('t1', { srsEffects: [effect('e1', '2026-03-15T21:10:00.000Z')] })],
+      })
+
+      expect(result.week).toEqual([1, 0, 0, 0, 0, 0, 0])
+    })
+
+    it('rejects an offset outside the range of real timezones', async () => {
+      const res = await request({ query: '?tzOffset=900' })
+
+      expect(res.status).toBe(400)
+    })
   })
 
-  it("counts and lists only the caller's own data", async () => {
+  it("counts only the caller's own data", async () => {
     const result = await summary({
       now,
       expressions: [
@@ -110,11 +171,13 @@ describe('GET /progress/summary', () => {
         practiced('theirs', day(1), { userId: 'someone else' }),
         expression('their-fresh', { userId: 'someone else' }),
       ],
-      trainings: [training('t1'), training('x1', { userId: 'someone else' })],
+      trainings: [
+        training('t1', { srsEffects: [effect('mine', '2026-03-10T08:00:00.000Z')] }),
+        training('x1', { userId: 'someone else', srsEffects: [effect('theirs', '2026-03-10T08:00:00.000Z')] }),
+      ],
     })
 
-    expect(result).toMatchObject({ dueNow: 1, unpracticed: 0 })
-    expect(result.active.map(({ id }) => id)).toEqual(['t1'])
+    expect(result).toMatchObject({ dueNow: 1, unpracticed: 0, week: [0, 1, 0, 0, 0, 0, 0] })
   })
 
   it('refuses a request without a token', async () => {

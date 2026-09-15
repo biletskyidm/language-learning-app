@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
-import { TrainingRow } from '../src/components/training-row'
+import { WeekChart } from '../src/components/week-chart'
 import { colors, spacing } from '../src/theme/tokens'
 
 const START: [string, string][] = [
@@ -63,13 +63,7 @@ export default function Home() {
           <Button title="Sessions" onPress={() => router.push('/trainings')} />
           <Button title="Settings" onPress={() => router.push('/settings')} />
         </View>
-        <View style={styles.sessions}>
-          <Text style={styles.heading}>Active sessions</Text>
-          {summary.data?.active.length === 0 ? <Text style={styles.muted}>No active sessions</Text> : null}
-          {summary.data?.active.map((training) => (
-            <TrainingRow key={training.id} training={training} />
-          ))}
-        </View>
+        {summary.data ? <WeekChart week={summary.data.week} today={(new Date().getDay() + 6) % 7} /> : null}
       </ScrollView>
     </View>
   )
@@ -80,7 +74,6 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     padding: spacing.md,
     gap: spacing.md,
   },
@@ -89,6 +82,4 @@ const styles = StyleSheet.create({
   muted: { color: colors.muted },
   error: { color: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
-  sessions: { alignSelf: 'stretch', gap: spacing.sm },
-  heading: { fontSize: 16, fontWeight: '600' },
 })

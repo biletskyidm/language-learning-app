@@ -5,6 +5,6 @@ import { apiGet } from './client'
 export const useProgressSummary = (enabled = true) =>
   useQuery({
     queryKey: ['progress', 'summary'],
-    queryFn: () => apiGet('/progress/summary', progressSummarySchema),
+    queryFn: () => apiGet(`/progress/summary?tzOffset=${new Date().getTimezoneOffset()}`, progressSummarySchema),
     enabled,
   })

@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import type { TrainingSummary } from '@contracts'
 import Home from '../../app/index'
 import { apiGet } from '../api/client'
 
@@ -23,22 +22,10 @@ const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
 
 const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }
 
-const session = (id: string, overrides: Partial<TrainingSummary> = {}): TrainingSummary => ({
-  id,
-  userId: 'me',
-  type: 'chat',
-  status: 'ACTIVE',
-  context: `context of ${id}`,
-  style: 'informal',
-  targets: [],
-  createdAt: new Date('2026-01-02T00:00:00.000Z'),
-  ...overrides,
-})
-
-const renderHome = async (active: TrainingSummary[] = [session('t1'), session('t2')]) => {
+const renderHome = async () => {
   mockedApiGet.mockImplementation(async (path: string) => {
     if (path === '/health') return { status: 'ok', db: 'ok' }
-    return { dueNow: 7, unpracticed: 42, active }
+    return { dueNow: 7, unpracticed: 42, week: [4, 0, 2, 0, 0, 0, 0] }
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
@@ -72,21 +59,12 @@ describe('Home', () => {
     expect(router.push).toHaveBeenCalledWith({ pathname: '/expressions', params: { due: 'true' } })
   })
 
-  it('lists the active sessions and resumes one on tap', async () => {
+  it('charts the expressions trained each day of the week', async () => {
     await renderHome()
 
-    expect(await screen.findByText('context of t1')).toBeTruthy()
-    expect(screen.getByText('context of t2')).toBeTruthy()
-
-    await fireEvent.press(screen.getByText('context of t1'))
-
-    expect(router.push).toHaveBeenCalledWith('/trainings/t1')
-  })
-
-  it('says so when nothing is active', async () => {
-    await renderHome([])
-
-    expect(await screen.findByText('No active sessions')).toBeTruthy()
+    expect(await screen.findByLabelText('Mon: 4')).toBeTruthy()
+    expect(screen.getByLabelText('Wed: 2')).toBeTruthy()
+    expect(screen.queryByText('Active sessions')).toBeNull()
   })
 
   it.each([
@@ -95,7 +73,7 @@ describe('Home', () => {
     ['Describe', 'describe'],
     ['Smuggle', 'smuggle'],
   ])('starts %s from the start row', async (label, mode) => {
-    await renderHome([])
+    await renderHome()
 
     await fireEvent.press(await screen.findByRole('button', { name: label }))
 
