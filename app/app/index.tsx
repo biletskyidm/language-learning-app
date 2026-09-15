@@ -4,7 +4,6 @@ import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
-import { useHealth } from '../src/api/use-health'
 import { useProgressSummary } from '../src/api/use-progress-summary'
 import { TrainingRow } from '../src/components/training-row'
 import { colors, spacing } from '../src/theme/tokens'
@@ -20,40 +19,23 @@ export default function Home() {
   const insets = useSafeAreaInsets()
   const credentials = useCredentials()
   const configured = credentials.data != null
-  const health = useHealth(configured)
   const summary = useProgressSummary(configured)
-  const { refetch: refetchHealth } = health
-  const { refetch: refetchSummary } = summary
+  const { refetch } = summary
 
   useFocusEffect(
     useCallback(() => {
-      if (!configured) return
-      void refetchHealth()
-      void refetchSummary()
-    }, [configured, refetchHealth, refetchSummary]),
+      if (configured) void refetch()
+    }, [configured, refetch]),
   )
 
   if (credentials.isPending) return <View style={styles.container} />
   if (!credentials.data) return <Redirect href="/setup" />
 
-  const rejected = health.error instanceof UnauthorizedError
-  const healthy = health.isSuccess && health.data.db === 'ok'
-
-  const status = () => {
-    if (rejected) return 'API rejected the secret'
-    if (health.isPending) return 'API: checking'
-    if (health.isError) return 'API: unreachable'
-    return healthy ? 'API: ok' : 'API: db down'
-  }
-
-  const dotColor = () => {
-    if (health.isPending) return colors.muted
-    return healthy ? colors.ok : colors.error
-  }
+  const rejected = summary.error instanceof UnauthorizedError
 
   const progress = () => {
     if (summary.isPending) return <Text style={styles.muted}>…</Text>
-    if (summary.isError) return <Text style={styles.error}>Could not load your progress</Text>
+    if (summary.isError) return <Text style={styles.error}>API is not responding</Text>
 
     return (
       <>
@@ -89,10 +71,6 @@ export default function Home() {
           ))}
         </View>
       </ScrollView>
-      <View
-        accessibilityLabel={status()}
-        style={[styles.dot, { top: insets.top + spacing.sm, backgroundColor: dotColor() }]}
-      />
     </View>
   )
 }
@@ -106,7 +84,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  dot: { position: 'absolute', right: spacing.md, width: 12, height: 12, borderRadius: 6 },
   section: { alignItems: 'center', gap: 4 },
   due: { fontSize: 28, fontWeight: '700' },
   muted: { color: colors.muted },
