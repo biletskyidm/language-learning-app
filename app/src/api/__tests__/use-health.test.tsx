@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react-native'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { apiGet } from '../client'
 import { useHealth } from '../use-health'
 
@@ -37,5 +37,21 @@ describe('useHealth', () => {
     const { result } = await renderHook(() => useHealth(), { wrapper })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
+  })
+
+  it('rechecks every 30 seconds so a recovered API turns healthy again', async () => {
+    jest.useFakeTimers()
+    mockedApiGet.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ status: 'ok', db: 'ok' })
+
+    const { result, unmount } = await renderHook(() => useHealth(), { wrapper })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(30_000)
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await unmount()
+    jest.useRealTimers()
   })
 })

@@ -7,5 +7,6 @@ export const useHealth = (enabled = true) =>
     queryKey: ['health'],
     queryFn: () => apiGet('/health', healthResponseSchema),
     retry: false,
+    refetchInterval: 30_000,
     enabled,
   })

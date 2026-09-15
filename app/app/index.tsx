@@ -22,12 +22,15 @@ export default function Home() {
   const configured = credentials.data != null
   const health = useHealth(configured)
   const summary = useProgressSummary(configured)
-  const { refetch } = summary
+  const { refetch: refetchHealth } = health
+  const { refetch: refetchSummary } = summary
 
   useFocusEffect(
     useCallback(() => {
-      if (configured) void refetch()
-    }, [configured, refetch]),
+      if (!configured) return
+      void refetchHealth()
+      void refetchSummary()
+    }, [configured, refetchHealth, refetchSummary]),
   )
 
   if (credentials.isPending) return <View style={styles.container} />
