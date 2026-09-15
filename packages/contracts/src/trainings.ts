@@ -244,11 +244,16 @@ const targetChoiceSchema = z.object({
   limit: z.number().int().min(1).max(PICK_LIMIT_MAX).optional(),
 })
 
-export const createChatTrainingInputSchema = targetChoiceSchema.extend({
-  type: z.literal('chat'),
-  context: z.string().trim().min(1).max(500),
-  style: chatStyleSchema,
-})
+export const createChatTrainingInputSchema = targetChoiceSchema
+  .extend({
+    type: z.literal('chat'),
+    context: z.string().trim().min(1).max(500).optional(),
+    style: chatStyleSchema.optional(),
+    scenarioId: z.string().min(1).optional(),
+  })
+  .refine((input) => input.scenarioId !== undefined || (input.context !== undefined && input.style !== undefined), {
+    message: 'needs a scenarioId, or a context and style',
+  })
 
 export const createGapsTrainingInputSchema = targetChoiceSchema.extend({ type: z.literal('gaps') })
 

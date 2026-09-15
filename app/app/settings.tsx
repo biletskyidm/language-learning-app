@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router'
+import { Stack, router } from 'expo-router'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import {
   TARGETS_BOUNDS,
@@ -92,6 +92,11 @@ export default function SettingsScreen() {
       {settings.data ? <Form settings={settings.data} /> : null}
       {settings.isPending ? <ActivityIndicator style={styles.state} /> : null}
       {settings.isError ? <Text style={styles.error}>Could not load your settings</Text> : null}
+      <Text style={styles.heading}>Chat scenarios</Text>
+      <Pressable onPress={() => router.push('/scenarios')} accessibilityRole="button" style={styles.row}>
+        <Text style={styles.label}>Saved scenarios</Text>
+        <Text style={styles.link}>Manage</Text>
+      </Pressable>
     </View>
   )
 }
@@ -116,6 +121,7 @@ const styles = StyleSheet.create({
   stepIcon: { fontSize: 18, lineHeight: 20 },
   value: { fontSize: 16, fontWeight: '600', minWidth: 20, textAlign: 'center' },
   styles: { flexDirection: 'row', gap: spacing.sm },
+  link: { color: colors.ok, fontSize: 15, fontWeight: '600' },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, paddingVertical: spacing.sm },
 })
