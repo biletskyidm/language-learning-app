@@ -16,6 +16,8 @@ export type SrsFields = {
   nextTrainingAt: Date
 }
 
+export type ProgressCounts = { dueNow: number; unpracticed: number }
+
 export interface ExpressionRepository {
   /** Diagnostic total across every user; used by the startup log. */
   countAll(): Promise<number>
@@ -29,4 +31,5 @@ export interface ExpressionRepository {
   applySrs(userId: string, id: string, fields: SrsFields, expectedTimesPracticed?: number): Promise<boolean>
   delete(userId: string, id: string): Promise<boolean>
   tags(userId: string): Promise<string[]>
+  progressCounts(userId: string, now: Date): Promise<ProgressCounts>
 }

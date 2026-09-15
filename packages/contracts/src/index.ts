@@ -1,6 +1,7 @@
 export * from './error'
 export * from './expressions'
 export * from './health'
+export * from './progress'
 export * from './scenarios'
 export * from './settings'
 export * from './token'

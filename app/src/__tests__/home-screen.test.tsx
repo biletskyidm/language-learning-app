@@ -1,0 +1,98 @@
+import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen } from '@testing-library/react-native'
+import { router } from 'expo-router'
+import type { TrainingSummary } from '@contracts'
+import Home from '../../app/index'
+import { apiGet } from '../api/client'
+
+jest.mock('expo-router', () => ({
+  Redirect: () => null,
+  router: { push: jest.fn() },
+  useFocusEffect: (effect: () => void) => jest.requireActual<typeof React>('react').useEffect(effect, [effect]),
+}))
+jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
+jest.mock('../api/use-credentials', () => ({
+  useCredentials: () => ({ isPending: false, data: { baseUrl: 'http://api', secret: 's' } }),
+}))
+jest.mock('../api/client', () => ({ UnauthorizedError: class extends Error {}, apiGet: jest.fn() }))
+
+const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
+
+const session = (id: string, overrides: Partial<TrainingSummary> = {}): TrainingSummary => ({
+  id,
+  userId: 'me',
+  type: 'chat',
+  status: 'ACTIVE',
+  context: `context of ${id}`,
+  style: 'informal',
+  targets: [],
+  createdAt: new Date('2026-01-02T00:00:00.000Z'),
+  ...overrides,
+})
+
+const renderHome = async (active: TrainingSummary[] = [session('t1'), session('t2')]) => {
+  mockedApiGet.mockImplementation(async (path: string) => {
+    if (path === '/health') return { status: 'ok', db: 'ok' }
+    return { dueNow: 7, unpracticed: 42, active }
+  })
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Home />
+    </QueryClientProvider>,
+  )
+}
+
+describe('Home', () => {
+  beforeEach(() => {
+    mockedApiGet.mockReset()
+    jest.mocked(router.push).mockReset()
+  })
+
+  it('shows how many phrases are due and how many were never practiced', async () => {
+    await renderHome()
+
+    expect(await screen.findByText('7 due today')).toBeTruthy()
+    expect(screen.getByText('42 never practiced')).toBeTruthy()
+  })
+
+  it('opens the vocabulary filtered to due phrases', async () => {
+    await renderHome()
+
+    await fireEvent.press(await screen.findByText('7 due today'))
+
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/expressions', params: { due: 'true' } })
+  })
+
+  it('lists the active sessions and resumes one on tap', async () => {
+    await renderHome()
+
+    expect(await screen.findByText('context of t1')).toBeTruthy()
+    expect(screen.getByText('context of t2')).toBeTruthy()
+
+    await fireEvent.press(screen.getByText('context of t1'))
+
+    expect(router.push).toHaveBeenCalledWith('/trainings/t1')
+  })
+
+  it('says so when nothing is active', async () => {
+    await renderHome([])
+
+    expect(await screen.findByText('No active sessions')).toBeTruthy()
+  })
+
+  it.each([
+    ['New chat', 'chat'],
+    ['Gaps', 'gaps'],
+    ['Describe', 'describe'],
+    ['Smuggle', 'smuggle'],
+  ])('starts %s from the start row', async (label, mode) => {
+    await renderHome([])
+
+    await fireEvent.press(await screen.findByRole('button', { name: label }))
+
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/practice', params: { mode } })
+  })
+})

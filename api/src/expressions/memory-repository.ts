@@ -6,7 +6,13 @@ import {
   type UpdateExpressionInput,
 } from '@contracts'
 import { EXCLUDED_PRIORITY, priorityOf } from './picker'
-import type { ExpressionListParams, ExpressionPickParams, ExpressionRepository, SrsFields } from './repository'
+import type {
+  ExpressionListParams,
+  ExpressionPickParams,
+  ExpressionRepository,
+  ProgressCounts,
+  SrsFields,
+} from './repository'
 
 const sortValue = (expression: Expression, sort: ExpressionSort): number | undefined => {
   switch (sort) {
@@ -127,5 +133,15 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     const tags = this.expressions.filter((e) => e.userId === userId).flatMap((e) => e.tags)
 
     return [...new Set(tags)].sort()
+  }
+
+  async progressCounts(userId: string, now: Date): Promise<ProgressCounts> {
+    const mine = this.expressions.filter((e) => e.userId === userId)
+    const due = (e: Expression) => e.score !== undefined && e.nextTrainingAt !== undefined && e.nextTrainingAt <= now
+
+    return {
+      dueNow: mine.filter(due).length,
+      unpracticed: mine.filter((e) => e.score === undefined).length,
+    }
   }
 }
