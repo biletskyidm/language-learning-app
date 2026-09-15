@@ -216,8 +216,8 @@ export class MongoExpressionRepository implements ExpressionRepository {
   async progressCounts(userId: string, now: Date): Promise<ProgressCounts> {
     const collection = this.db.collection(EXPRESSIONS_COLLECTION)
     const [dueNow, unpracticed] = await Promise.all([
-      collection.countDocuments({ userId, score: { $exists: true }, nextTrainingAt: { $lte: now } }),
-      collection.countDocuments({ userId, score: { $exists: false } }),
+      collection.countDocuments({ userId, score: { $ne: null }, nextTrainingAt: { $lte: now } }),
+      collection.countDocuments({ userId, score: null }),
     ])
 
     return { dueNow, unpracticed }

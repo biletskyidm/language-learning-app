@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { Redirect, Stack, router, useFocusEffect } from 'expo-router'
 import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useHealth } from '../src/api/use-health'
@@ -16,6 +17,7 @@ const START: [string, string][] = [
 ]
 
 export default function Home() {
+  const insets = useSafeAreaInsets()
   const credentials = useCredentials()
   const configured = credentials.data != null
   const health = useHealth(configured)
@@ -34,11 +36,16 @@ export default function Home() {
   const rejected = health.error instanceof UnauthorizedError
   const healthy = health.isSuccess && health.data.db === 'ok'
 
-  const label = () => {
-    if (rejected) return 'Check your secret'
-    if (health.isPending) return 'API: …'
+  const status = () => {
+    if (rejected) return 'API rejected the secret'
+    if (health.isPending) return 'API: checking'
     if (health.isError) return 'API: unreachable'
     return healthy ? 'API: ok' : 'API: db down'
+  }
+
+  const dotColor = () => {
+    if (health.isPending) return colors.muted
+    return healthy ? colors.ok : colors.error
   }
 
   const progress = () => {
@@ -56,33 +63,39 @@ export default function Home() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: 'Home' }} />
-      <Text style={[styles.status, { color: healthy ? colors.ok : colors.error }]}>{label()}</Text>
-      {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
-      <View style={styles.section}>{progress()}</View>
-      <View style={styles.row}>
-        {START.map(([title, mode]) => (
-          <Button key={mode} title={title} onPress={() => router.push({ pathname: '/practice', params: { mode } })} />
-        ))}
-      </View>
-      <View style={styles.row}>
-        <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
-        <Button title="Sessions" onPress={() => router.push('/trainings')} />
-        <Button title="Settings" onPress={() => router.push('/settings')} />
-      </View>
-      <View style={styles.sessions}>
-        <Text style={styles.heading}>Active sessions</Text>
-        {summary.data?.active.length === 0 ? <Text style={styles.muted}>No active sessions</Text> : null}
-        {summary.data?.active.map((training) => (
-          <TrainingRow key={training.id} training={training} />
-        ))}
-      </View>
-    </ScrollView>
+    <View style={styles.screen}>
+      <Stack.Screen options={{ title: 'Home', headerShown: false }} />
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+        {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
+        <View style={styles.section}>{progress()}</View>
+        <View style={styles.row}>
+          {START.map(([title, mode]) => (
+            <Button key={mode} title={title} onPress={() => router.push({ pathname: '/practice', params: { mode } })} />
+          ))}
+        </View>
+        <View style={styles.row}>
+          <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
+          <Button title="Sessions" onPress={() => router.push('/trainings')} />
+          <Button title="Settings" onPress={() => router.push('/settings')} />
+        </View>
+        <View style={styles.sessions}>
+          <Text style={styles.heading}>Active sessions</Text>
+          {summary.data?.active.length === 0 ? <Text style={styles.muted}>No active sessions</Text> : null}
+          {summary.data?.active.map((training) => (
+            <TrainingRow key={training.id} training={training} />
+          ))}
+        </View>
+      </ScrollView>
+      <View
+        accessibilityLabel={status()}
+        style={[styles.dot, { top: insets.top + spacing.sm, backgroundColor: dotColor() }]}
+      />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   container: {
     flexGrow: 1,
     alignItems: 'center',
@@ -90,7 +103,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  status: { fontSize: 18, fontWeight: '600' },
+  dot: { position: 'absolute', right: spacing.md, width: 12, height: 12, borderRadius: 6 },
   section: { alignItems: 'center', gap: 4 },
   due: { fontSize: 28, fontWeight: '700' },
   muted: { color: colors.muted },

@@ -63,8 +63,8 @@ curl localhost:8787/health
 # {"status":"ok","db":"ok"}
 ```
 
-The app's Home screen shows this as a green "API: ok" line, sends you to the setup screen until an
-API URL and secret are stored, and shows "Check your secret" when the API rejects the token. Point
+The app's Home screen shows this as a green dot in the top-right corner (red when unreachable), sends you to the setup screen until an
+API URL and secret are stored, and shows "Change API URL or secret" when the API rejects the token. Point
 the URL at the Mac's LAN address (`http://192.168.x.x:8787`) for local iteration, or at the deployed
 Function URL.
 
@@ -130,4 +130,4 @@ Redeploy after every ticket so the phone is always testing the real Lambda.
 2. Put the new value in `infra/.env` (and `api/.env` for local runs).
 3. `pnpm --filter infra deploy` — the Lambda picks up the new environment variable.
 4. Re-enter the secret on the app's setup screen. Until you do, every request answers `401` and the
-   Home screen shows "Check your secret".
+   Home screen shows a red dot and "Change API URL or secret".

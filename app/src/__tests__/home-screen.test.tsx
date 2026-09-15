@@ -1,6 +1,7 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { TrainingSummary } from '@contracts'
 import Home from '../../app/index'
@@ -19,6 +20,8 @@ jest.mock('../api/use-credentials', () => ({
 jest.mock('../api/client', () => ({ UnauthorizedError: class extends Error {}, apiGet: jest.fn() }))
 
 const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
+
+const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }
 
 const session = (id: string, overrides: Partial<TrainingSummary> = {}): TrainingSummary => ({
   id,
@@ -41,7 +44,9 @@ const renderHome = async (active: TrainingSummary[] = [session('t1'), session('t
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <Home />
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <Home />
+      </SafeAreaProvider>
     </QueryClientProvider>,
   )
 }
