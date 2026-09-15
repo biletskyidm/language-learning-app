@@ -68,6 +68,10 @@ export const expressionListQuerySchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((value) => value === 'true'),
+  practiced: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value === 'true')),
   sort: expressionSortSchema.default('createdAt'),
   dir: sortDirectionSchema.default('desc'),
 })

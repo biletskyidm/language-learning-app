@@ -50,6 +50,10 @@ describe('listFilter', () => {
       nextTrainingAt: { $lte: NOW },
     })
   })
+  it('matches scored expressions when practiced is true and unscored ones when it is false', () => {
+    expect(listFilter('me', query({ practiced: true }))).toEqual({ userId: 'me', score: { $ne: null } })
+    expect(listFilter('me', query({ practiced: false }))).toEqual({ userId: 'me', score: null })
+  })
 })
 
 describe('listPipeline', () => {
