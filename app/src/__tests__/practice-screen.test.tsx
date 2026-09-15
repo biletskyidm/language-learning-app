@@ -176,6 +176,44 @@ describe('Practice', () => {
     expect(screen.getByText('informal').parent?.props.accessibilityState).toEqual({ selected: true })
   })
 
+  it('keeps a refreshed style when only the context is edited', async () => {
+    mockedApiPost.mockResolvedValue({ id: 't1', type: 'chat' })
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await fireEvent.press(await screen.findByText('Scrum standup'))
+
+    await act(async () => {
+      queryClient.setQueryData(['scenarios'], { items: [{ ...scenario, context: 'a retro', style: 'informal' }] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await fireEvent.changeText(context(), 'a retro on Friday')
+    await fireEvent.press(screen.getByText('Start chat'))
+
+    await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
+    expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({
+      type: 'chat',
+      context: 'a retro on Friday',
+      style: 'informal',
+    })
+  })
+
+  it('keeps a refreshed context when only the style is edited', async () => {
+    mockedApiPost.mockResolvedValue({ id: 't1', type: 'chat' })
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await fireEvent.press(await screen.findByText('Scrum standup'))
+
+    await act(async () => {
+      queryClient.setQueryData(['scenarios'], { items: [{ ...scenario, context: 'a retro', style: 'informal' }] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await fireEvent.press(screen.getByText('formal'))
+    await fireEvent.press(screen.getByText('Start chat'))
+
+    await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
+    expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({ type: 'chat', context: 'a retro', style: 'formal' })
+  })
+
   it('re-picks only when the mode actually changes', async () => {
     await renderPractice()
     await waitFor(() => expect(rows()).toHaveLength(5))

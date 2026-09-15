@@ -233,10 +233,12 @@ export default function Practice() {
             context: chosen?.context ?? context,
             onContext: (next) => {
               setContext(next)
+              if (chosen) setStyle(chosen.style)
               setScenarioId(undefined)
             },
             style: chosen?.style ?? style ?? settings.defaultStyle,
             onStyle: (next) => {
+              if (chosen) setContext(chosen.context)
               setStyle(next)
               setScenarioId(undefined)
             },
