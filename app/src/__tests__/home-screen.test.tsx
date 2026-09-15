@@ -8,6 +8,7 @@ import { apiGet } from '../api/client'
 
 jest.mock('expo-router', () => ({
   Redirect: () => null,
+  Stack: { Screen: () => null },
   router: { push: jest.fn() },
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof React>('react').useEffect(effect, [effect]),
 }))

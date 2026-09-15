@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { Redirect, router, useFocusEffect } from 'expo-router'
+import { Redirect, Stack, router, useFocusEffect } from 'expo-router'
 import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
@@ -57,13 +57,19 @@ export default function Home() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen options={{ title: 'Home' }} />
       <Text style={[styles.status, { color: healthy ? colors.ok : colors.error }]}>{label()}</Text>
       {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
       <View style={styles.section}>{progress()}</View>
-      <View style={styles.start}>
+      <View style={styles.row}>
         {START.map(([title, mode]) => (
           <Button key={mode} title={title} onPress={() => router.push({ pathname: '/practice', params: { mode } })} />
         ))}
+      </View>
+      <View style={styles.row}>
+        <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
+        <Button title="Sessions" onPress={() => router.push('/trainings')} />
+        <Button title="Settings" onPress={() => router.push('/settings')} />
       </View>
       <View style={styles.sessions}>
         <Text style={styles.heading}>Active sessions</Text>
@@ -72,9 +78,6 @@ export default function Home() {
           <TrainingRow key={training.id} training={training} />
         ))}
       </View>
-      <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
-      <Button title="Sessions" onPress={() => router.push('/trainings')} />
-      <Button title="Settings" onPress={() => router.push('/settings')} />
     </ScrollView>
   )
 }
@@ -92,7 +95,7 @@ const styles = StyleSheet.create({
   due: { fontSize: 28, fontWeight: '700' },
   muted: { color: colors.muted },
   error: { color: colors.error },
-  start: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   sessions: { alignSelf: 'stretch', gap: spacing.sm },
   heading: { fontSize: 16, fontWeight: '600' },
 })
