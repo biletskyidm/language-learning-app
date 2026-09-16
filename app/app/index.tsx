@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   error: { color: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   weakest: { alignSelf: 'stretch', gap: spacing.sm },
-  heading: { fontSize: 13, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  heading: { fontSize: 16, fontWeight: '600' },
   weak: { gap: 5 },
   weakHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
   weakExpression: { flex: 1, fontSize: 15, fontWeight: '400' },
