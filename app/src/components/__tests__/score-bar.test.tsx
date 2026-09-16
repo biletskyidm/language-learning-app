@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react-native'
-import { ScoreBar, scoreBarWidth } from '../score-bar'
+import { colors } from '../../theme/tokens'
+import { ScoreBar, scoreBarWidth, scoreColor } from '../score-bar'
 
 describe('scoreBarWidth', () => {
   it('maps a 0–10 score onto the bar width', () => {
@@ -16,6 +17,21 @@ describe('scoreBarWidth', () => {
 
   it('draws an empty bar for a phrase never practiced', () => {
     expect(scoreBarWidth(undefined)).toBe('0%')
+  })
+})
+
+describe('scoreColor', () => {
+  it('turns red at or below 3, amber up to 6, green above it', () => {
+    expect(scoreColor(0)).toBe(colors.error)
+    expect(scoreColor(3)).toBe(colors.error)
+    expect(scoreColor(3.1)).toBe(colors.warn)
+    expect(scoreColor(6)).toBe(colors.warn)
+    expect(scoreColor(6.1)).toBe(colors.ok)
+    expect(scoreColor(10)).toBe(colors.ok)
+  })
+
+  it('leaves an unpractised phrase uncoloured', () => {
+    expect(scoreColor(undefined)).toBe(colors.border)
   })
 })
 

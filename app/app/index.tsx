@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
-import { ScoreBar } from '../src/components/score-bar'
+import { ScoreBar, scoreColor } from '../src/components/score-bar'
 import { WeekChart } from '../src/components/week-chart'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -82,7 +82,7 @@ export default function Home() {
                   <Text style={styles.weakExpression} numberOfLines={1}>
                     {item.expression}
                   </Text>
-                  <Text style={styles.muted}>{item.score?.toFixed(1)}</Text>
+                  <Text style={[styles.weakScore, { color: scoreColor(item.score) }]}>{item.score?.toFixed(1)}</Text>
                 </View>
                 <ScoreBar score={item.score} />
               </Pressable>
@@ -109,8 +109,9 @@ const styles = StyleSheet.create({
   error: { color: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   weakest: { alignSelf: 'stretch', gap: spacing.sm },
-  heading: { fontSize: 16, fontWeight: '600' },
-  weak: { gap: 4 },
-  weakHeading: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-  weakExpression: { flex: 1, fontSize: 15, fontWeight: '600' },
+  heading: { fontSize: 13, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  weak: { gap: 5 },
+  weakHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
+  weakExpression: { flex: 1, fontSize: 15, fontWeight: '400' },
+  weakScore: { fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] },
 })
