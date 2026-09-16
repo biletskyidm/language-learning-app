@@ -17,7 +17,7 @@ const Row = ({ item }: { item: Expression }) => (
   <Pressable style={styles.row} onPress={() => router.push(`/expressions/${item.id}`)}>
     <Text style={styles.expression}>{item.expression}</Text>
     <Text style={styles.meaning}>{item.meaning}</Text>
-    <ScoreBar score={item.score} />
+    {item.score === undefined ? null : <ScoreBar score={item.score} />}
     <Text style={styles.meta}>{srsSummary(item, new Date())}</Text>
   </Pressable>
 )
