@@ -29,10 +29,20 @@ describe('TrainingRow', () => {
     expect(router.push).toHaveBeenCalledWith('/trainings/t1')
   })
 
-  it.each(['COMPLETED', 'CANCELED'] as const)('does not offer to resume a %s chat', async (status) => {
+  it.each(['COMPLETED', 'CANCELED'] as const)('opens a %s chat read-only instead of resuming it', async (status) => {
     await render(<TrainingRow training={summary({ status })} />)
 
-    expect(screen.queryByRole('button')).toBeNull()
+    await fireEvent.press(screen.getByRole('button'))
+
+    expect(router.push).toHaveBeenCalledWith('/trainings/history/t1')
+  })
+
+  it('opens an ended drill read-only too', async () => {
+    await render(<TrainingRow training={summary({ type: 'gaps', status: 'COMPLETED', context: undefined })} />)
+
+    await fireEvent.press(screen.getByRole('button'))
+
+    expect(router.push).toHaveBeenCalledWith('/trainings/history/t1')
   })
 
   it('opens the session menu from an active row without resuming it', async () => {

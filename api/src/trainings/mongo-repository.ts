@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   DrillAggregates,
   DrillRound,
+  ExpressionHistoryItem,
   FinalAssessment,
   SrsEffect,
   Training,
@@ -184,6 +185,31 @@ export class MongoTrainingRepository implements TrainingRepository {
         { $unwind: '$srsEffects' },
         { $match: { 'srsEffects.at': range } },
         { $project: { _id: 0, expressionId: '$srsEffects.expressionId', at: '$srsEffects.at' } },
+      ])
+      .toArray()
+  }
+
+  async listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]> {
+    const mine = { 'srsEffects.expressionId': expressionId }
+
+    return this.db
+      .collection(TRAININGS_COLLECTION)
+      .aggregate<ExpressionHistoryItem>([
+        { $match: { userId, ...mine } },
+        { $unwind: '$srsEffects' },
+        { $match: mine },
+        {
+          $project: {
+            _id: 0,
+            trainingId: { $toString: '$_id' },
+            type: '$type',
+            scoreWritten: '$srsEffects.scoreWritten',
+            before: '$srsEffects.before',
+            after: '$srsEffects.after',
+            at: '$srsEffects.at',
+          },
+        },
+        { $sort: { at: -1 } },
       ])
       .toArray()
   }

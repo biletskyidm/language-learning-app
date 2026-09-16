@@ -5,6 +5,7 @@ import {
   createExpressionInputSchema,
   expressionDraftInputSchema,
   expressionDraftSchema,
+  expressionHistoryResponseSchema,
   expressionListQuerySchema,
   expressionListResponseSchema,
   expressionPickQuerySchema,
@@ -27,7 +28,7 @@ const draftWithRetry = async (llm: Deps['llm'], text: string) => {
   }
 }
 
-export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock' | 'llm'>) =>
+export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock' | 'llm' | 'trainings'>) =>
   new Hono<AuthEnv>()
     .get('/expressions', async (c) => {
       const query = expressionListQuerySchema.safeParse(c.req.query())
@@ -77,6 +78,11 @@ export const expressionRoutes = (deps: Pick<Deps, 'expressions' | 'clock' | 'llm
       const items = await deps.expressions.tags(c.get('userId'))
 
       return c.json(expressionTagsResponseSchema.parse({ items }))
+    })
+    .get('/expressions/:id/history', async (c) => {
+      const items = await deps.trainings.listEffectsForExpression(c.get('userId'), c.req.param('id'))
+
+      return c.json(expressionHistoryResponseSchema.parse({ items }))
     })
     .get('/expressions/:id', async (c) => {
       const expression = await deps.expressions.findById(c.get('userId'), c.req.param('id'))

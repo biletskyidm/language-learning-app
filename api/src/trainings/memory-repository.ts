@@ -3,6 +3,7 @@ import {
   type ChatMessage,
   type DrillAggregates,
   type DrillRound,
+  type ExpressionHistoryItem,
   type FinalAssessment,
   type SrsEffect,
   type Training,
@@ -144,6 +145,24 @@ export class InMemoryTrainingRepository implements TrainingRepository {
       .flatMap((training) => training.srsEffects)
       .filter(({ at }) => at >= from && at < to)
       .map(({ expressionId, at }) => ({ expressionId, at }))
+  }
+
+  async listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]> {
+    return this.trainings
+      .filter((training) => training.userId === userId)
+      .flatMap((training) =>
+        training.srsEffects
+          .filter((effect) => effect.expressionId === expressionId)
+          .map(({ scoreWritten, before, after, at }) => ({
+            trainingId: training.id,
+            type: training.type,
+            scoreWritten,
+            before,
+            after,
+            at,
+          })),
+      )
+      .sort((a, b) => b.at.getTime() - a.at.getTime())
   }
 
   private stored(userId: string, id: string) {

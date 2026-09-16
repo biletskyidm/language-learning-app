@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text } fro
 import { useDeleteExpression } from '../../../src/api/use-delete-expression'
 import { useExpression } from '../../../src/api/use-expression'
 import { ExpressionDetail } from '../../../src/components/expression-detail'
+import { ExpressionHistory } from '../../../src/components/expression-history'
 import { colors, spacing } from '../../../src/theme/tokens'
 
 export default function ExpressionScreen() {
@@ -43,6 +44,7 @@ export default function ExpressionScreen() {
       {expression.data ? (
         <>
           <ExpressionDetail expression={expression.data} />
+          <ExpressionHistory id={id} />
           {remove.isError ? <Text style={styles.error}>Could not delete this expression</Text> : null}
           <Pressable
             onPress={confirmDelete}
