@@ -353,7 +353,7 @@ export type ChatTurnResponse = z.infer<typeof chatTurnResponseSchema>
 /** One SRS write seen from the expression's side: the same snapshot, plus which training caused it. */
 export const expressionHistoryItemSchema = srsEffectSchema
   .pick({ scoreWritten: true, before: true, after: true, at: true })
-  .extend({ trainingId: z.string(), type: trainingTypeSchema })
+  .extend({ trainingId: z.string(), type: trainingTypeSchema, status: trainingStatusSchema })
 
 export const expressionHistoryResponseSchema = z.object({ items: z.array(expressionHistoryItemSchema) })
 

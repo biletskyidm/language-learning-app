@@ -101,6 +101,7 @@ describe('GET /expressions/:id/history', () => {
       {
         trainingId: 't2',
         type: 'gaps',
+        status: 'ACTIVE',
         at: daysAfter(2),
         scoreWritten: 8,
         before: { score: 6, timesPracticed: 2, nextTrainingAt: NOW },
@@ -109,11 +110,23 @@ describe('GET /expressions/:id/history', () => {
       {
         trainingId: 't1',
         type: 'chat',
+        status: 'COMPLETED',
         at: daysAfter(1),
         scoreWritten: 9,
         before: { score: 6, timesPracticed: 2, nextTrainingAt: NOW },
         after: { score: 7, timesPracticed: 3, nextTrainingAt: daysAfter(7) },
       },
+    ])
+  })
+
+  it('carries the status of each training, so an ongoing session can still be resumed', async () => {
+    const { request, auth } = app()
+
+    const body = expressionHistoryResponseSchema.parse(await (await request('/expressions/e1/history', { headers: auth })).json())
+
+    expect(body.items.map(({ trainingId, status }) => [trainingId, status])).toEqual([
+      ['t2', 'ACTIVE'],
+      ['t1', 'COMPLETED'],
     ])
   })
 

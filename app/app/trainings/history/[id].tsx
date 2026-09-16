@@ -8,7 +8,7 @@ import { DrillRounds } from '../../../src/components/drill-rounds'
 import { MessageBubble } from '../../../src/components/message-bubble'
 import { SessionSummary } from '../../../src/components/session-summary'
 import { SrsEffects } from '../../../src/components/srs-effects'
-import { TRAINING_TYPE_NAMES } from '../../../src/components/training-row'
+import { TRAINING_STATUS_NAMES, TRAINING_TYPE_NAMES } from '../../../src/components/training-row'
 import { colors, spacing } from '../../../src/theme/tokens'
 
 const ChatPast = ({ chat, onPreview }: { chat: ChatTraining; onPreview: (message: ChatMessage) => void }) => (
@@ -38,7 +38,7 @@ export default function PastTraining() {
       {past ? (
         <ScrollView contentContainerStyle={styles.body}>
           <Text style={styles.when}>
-            {past.status === 'CANCELED' ? 'Canceled' : 'Completed'} ·{' '}
+            {TRAINING_STATUS_NAMES[past.status]} ·{' '}
             {(past.canceledAt ?? past.completedAt ?? past.createdAt).toLocaleDateString()}
           </Text>
           {past.type !== 'chat' && past.aggregates ? (

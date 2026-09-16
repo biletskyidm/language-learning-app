@@ -203,6 +203,7 @@ export class MongoTrainingRepository implements TrainingRepository {
             _id: 0,
             trainingId: { $toString: '$_id' },
             type: '$type',
+            status: '$status',
             scoreWritten: '$srsEffects.scoreWritten',
             before: '$srsEffects.before',
             after: '$srsEffects.after',

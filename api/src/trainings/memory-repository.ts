@@ -156,6 +156,7 @@ export class InMemoryTrainingRepository implements TrainingRepository {
           .map(({ scoreWritten, before, after, at }) => ({
             trainingId: training.id,
             type: training.type,
+            status: training.status,
             scoreWritten,
             before,
             after,

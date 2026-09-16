@@ -3,6 +3,8 @@ import type { SrsEffect } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 
 const score = (value?: number) => (value === undefined ? 'new' : value.toFixed(1))
+const times = (value?: number) => `${value ?? 0}×`
+const due = (value?: Date) => (value === undefined ? 'unscheduled' : value.toLocaleDateString())
 
 export const SrsEffects = ({ effects }: { effects: SrsEffect[] }) => (
   <View style={styles.section}>
@@ -16,8 +18,11 @@ export const SrsEffects = ({ effects }: { effects: SrsEffect[] }) => (
             {effect.expression}
           </Text>
           <Text style={styles.meta}>
-            scored {effect.scoreWritten} · {score(effect.before.score)} → {score(effect.after.score)} ·{' '}
-            {effect.after.timesPracticed}× · due {effect.after.nextTrainingAt.toLocaleDateString()}
+            scored {effect.scoreWritten} · {score(effect.before.score)} → {score(effect.after.score)}
+          </Text>
+          <Text style={styles.meta}>
+            {times(effect.before.timesPracticed)} → {times(effect.after.timesPracticed)} · due{' '}
+            {due(effect.before.nextTrainingAt)} → {due(effect.after.nextTrainingAt)}
           </Text>
         </View>
       ))

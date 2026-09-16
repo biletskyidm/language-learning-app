@@ -20,6 +20,7 @@ const history: ExpressionHistoryResponse = {
     {
       trainingId: 't2',
       type: 'gaps',
+      status: 'COMPLETED',
       scoreWritten: 8,
       before: { score: 6, timesPracticed: 2, nextTrainingAt: new Date('2026-01-01T00:00:00.000Z') },
       after: { score: 7, timesPracticed: 3, nextTrainingAt: new Date('2026-01-08T00:00:00.000Z') },

@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useExpressionHistory } from '../api/use-expression-history'
 import { colors, spacing } from '../theme/tokens'
+import { trainingRoute } from './training-route'
 import { TRAINING_TYPE_NAMES } from './training-row'
 
 const score = (value?: number) => (value === undefined ? 'new' : value.toFixed(1))
@@ -20,9 +21,15 @@ export const ExpressionHistory = ({ id }: { id: string }) => {
           key={`${item.trainingId}-${item.at.toISOString()}`}
           style={styles.row}
           accessibilityRole="button"
-          onPress={() => router.push(`/trainings/history/${item.trainingId}`)}
+          onPress={() => {
+            const route = trainingRoute(item.type, item.trainingId, item.status)
+            if (route) router.push(route)
+          }}
         >
-          <Text style={styles.type}>{TRAINING_TYPE_NAMES[item.type]}</Text>
+          <Text style={styles.type}>
+            {TRAINING_TYPE_NAMES[item.type]}
+            {item.status === 'ACTIVE' ? <Text style={styles.active}> · still open</Text> : null}
+          </Text>
           <Text style={styles.meta}>
             {item.at.toLocaleDateString()} · scored {item.scoreWritten} · {score(item.before.score)} →{' '}
             {score(item.after.score)}
@@ -39,6 +46,7 @@ const styles = StyleSheet.create({
   row: { gap: 2 },
   type: { fontWeight: '500' },
   meta: { color: colors.muted, fontSize: 12 },
+  active: { color: colors.ok, fontWeight: '600' },
   empty: { color: colors.muted },
   error: { color: colors.error },
 })

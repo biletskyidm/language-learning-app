@@ -28,8 +28,11 @@ const GapsPast = ({ round }: { round: GapsRound }) => (
         <Text key={blank}>
           {part}
           {blank < round.material.parts.length - 1 ? (
-            <Text style={[styles.blank, judged && (judged.correct ? styles.right : styles.wrong)]}>
-              {judged?.given || round.answer?.fills[blank] || BLANK}
+            <Text>
+              <Text style={[styles.blank, judged && (judged.correct ? styles.right : styles.wrong)]}>
+                {judged?.given || round.answer?.fills[blank] || BLANK}
+              </Text>
+              {judged && !judged.correct ? <Text style={styles.right}> {judged.expected}</Text> : null}
             </Text>
           ) : null}
         </Text>
