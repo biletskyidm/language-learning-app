@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
+import { ScoreBar } from '../src/components/score-bar'
 import { WeekChart } from '../src/components/week-chart'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -66,9 +67,28 @@ export default function Home() {
         <View style={styles.row}>
           <Button title="Vocabulary" onPress={() => router.push('/expressions')} />
           <Button title="Sessions" onPress={() => router.push('/trainings')} />
-          <Button title="Progress" onPress={() => router.push('/progress')} />
           <Button title="Settings" onPress={() => router.push('/settings')} />
         </View>
+        {summary.data?.weakest.length ? (
+          <View style={styles.weakest}>
+            <Text style={styles.heading}>Weakest phrases</Text>
+            {summary.data.weakest.map((item) => (
+              <Pressable
+                key={item.id}
+                style={styles.weak}
+                onPress={() => router.push({ pathname: '/practice', params: { expressionId: item.id } })}
+              >
+                <View style={styles.weakHeading}>
+                  <Text style={styles.weakExpression} numberOfLines={1}>
+                    {item.expression}
+                  </Text>
+                  <Text style={styles.muted}>{item.score?.toFixed(1)}</Text>
+                </View>
+                <ScoreBar score={item.score} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {summary.data ? <WeekChart week={summary.data.week} today={(new Date().getDay() + 6) % 7} /> : null}
       </ScrollView>
     </View>
@@ -88,4 +108,9 @@ const styles = StyleSheet.create({
   muted: { color: colors.muted },
   error: { color: colors.error },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  weakest: { alignSelf: 'stretch', gap: spacing.sm },
+  heading: { fontSize: 16, fontWeight: '600' },
+  weak: { gap: 4 },
+  weakHeading: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  weakExpression: { flex: 1, fontSize: 15, fontWeight: '600' },
 })

@@ -12,6 +12,7 @@ import {
 import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
+import { useExpression } from '../src/api/use-expression'
 import { usePickedExpressions } from '../src/api/use-picked-expressions'
 import { useScenarios } from '../src/api/use-scenarios'
 import { useSettings } from '../src/api/use-settings'
@@ -208,7 +209,7 @@ const MODE_NAMES = new Set<string>(MODES.map(([value]) => value))
 const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode as Mode) : 'chat')
 
 export default function Practice() {
-  const params = useLocalSearchParams<{ mode?: string }>()
+  const params = useLocalSearchParams<{ mode?: string; expressionId?: string }>()
   const [mode, setMode] = useState<Mode>(startMode(params.mode))
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>()
@@ -217,8 +218,9 @@ export default function Practice() {
   const settings = saved.isPending ? undefined : (saved.data ?? DEFAULT_SETTINGS)
   const presets = useScenarios().data?.items ?? []
   const chosen = presets.find((scenario) => scenario.id === scenarioId)
-  const picked = usePickedExpressions(settings && settings[TARGETS_SETTING[mode]])
-  const items = picked.data?.items
+  const named = useExpression(params.expressionId)
+  const picked = usePickedExpressions(params.expressionId ? undefined : settings && settings[TARGETS_SETTING[mode]])
+  const items = params.expressionId ? (named.data ? [named.data] : undefined) : picked.data?.items
 
   const body = () => {
     if (settings && items) {
@@ -254,7 +256,7 @@ export default function Practice() {
         <Text style={styles.state}>Nothing to practice right now</Text>
       )
     }
-    if (picked.isError) return <Text style={styles.error}>Could not work out what to practice</Text>
+    if (picked.isError || named.isError) return <Text style={styles.error}>Could not work out what to practice</Text>
     return <ActivityIndicator style={styles.state} />
   }
 

@@ -8,7 +8,7 @@ import { apiGet, apiPost } from '../api/client'
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   router: { push: jest.fn(), replace: jest.fn() },
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockParams,
 }))
 jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
 jest.mock('../api/client', () => ({ ApiError: class extends Error {}, apiGet: jest.fn(), apiPost: jest.fn() }))
@@ -27,6 +27,8 @@ const expression = (id: string): Expression => ({
   frequency: 'common',
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
 })
+
+let mockParams: Record<string, string> = {}
 
 const settings = { chatTargets: 5, gapsTargets: 4, describeTargets: 1, smuggleTargets: 3, defaultStyle: 'informal' }
 
@@ -65,12 +67,14 @@ const renderPractice = async () => {
 
 describe('Practice', () => {
   beforeEach(() => {
+    mockParams = {}
     mockedApiGet.mockReset()
     mockedApiPost.mockReset()
     mockedApiGet.mockImplementation(async (path: string) => {
       if (path === '/settings') return settings
       if (path === '/scenarios') return { items: [scenario] }
       if (path.startsWith('/expressions/pick')) return picks(path)
+      if (path.startsWith('/expressions/')) return expression(path.slice('/expressions/'.length))
       return { items: vocabulary }
     })
   })
@@ -80,6 +84,15 @@ describe('Practice', () => {
 
     await waitFor(() => expect(rows()).toHaveLength(5))
     expect(picked()).toEqual(['/expressions/pick?limit=5'])
+  })
+
+  it('starts from the phrase the route names instead of the picker', async () => {
+    mockParams = { expressionId: 'e3' }
+    await renderPractice()
+
+    await waitFor(() => expect(rows()).toHaveLength(1))
+    expect(screen.getByText('phrase e3')).toBeTruthy()
+    expect(picked()).toEqual([])
   })
 
   it('re-picks for the mode the user switched to', async () => {
