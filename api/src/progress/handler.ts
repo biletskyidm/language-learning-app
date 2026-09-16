@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { apiError, progressSummaryQuerySchema, progressSummarySchema } from '@contracts'
+import { apiError, progressSummaryQuerySchema, progressSummarySchema, WEAKEST_LIMIT } from '@contracts'
 import type { AuthEnv } from '../auth/middleware'
 import type { Deps } from '../deps'
 
@@ -21,13 +21,20 @@ export const progressRoutes = (deps: Pick<Deps, 'expressions' | 'trainings' | 'c
     const userId = c.get('userId')
     const now = deps.clock()
     const from = weekStart(now, query.data.tzOffset)
-    const [counts, effects] = await Promise.all([
+    const [counts, weakest, effects] = await Promise.all([
       deps.expressions.progressCounts(userId, now),
+      deps.expressions.list(userId, { practiced: true, sort: 'score', dir: 'asc', due: false, now }),
       deps.trainings.srsEffectsBetween(userId, from, new Date(from.getTime() + 7 * DAY)),
     ])
 
     const days = Array.from({ length: 7 }, () => new Set<string>())
     for (const { expressionId, at } of effects) days[Math.floor((at.getTime() - from.getTime()) / DAY)]?.add(expressionId)
 
-    return c.json(progressSummarySchema.parse({ ...counts, week: days.map((day) => day.size) }))
+    return c.json(
+      progressSummarySchema.parse({
+        ...counts,
+        weakest: weakest.slice(0, WEAKEST_LIMIT),
+        week: days.map((day) => day.size),
+      }),
+    )
   })

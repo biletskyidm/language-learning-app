@@ -7,17 +7,18 @@ import {
   isFiltered,
   type ExpressionFilters,
 } from '../../src/api/expression-filters'
+import { srsSummary } from '../../src/api/expression-srs'
 import { useExpressions } from '../../src/api/use-expressions'
 import { ExpressionFilterBar } from '../../src/components/expression-filter-bar'
+import { ScoreBar } from '../../src/components/score-bar'
 import { colors, spacing } from '../../src/theme/tokens'
 
 const Row = ({ item }: { item: Expression }) => (
   <Pressable style={styles.row} onPress={() => router.push(`/expressions/${item.id}`)}>
     <Text style={styles.expression}>{item.expression}</Text>
     <Text style={styles.meaning}>{item.meaning}</Text>
-    <Text style={styles.meta}>
-      {item.type} · {item.frequency} · ×{item.timesPracticed ?? 0}
-    </Text>
+    {item.score === undefined ? null : <ScoreBar score={item.score} />}
+    <Text style={styles.meta}>{srsSummary(item, new Date())}</Text>
   </Pressable>
 )
 
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: spacing.sm,
   },
-  row: { paddingVertical: spacing.sm, gap: 2 },
+  row: { paddingVertical: spacing.sm, gap: 4 },
   expression: { fontSize: 16, fontWeight: '600' },
   meaning: { color: colors.muted },
   meta: { color: colors.muted, fontSize: 12 },

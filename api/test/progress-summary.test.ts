@@ -103,6 +103,30 @@ describe('GET /progress/summary', () => {
     expect(result).toMatchObject({ dueNow: 0, unpracticed: 1 })
   })
 
+  describe('weakest', () => {
+    it('returns the five lowest-scoring practiced phrases, weakest first', async () => {
+      const result = await summary({
+        now,
+        expressions: [
+          practiced('s9', day(20), { score: 9 }),
+          practiced('s1', day(20), { score: 1 }),
+          practiced('s7', day(20), { score: 7 }),
+          practiced('s3', day(20), { score: 3 }),
+          practiced('s5', day(20), { score: 5 }),
+          practiced('s8', day(20), { score: 8 }),
+        ],
+      })
+
+      expect(result.weakest.map((e) => e.id)).toEqual(['s1', 's3', 's5', 's7', 's8'])
+    })
+
+    it('leaves out phrases that were never practiced', async () => {
+      const result = await summary({ now, expressions: [expression('fresh'), practiced('scored', day(20), { score: 6 })] })
+
+      expect(result.weakest.map((e) => e.id)).toEqual(['scored'])
+    })
+  })
+
   describe('week', () => {
     const wednesday = new Date('2026-03-11T12:00:00.000Z')
 

@@ -20,12 +20,33 @@ jest.mock('../api/client', () => ({ UnauthorizedError: class extends Error {}, a
 
 const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
 
+const weak = (id: string, text: string, score: number) => ({
+  id,
+  userId: 'me',
+  expression: text,
+  type: 'idiom' as const,
+  meaning: 'a meaning',
+  examples: [],
+  tags: [],
+  frequency: 'common' as const,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  score,
+  timesPracticed: 2,
+  lastTimePracticedAt: new Date('2026-01-01T00:00:00.000Z'),
+  nextTrainingAt: new Date('2026-01-08T00:00:00.000Z'),
+})
+
 const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }
 
 const renderHome = async () => {
   mockedApiGet.mockImplementation(async (path: string) => {
     if (path === '/health') return { status: 'ok', db: 'ok' }
-    return { dueNow: 7, unpracticed: 42, week: [4, 0, 2, 0, 0, 0, 0] }
+    return {
+      dueNow: 7,
+      unpracticed: 42,
+      week: [4, 0, 2, 0, 0, 0, 0],
+      weakest: [weak('w1', 'run late', 2.5), weak('w2', 'break the ice', 6)],
+    }
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
@@ -65,6 +86,22 @@ describe('Home', () => {
     expect(await screen.findByLabelText('Mon: 4')).toBeTruthy()
     expect(screen.getByLabelText('Wed: 2')).toBeTruthy()
     expect(screen.queryByText('Active sessions')).toBeNull()
+  })
+
+  it('lists the weakest phrases with their score', async () => {
+    await renderHome()
+
+    expect(await screen.findByText('run late')).toBeTruthy()
+    expect(screen.getByText('break the ice')).toBeTruthy()
+    expect(screen.getByLabelText('Score 2.5 of 10')).toBeTruthy()
+  })
+
+  it('starts a session on the weakest phrase it is tapped on', async () => {
+    await renderHome()
+
+    await fireEvent.press(await screen.findByText('run late'))
+
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/practice', params: { expressionId: 'w1' } })
   })
 
   it.each([
