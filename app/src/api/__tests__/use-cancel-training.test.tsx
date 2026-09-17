@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { Training } from '@contracts'
 import { ApiError, apiPost } from '../client'
 import { useCancelTraining } from '../use-cancel-training'
+import { EXPRESSIONS_KEY } from '../use-expressions'
 import { TRAININGS_KEY } from '../use-training'
 
 jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
@@ -39,6 +40,7 @@ const canceled: Training = { ...active, status: 'CANCELED', canceledAt: NOW }
 
 const LIST_KEY = [TRAININGS_KEY, 'list', {}]
 const DETAIL_KEY = [TRAININGS_KEY, 'detail', 't1']
+const HISTORY_KEY = [EXPRESSIONS_KEY, 'history', 'e1']
 
 const cancel = async () => {
   const { result } = await renderHook(() => useCancelTraining(), { wrapper })
@@ -56,6 +58,7 @@ describe('useCancelTraining', () => {
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false, gcTime: 0 } } })
     queryClient.setQueryData(DETAIL_KEY, active)
     queryClient.setQueryData(LIST_KEY, { pages: [{ items: [] }], pageParams: [undefined] })
+    queryClient.setQueryData(HISTORY_KEY, { items: [] })
   })
 
   afterEach(() => queryClient.clear())
@@ -72,6 +75,13 @@ describe('useCancelTraining', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData(DETAIL_KEY)).toEqual(canceled)
+  })
+
+  it('marks expression history stale so its row moves out of "still open"', async () => {
+    const result = await cancel()
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState(HISTORY_KEY)?.isInvalidated).toBe(true)
   })
 
   it('marks the session lists stale so the row moves under Canceled', async () => {
