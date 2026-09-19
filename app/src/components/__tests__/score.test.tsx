@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react-native'
 import { colors } from '../../theme/tokens'
-import { Score, scoreColor } from '../score'
+import { Score, scoreColor, scoreColorAt } from '../score'
 
 describe('scoreColor', () => {
   it('turns red at or below 3, amber up to 6, green above it', () => {
@@ -15,6 +15,14 @@ describe('scoreColor', () => {
 
   it('leaves an unpractised phrase uncoloured', () => {
     expect(scoreColor(undefined)).toBe(colors.border)
+  })
+})
+
+describe('scoreColorAt', () => {
+  it('bands the value as it will be shown, not as it was given', () => {
+    expect(scoreColorAt(6.4, 0)).toBe(colors.warn)
+    expect(scoreColorAt(6.04)).toBe(colors.warn)
+    expect(scoreColorAt(6.6, 0)).toBe(colors.ok)
   })
 })
 

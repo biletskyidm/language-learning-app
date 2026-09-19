@@ -9,13 +9,15 @@ export const scoreColor = (score?: number): string => {
   return colors.ok
 }
 
+export const scoreColorAt = (value: number, digits = 1) => scoreColor(Number(value.toFixed(digits)))
+
 type Props = { value?: number; digits?: number; placeholder?: string; style?: StyleProp<TextStyle> }
 
 export const Score = ({ value, digits = 1, placeholder = 'new', style }: Props) => {
   const shown = value === undefined ? undefined : value.toFixed(digits)
 
   return (
-    <Text style={[style, { color: shown === undefined ? colors.muted : scoreColor(Number(shown)) }]}>
+    <Text style={[style, { color: value === undefined ? colors.muted : scoreColorAt(value, digits) }]}>
       {shown ?? placeholder}
     </Text>
   )

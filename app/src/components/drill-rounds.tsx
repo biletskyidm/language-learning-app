@@ -9,7 +9,7 @@ import type {
 } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { roundVerdictLine } from './drill-history'
-import { Score, scoreColor } from './score'
+import { Score, scoreColorAt } from './score'
 
 export type DrillTraining = GapsTraining | DescribeTraining | SmuggleTraining
 
@@ -55,7 +55,10 @@ const SmugglePast = ({ round }: { round: SmuggleRound }) => (
         return (
           <Text
             key={target.expressionId}
-            style={[styles.chip, result && { borderColor: scoreColor(result.score), color: scoreColor(result.score) }]}
+            style={[
+              styles.chip,
+              result && { borderColor: scoreColorAt(result.score, 0), color: scoreColorAt(result.score, 0) },
+            ]}
           >
             {target.expression}
             {result ? <> <Score value={result.score} digits={0} /></> : ''}
