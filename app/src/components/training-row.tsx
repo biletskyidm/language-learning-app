@@ -21,16 +21,17 @@ export const TRAINING_STATUS_NAMES: Record<TrainingStatus, string> = {
 const TYPE_ICONS: Record<TrainingType, string> = { chat: '💬', gaps: '🧩', describe: '🗣️', smuggle: '🎒' }
 
 export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; onMenu?: () => void }) => {
-  const route = trainingRoute(training.type, training.id)
-  const resumable = route !== undefined && training.status === 'ACTIVE'
+  const route = trainingRoute(training.type, training.id, training.status)
+  const openable = route !== undefined
+  const resumable = openable && training.status === 'ACTIVE'
   const averages = training.finalAssessment?.averages
 
   return (
     <Pressable
       style={styles.row}
-      disabled={!resumable}
+      disabled={!openable}
       onPress={() => route && router.push(route)}
-      accessibilityRole={resumable ? 'button' : undefined}
+      accessibilityRole={openable ? 'button' : undefined}
     >
       <Text style={styles.icon}>{TYPE_ICONS[training.type]}</Text>
       <View style={styles.body}>

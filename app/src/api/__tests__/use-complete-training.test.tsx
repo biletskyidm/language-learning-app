@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { Training } from '@contracts'
 import { ApiError, apiPost } from '../client'
 import { useCompleteTraining } from '../use-complete-training'
+import { EXPRESSIONS_KEY } from '../use-expressions'
 import { TRAININGS_KEY } from '../use-training'
 
 jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
@@ -55,6 +56,7 @@ const completed: Training = {
 
 const LIST_KEY = [TRAININGS_KEY, 'list', {}]
 const DETAIL_KEY = [TRAININGS_KEY, 'detail', 't1']
+const HISTORY_KEY = [EXPRESSIONS_KEY, 'history', 'e1']
 
 const end = async () => {
   const { result } = await renderHook(() => useCompleteTraining('t1'), { wrapper })
@@ -72,6 +74,7 @@ describe('useCompleteTraining', () => {
     queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false, gcTime: 0 } } })
     queryClient.setQueryData(DETAIL_KEY, active)
     queryClient.setQueryData(LIST_KEY, { pages: [{ items: [] }], pageParams: [undefined] })
+    queryClient.setQueryData(HISTORY_KEY, { items: [] })
   })
 
   afterEach(() => queryClient.clear())
@@ -88,6 +91,13 @@ describe('useCompleteTraining', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData(DETAIL_KEY)).toEqual(completed)
+  })
+
+  it('marks expression history stale so its row moves out of "still open"', async () => {
+    const result = await end()
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState(HISTORY_KEY)?.isInvalidated).toBe(true)
   })
 
   it('marks the session lists stale so the row picks up the averages', async () => {

@@ -2,6 +2,7 @@ import type {
   ChatMessage,
   DrillAggregates,
   DrillRound,
+  ExpressionHistoryItem,
   FinalAssessment,
   SrsEffect,
   Training,
@@ -42,4 +43,6 @@ export interface TrainingRepository {
   ): Promise<Training | undefined>
   cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined>
   srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at'>[]>
+  /** Newest first, so an expression's schedule reads as a history. */
+  listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]>
 }

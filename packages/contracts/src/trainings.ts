@@ -349,3 +349,13 @@ export type TargetCorrectness = z.infer<typeof targetCorrectnessSchema>
 export type OverallFeedback = z.infer<typeof overallFeedbackSchema>
 export type SendMessageInput = z.infer<typeof sendMessageInputSchema>
 export type ChatTurnResponse = z.infer<typeof chatTurnResponseSchema>
+
+/** One SRS write seen from the expression's side: the same snapshot, plus which training caused it. */
+export const expressionHistoryItemSchema = srsEffectSchema
+  .pick({ scoreWritten: true, before: true, after: true, at: true })
+  .extend({ trainingId: z.string(), type: trainingTypeSchema, status: trainingStatusSchema })
+
+export const expressionHistoryResponseSchema = z.object({ items: z.array(expressionHistoryItemSchema) })
+
+export type ExpressionHistoryItem = z.infer<typeof expressionHistoryItemSchema>
+export type ExpressionHistoryResponse = z.infer<typeof expressionHistoryResponseSchema>

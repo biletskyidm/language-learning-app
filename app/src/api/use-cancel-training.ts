@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { trainingSchema } from '@contracts'
 import { ApiError, apiPost } from './client'
+import { EXPRESSIONS_KEY } from './use-expressions'
 import { TRAININGS_KEY } from './use-training'
 
 export const useCancelTraining = () => {
@@ -12,6 +13,7 @@ export const useCancelTraining = () => {
     onSuccess: (training) => {
       queryClient.setQueryData([TRAININGS_KEY, 'detail', training.id], training)
       queryClient.invalidateQueries(lists)
+      queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY, 'history'] })
     },
     onError: (error, trainingId) => {
       if (error instanceof ApiError && error.code === 'TRAINING_NOT_ACTIVE') {
