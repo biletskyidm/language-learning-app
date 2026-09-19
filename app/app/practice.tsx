@@ -51,17 +51,16 @@ const START_LABELS: Record<Mode, string> = {
 
 type RowProps = {
   item: Expression
-  suggested: boolean
   removable: boolean
   onRemove: () => void
 }
 
-const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
+const Row = ({ item, removable, onRemove }: RowProps) => (
   <View style={styles.row}>
     <Pressable style={styles.rowBody} onPress={() => router.push(`/expressions/${item.id}`)}>
       <Text style={styles.expression}>{item.expression}</Text>
       <Text style={styles.meaning}>{item.meaning}</Text>
-      <SrsSummary expression={item} now={new Date()} style={suggested ? styles.suggestedStats : styles.stats} />
+      <SrsSummary expression={item} now={new Date()} style={styles.stats} />
     </Pressable>
     {removable ? (
       <Pressable
@@ -169,7 +168,6 @@ const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
   const vocabulary = useExpressions()
   const { targets, remove, add } = useTargetSelection(initial, vocabulary.data?.items)
   const [picking, setPicking] = useState(false)
-  const suggested = new Set(initial.map((item) => item.id))
 
   return (
     <>
@@ -187,7 +185,6 @@ const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
         renderItem={({ item, index }) => (
           <Row
             item={item}
-            suggested={suggested.has(item.id)}
             removable={targets.length > 1}
             onRemove={() => remove(index)}
           />
@@ -275,7 +272,6 @@ const styles = StyleSheet.create({
   expression: { fontSize: 16, fontWeight: '600' },
   meaning: { color: colors.muted },
   stats: { color: colors.muted, fontSize: 12 },
-  suggestedStats: { color: colors.ok, fontSize: 12 },
   remove: {
     width: 24,
     height: 24,
