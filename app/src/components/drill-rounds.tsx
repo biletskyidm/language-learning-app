@@ -1,23 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native'
-import {
-  SMUGGLE_PASS_SCORE,
-  SMUGGLE_WEAK_SCORE,
-  type DescribeRound,
-  type DescribeTraining,
-  type GapsRound,
-  type GapsTraining,
-  type SmuggleRound,
-  type SmuggleTraining,
+import type {
+  DescribeRound,
+  DescribeTraining,
+  GapsRound,
+  GapsTraining,
+  SmuggleRound,
+  SmuggleTraining,
 } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { roundVerdictLine } from './drill-history'
+import { Score, scoreColor } from './score'
 
 export type DrillTraining = GapsTraining | DescribeTraining | SmuggleTraining
 
 const BLANK = '______'
-
-const bandColor = (score: number) =>
-  score >= SMUGGLE_PASS_SCORE ? colors.ok : score <= SMUGGLE_WEAK_SCORE ? colors.error : colors.warn
 
 const GapsPast = ({ round }: { round: GapsRound }) => (
   <Text style={styles.story}>
@@ -59,10 +55,10 @@ const SmugglePast = ({ round }: { round: SmuggleRound }) => (
         return (
           <Text
             key={target.expressionId}
-            style={[styles.chip, result && { borderColor: bandColor(result.score), color: bandColor(result.score) }]}
+            style={[styles.chip, result && { borderColor: scoreColor(result.score), color: scoreColor(result.score) }]}
           >
             {target.expression}
-            {result ? ` ${result.score}` : ''}
+            {result ? <> <Score value={result.score} digits={0} /></> : ''}
           </Text>
         )
       })}

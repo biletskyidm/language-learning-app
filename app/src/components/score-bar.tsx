@@ -1,16 +1,9 @@
 import { StyleSheet, View } from 'react-native'
 import { colors } from '../theme/tokens'
+import { scoreColor } from './score'
 
 export const scoreBarWidth = (score?: number): `${number}%` =>
   `${Math.min(10, Math.max(0, score ?? 0)) * 10}%`
-
-export const scoreColor = (score?: number): string => {
-  if (score === undefined) return colors.border
-  if (score <= 3) return colors.error
-  if (score <= 6) return colors.warn
-
-  return colors.ok
-}
 
 export const ScoreBar = ({ score }: { score?: number }) => (
   <View

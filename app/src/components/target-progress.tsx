@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { SrsEffect, TrainingTarget } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
+import { Score } from './score'
 
 type Props = { target: TrainingTarget; effects: SrsEffect[]; onDismiss: () => void }
 
@@ -8,7 +9,8 @@ export const TargetProgress = ({ target, effects, onDismiss }: Props) => {
   const own = effects.filter((effect) => effect.expressionId === target.expressionId)
   const first = own[0]
   const last = own[own.length - 1]
-  const before = first?.before.score === undefined ? 'new' : first.before.score.toFixed(1)
+  const before = first?.before.score
+  const label = `Score: ${before === undefined ? 'new' : before.toFixed(1)} to ${last?.after.score.toFixed(1)}`
 
   return (
     <View style={styles.backdrop}>
@@ -22,11 +24,11 @@ export const TargetProgress = ({ target, effects, onDismiss }: Props) => {
         <Text style={styles.expression}>{target.expression}</Text>
         {last ? (
           <>
-            <View style={styles.row} accessibilityLabel={`Score: ${before} to ${last.after.score.toFixed(1)}`}>
+            <View style={styles.row} accessibilityLabel={label}>
               <Text style={styles.label}>Score</Text>
-              <Text style={styles.before}>{before}</Text>
+              <Score value={before} style={styles.before} />
               <Text style={styles.before}>→</Text>
-              <Text style={styles.after}>{last.after.score.toFixed(1)}</Text>
+              <Score value={last.after.score} style={styles.after} />
             </View>
             <View style={styles.row} accessibilityLabel={`Practiced ${last.after.timesPracticed} times`}>
               <Text style={styles.label}>Practiced</Text>

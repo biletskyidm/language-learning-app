@@ -1,5 +1,3 @@
-import type { Expression } from '@contracts'
-
 const DAY_MS = 86_400_000
 
 export const relativeDays = (date: Date, now: Date) => {
@@ -18,18 +16,4 @@ export const shortDate = (date: Date, now: Date) => {
   const day = `${MONTHS[date.getMonth()]} ${date.getDate()}`
 
   return date.getFullYear() === now.getFullYear() ? day : `${day}, ${date.getFullYear()}`
-}
-
-export const srsSummary = (expression: Expression, now: Date): string => {
-  if (expression.score === undefined) return `New · ${expression.frequency.replace('_', ' ')}`
-
-  const due = expression.nextTrainingAt
-
-  return [
-    `Score ${expression.score.toFixed(1)}`,
-    `Trained ${expression.timesPracticed ?? 0}×`,
-    due ? `Due ${shortDate(due, now)}` : undefined,
-  ]
-    .filter(Boolean)
-    .join(' · ')
 }

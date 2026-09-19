@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { ChatMessage } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
-import { badgeTone, overallScore } from './assessment'
-import { toneColor } from './assessment-preview'
+import { overallScore } from './assessment'
+import { Score, scoreColor } from './score'
 
 type Props = { message: ChatMessage; onPreview?: () => void }
 
@@ -25,10 +25,8 @@ export const MessageBubble = ({ message, onPreview }: Props) => {
         </Text>
       </View>
       {assessment ? (
-        <View style={[styles.badge, { borderColor: toneColor[badgeTone(score)] }]}>
-          <Text style={[styles.badgeLabel, { color: toneColor[badgeTone(score)] }]}>
-            {score.toFixed(1)}
-          </Text>
+        <View style={[styles.badge, { borderColor: scoreColor(score) }]}>
+          <Score value={score} style={styles.badgeLabel} />
         </View>
       ) : null}
     </Pressable>

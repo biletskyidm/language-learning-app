@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import type { FinalAssessment, Narrative } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
-import { averagesLine } from './assessment'
+import { AveragesLine } from './averages-line'
 
 const NARRATIVE_LABELS: [keyof Narrative, string][] = [
   ['strengths', 'Strengths'],
@@ -11,7 +11,7 @@ const NARRATIVE_LABELS: [keyof Narrative, string][] = [
 
 export const SessionSummary = ({ finalAssessment }: { finalAssessment: FinalAssessment }) => (
   <View style={styles.summary}>
-    <Text style={styles.averages}>{averagesLine(finalAssessment.averages)}</Text>
+    <AveragesLine averages={finalAssessment.averages} style={styles.averages} />
     {NARRATIVE_LABELS.map(([key, label]) => (
       <View key={key} style={styles.field}>
         <Text style={styles.label}>{label}</Text>

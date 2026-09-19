@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native'
 import type { SrsEffect } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
+import { Score } from './score'
 
-const score = (value?: number) => (value === undefined ? 'new' : value.toFixed(1))
 const times = (value?: number) => `${value ?? 0}×`
 const due = (value?: Date) => (value === undefined ? 'unscheduled' : value.toLocaleDateString())
 
@@ -18,7 +18,9 @@ export const SrsEffects = ({ effects }: { effects: SrsEffect[] }) => (
             {effect.expression}
           </Text>
           <Text style={styles.meta}>
-            scored {effect.scoreWritten} · {score(effect.before.score)} → {score(effect.after.score)}
+            scored <Score value={effect.scoreWritten} digits={0} style={styles.meta} /> ·{' '}
+            <Score value={effect.before.score} style={styles.meta} /> →{' '}
+            <Score value={effect.after.score} style={styles.meta} />
           </Text>
           <Text style={styles.meta}>
             {times(effect.before.timesPracticed)} → {times(effect.after.timesPracticed)} · due{' '}

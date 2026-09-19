@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import type { Expression } from '@contracts'
 import { DEFAULT_FILTERS } from '../api/expression-filters'
-import { srsSummary } from '../api/expression-srs'
 import { useExpressions } from '../api/use-expressions'
 import { colors, spacing } from '../theme/tokens'
 import { Chip } from './chip'
+import { SrsSummary } from './srs-summary'
 import { TagPicker } from './tag-picker'
 
 type Props = {
@@ -59,7 +59,7 @@ export const ExpressionPicker = ({ title, excludedIds, onSelect, onClose }: Prop
             <Pressable onPress={() => choose(item)} style={styles.option} accessibilityRole="button">
               <Text style={styles.expression}>{item.expression}</Text>
               <Text style={styles.meaning}>{item.meaning}</Text>
-              <Text style={styles.stats}>{srsSummary(item, new Date())}</Text>
+              <SrsSummary expression={item} now={new Date()} style={styles.stats} />
             </Pressable>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}

@@ -1,5 +1,5 @@
 import type { Assessment, ChatMessage, TrainingTarget } from '@contracts'
-import { averagesLine, badgeTone, litTargets, overallScore, readyToEnd } from '../assessment'
+import { litTargets, overallScore, readyToEnd } from '../assessment'
 
 const category = (score: number) => ({ score, feedback: 'clear enough', suggestions: 'try this instead' })
 
@@ -32,23 +32,6 @@ describe('overallScore', () => {
 
   it('ignores target scores', () => {
     expect(overallScore(assessment([4, 4, 4, 4, 4], { 'break the ice': 10 }))).toBe(4)
-  })
-})
-
-describe('badgeTone', () => {
-  it('is good from 7 up', () => {
-    expect(badgeTone(7)).toBe('good')
-    expect(badgeTone(10)).toBe('good')
-  })
-
-  it('is fair between 4 and 7', () => {
-    expect(badgeTone(4)).toBe('fair')
-    expect(badgeTone(6.9)).toBe('fair')
-  })
-
-  it('is poor below 4', () => {
-    expect(badgeTone(3.9)).toBe('poor')
-    expect(badgeTone(0)).toBe('poor')
   })
 })
 
@@ -100,19 +83,5 @@ describe('readyToEnd', () => {
 
   it('is not ready for a session without targets', () => {
     expect(readyToEnd([], [userMessage({ assessment: assessment([9, 9, 9, 9, 9]) })])).toBe(false)
-  })
-})
-
-describe('averagesLine', () => {
-  it('lists the five averages with one decimal', () => {
-    expect(
-      averagesLine({
-        contextCorrectness: 7,
-        grammarAndSyntax: 8,
-        vocabularyDiversity: 6.25,
-        sentenceComplexity: 5,
-        sentenceNaturalness: 7.5,
-      }),
-    ).toBe('Context 7.0 · Grammar 8.0 · Vocabulary 6.3 · Complexity 5.0 · Naturalness 7.5')
   })
 })

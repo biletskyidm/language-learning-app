@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { DESCRIBE_MAX_LENGTH, DESCRIBE_PASS_SCORE } from '@contracts'
+import { DESCRIBE_MAX_LENGTH } from '@contracts'
 import { ApiError } from '../../../src/api/client'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
 import { useDescribeDraft } from '../../../src/components/describe-draft'
+import { scoreColor } from '../../../src/components/score'
 import { openEndMenu } from '../../../src/components/session-menu'
 import { colors, spacing } from '../../../src/theme/tokens'
 
@@ -113,9 +114,7 @@ export default function Describe() {
         {draft.phase === 'judged' && verdict ? (
           <>
             <Text style={styles.description}>{draft.description}</Text>
-            <Text style={[styles.score, verdict.score >= DESCRIBE_PASS_SCORE ? styles.right : styles.wrong]}>
-              {verdict.score} / 10
-            </Text>
+            <Text style={[styles.score, { color: scoreColor(verdict.score) }]}>{verdict.score} / 10</Text>
             <Text style={styles.note}>{verdict.feedback}</Text>
             {active ? (
               <Pressable
@@ -174,8 +173,6 @@ const styles = StyleSheet.create({
   secondaryLabel: { fontSize: 15, fontWeight: '600' },
   description: { fontSize: 16, lineHeight: 24 },
   score: { fontSize: 22, fontWeight: '700' },
-  right: { color: colors.ok },
-  wrong: { color: colors.error },
   note: { color: colors.muted },
   summary: { fontWeight: '600' },
   canceled: { color: colors.muted },

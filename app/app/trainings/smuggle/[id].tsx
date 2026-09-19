@@ -1,17 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { SMUGGLE_MAX_LENGTH, SMUGGLE_PASS_SCORE, SMUGGLE_WEAK_SCORE } from '@contracts'
+import { SMUGGLE_MAX_LENGTH } from '@contracts'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
+import { scoreColor } from '../../../src/components/score'
 import { openEndMenu } from '../../../src/components/session-menu'
 import { useSmuggleDraft } from '../../../src/components/smuggle-draft'
 import { colors, spacing } from '../../../src/theme/tokens'
-
-const bandColor = (score: number) =>
-  score >= SMUGGLE_PASS_SCORE ? colors.ok : score <= SMUGGLE_WEAK_SCORE ? colors.error : colors.warn
 
 export default function Smuggle() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -92,7 +90,7 @@ export default function Smuggle() {
                     }`}
                     style={[
                       styles.chip,
-                      score !== undefined && { borderColor: bandColor(score), backgroundColor: bandColor(score) },
+                      score !== undefined && { borderColor: scoreColor(score), backgroundColor: scoreColor(score) },
                     ]}
                   >
                     <Text style={[styles.chipLabel, score !== undefined && styles.chipLabelJudged]}>
@@ -134,7 +132,7 @@ export default function Smuggle() {
             <Text style={styles.reply}>{verdict.reply}</Text>
             {verdict.results.map(({ expression, score, note }) => (
               <Text key={expression} style={styles.note}>
-                <Text style={[styles.noteLabel, { color: bandColor(score) }]}>
+                <Text style={[styles.noteLabel, { color: scoreColor(score) }]}>
                   {expression} {score}/10
                 </Text>{' '}
                 — {note}
