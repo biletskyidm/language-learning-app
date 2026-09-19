@@ -9,7 +9,6 @@ import {
   type Expression,
   type Scenario,
 } from '@contracts'
-import { srsSummary } from '../src/api/expression-srs'
 import { useCreateTraining } from '../src/api/use-create-training'
 import { useExpressions } from '../src/api/use-expressions'
 import { useExpression } from '../src/api/use-expression'
@@ -19,6 +18,7 @@ import { useSettings } from '../src/api/use-settings'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
+import { SrsSummary } from '../src/components/srs-summary'
 import { trainingRoute } from '../src/components/training-route'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -61,7 +61,7 @@ const Row = ({ item, suggested, removable, onRemove }: RowProps) => (
     <Pressable style={styles.rowBody} onPress={() => router.push(`/expressions/${item.id}`)}>
       <Text style={styles.expression}>{item.expression}</Text>
       <Text style={styles.meaning}>{item.meaning}</Text>
-      <Text style={suggested ? styles.suggestedStats : styles.stats}>{srsSummary(item, new Date())}</Text>
+      <SrsSummary expression={item} now={new Date()} style={suggested ? styles.suggestedStats : styles.stats} />
     </Pressable>
     {removable ? (
       <Pressable

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { Assessment, AssessmentCategory } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
-import { badgeTone } from './assessment'
+import { Score } from './score'
 
 const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCorrectness' | 'overallFeedback'> }[] = [
   { label: 'Context', key: 'contextCorrectness' },
@@ -12,15 +12,11 @@ const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCor
   { label: 'Naturalness', key: 'sentenceNaturalness' },
 ]
 
-export const toneColor = { good: colors.ok, fair: colors.warn, poor: colors.error } as const
-
 const Row = ({ label, category }: { label: string; category: AssessmentCategory }) => (
   <View style={styles.row}>
     <View style={styles.rowHead}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={[styles.rowScore, { color: toneColor[badgeTone(category.score)] }]}>
-        {category.score.toFixed(1)}
-      </Text>
+      <Score value={category.score} style={styles.rowScore} />
     </View>
     {category.feedback ? <Text style={styles.feedback}>{category.feedback}</Text> : null}
     {category.suggestions ? <Text style={styles.suggestion}>{category.suggestions}</Text> : null}

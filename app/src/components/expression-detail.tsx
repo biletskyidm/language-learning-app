@@ -1,14 +1,16 @@
+import type { ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import type { Expression } from '@contracts'
 import { relativeDays } from '../api/expression-srs'
 import { colors, spacing } from '../theme/tokens'
+import { Score } from './score'
 
 const trained = (times = 0) => `Trained ${times} ${times === 1 ? 'time' : 'times'}`
 
-const Field = ({ label, value }: { label: string; value: string }) => (
+const Field = ({ label, value }: { label: string; value: ReactNode }) => (
   <View style={styles.field}>
     <Text style={styles.label}>{label}</Text>
-    <Text style={styles.value}>{value}</Text>
+    {typeof value === 'string' ? <Text style={styles.value}>{value}</Text> : value}
   </View>
 )
 
@@ -47,7 +49,7 @@ export const ExpressionDetail = ({ expression }: { expression: Expression }) => 
 
       <View style={styles.section}>
         <Text style={styles.counter}>{trained(expression.timesPracticed)}</Text>
-        <Field label="Score" value={expression.score === undefined ? '—' : expression.score.toFixed(1)} />
+        <Field label="Score" value={<Score value={expression.score} placeholder="—" style={styles.value} />} />
         <Field
           label="Last practiced"
           value={expression.lastTimePracticedAt ? relativeDays(expression.lastTimePracticedAt, now) : '—'}

@@ -2,10 +2,9 @@ import { router } from 'expo-router'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useExpressionHistory } from '../api/use-expression-history'
 import { colors, spacing } from '../theme/tokens'
+import { Score } from './score'
 import { trainingRoute } from './training-route'
 import { TRAINING_TYPE_NAMES } from './training-row'
-
-const score = (value?: number) => (value === undefined ? 'new' : value.toFixed(1))
 
 export const ExpressionHistory = ({ id }: { id: string }) => {
   const history = useExpressionHistory(id)
@@ -31,8 +30,10 @@ export const ExpressionHistory = ({ id }: { id: string }) => {
             {item.status === 'ACTIVE' ? <Text style={styles.active}> · still open</Text> : null}
           </Text>
           <Text style={styles.meta}>
-            {item.at.toLocaleDateString()} · scored {item.scoreWritten} · {score(item.before.score)} →{' '}
-            {score(item.after.score)}
+            {item.at.toLocaleDateString()} · scored{' '}
+            <Score value={item.scoreWritten} digits={0} style={styles.meta} /> ·{' '}
+            <Score value={item.before.score} style={styles.meta} /> →{' '}
+            <Score value={item.after.score} style={styles.meta} />
           </Text>
         </Pressable>
       ))}

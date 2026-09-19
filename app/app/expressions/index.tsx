@@ -7,10 +7,10 @@ import {
   isFiltered,
   type ExpressionFilters,
 } from '../../src/api/expression-filters'
-import { srsSummary } from '../../src/api/expression-srs'
 import { useExpressions } from '../../src/api/use-expressions'
 import { ExpressionFilterBar } from '../../src/components/expression-filter-bar'
 import { ScoreBar } from '../../src/components/score-bar'
+import { SrsSummary } from '../../src/components/srs-summary'
 import { colors, spacing } from '../../src/theme/tokens'
 
 const Row = ({ item }: { item: Expression }) => (
@@ -18,7 +18,7 @@ const Row = ({ item }: { item: Expression }) => (
     <Text style={styles.expression}>{item.expression}</Text>
     <Text style={styles.meaning}>{item.meaning}</Text>
     {item.score === undefined ? null : <ScoreBar score={item.score} />}
-    <Text style={styles.meta}>{srsSummary(item, new Date())}</Text>
+    <SrsSummary expression={item} now={new Date()} style={styles.meta} />
   </Pressable>
 )
 

@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
-import { ScoreBar, scoreColor } from '../src/components/score-bar'
+import { Score } from '../src/components/score'
+import { ScoreBar } from '../src/components/score-bar'
 import { WeekChart } from '../src/components/week-chart'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -82,7 +83,7 @@ export default function Home() {
                   <Text style={styles.weakExpression} numberOfLines={1}>
                     {item.expression}
                   </Text>
-                  <Text style={[styles.weakScore, { color: scoreColor(item.score) }]}>{item.score?.toFixed(1)}</Text>
+                  <Score value={item.score} style={styles.weakScore} />
                 </View>
                 <ScoreBar score={item.score} />
               </Pressable>

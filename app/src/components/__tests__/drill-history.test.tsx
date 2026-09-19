@@ -1,4 +1,8 @@
+import React from 'react'
+import { render, screen } from '@testing-library/react-native'
+import { Text } from 'react-native'
 import type { DescribeRound, GapsRound, SmuggleRound, TrainingTarget } from '@contracts'
+import { colors } from '../../theme/tokens'
 import { roundVerdictLine } from '../drill-history'
 
 const TARGETS: TrainingTarget[] = [
@@ -39,13 +43,18 @@ describe('roundVerdictLine', () => {
     expect(roundVerdictLine({ type: 'gaps', round })).toBe('1 of 2 in the right place')
   })
 
-  it('bands a describe round by the passing score', () => {
-    expect(roundVerdictLine({ type: 'describe', round: describe_({ score: 7, feedback: 'Clear.' }) })).toBe(
-      '7 / 10 — solid',
+  it('bands a describe round by the passing score', async () => {
+    await render(
+      <>
+        <Text>{roundVerdictLine({ type: 'describe', round: describe_({ score: 7, feedback: 'Clear.' }) })}</Text>
+        <Text>{roundVerdictLine({ type: 'describe', round: describe_({ score: 6, feedback: 'Vague.' }) })}</Text>
+      </>,
     )
-    expect(roundVerdictLine({ type: 'describe', round: describe_({ score: 6, feedback: 'Vague.' }) })).toBe(
-      '6 / 10 — shaky',
-    )
+
+    expect(screen.getByText('7')).toHaveStyle({ color: colors.ok })
+    expect(screen.getByText(/solid/)).toBeTruthy()
+    expect(screen.getByText('6')).toHaveStyle({ color: colors.warn })
+    expect(screen.getByText(/shaky/)).toBeTruthy()
   })
 
   it('counts the phrases a smuggle round landed', () => {

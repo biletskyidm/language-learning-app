@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
-import { averagesLine } from './assessment'
+import { AveragesLine } from './averages-line'
 import { trainingRoute } from './training-route'
 
 export const TRAINING_TYPE_NAMES: Record<TrainingType, string> = {
@@ -42,7 +42,7 @@ export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; o
           <Text style={resumable ? styles.active : undefined}>{TRAINING_STATUS_NAMES[training.status]}</Text> ·{' '}
           {training.createdAt.toLocaleDateString()}
         </Text>
-        {averages ? <Text style={styles.meta}>{averagesLine(averages)}</Text> : null}
+        {averages ? <AveragesLine averages={averages} style={styles.meta} /> : null}
       </View>
       {onMenu && training.status === 'ACTIVE' ? (
         <Pressable onPress={onMenu} accessibilityRole="button" accessibilityLabel="Session menu" hitSlop={12}>
