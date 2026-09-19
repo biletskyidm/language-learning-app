@@ -31,6 +31,12 @@ describe('Score', () => {
     expect(screen.getByText('7')).toBeTruthy()
   })
 
+  it('bands the number it shows, not the one behind it', async () => {
+    await render(<Score value={6.4} digits={0} />)
+
+    expect(screen.getByText('6')).toHaveStyle({ color: colors.warn })
+  })
+
   it('shows a muted placeholder when there is no score', async () => {
     await render(<Score placeholder="—" />)
 
