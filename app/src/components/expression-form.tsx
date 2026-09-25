@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { Button, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Button, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   createExpressionInputSchema,
@@ -69,6 +69,7 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
 
   const fill = async () => {
     if (!onFill) return
+    Keyboard.dismiss()
     setFilling(true)
     setFillError(undefined)
     try {
@@ -96,6 +97,7 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
     <ScrollView
       contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + spacing.lg }]}
       keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
     >
       <Stack.Screen
         options={{
