@@ -7,7 +7,19 @@ import Chat from '../../app/trainings/[id]'
 import { apiGet } from '../api/client'
 
 jest.mock('expo-router', () => ({
-  Stack: { Screen: () => null },
+  Stack: {
+    Screen: () => null,
+    Toolbar: Object.assign(({ children }: { children: React.ReactNode }) => children, {
+      Button: ({ children, onPress }: { children?: React.ReactNode; onPress?: () => void }) => {
+        const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native')
+        return (
+          <Pressable onPress={onPress}>
+            <Text>{children}</Text>
+          </Pressable>
+        )
+      },
+    }),
+  },
   useLocalSearchParams: () => ({ id: 't1' }),
 }))
 jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))

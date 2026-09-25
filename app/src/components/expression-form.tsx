@@ -103,13 +103,13 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
       <Stack.Screen
         options={{
           title,
-          headerRight: () => (
-            <Pressable onPress={submit} disabled={!submit} accessibilityRole="button" hitSlop={12}>
-              <Text style={[styles.save, !submit && styles.saveDisabled]}>Save</Text>
-            </Pressable>
-          ),
         }}
       />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button onPress={submit} disabled={!submit} tintColor={colors.ok}>
+          Save
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -227,6 +227,4 @@ const styles = StyleSheet.create({
   exampleInput: { flex: 1 },
   remove: { color: colors.muted, fontSize: 16 },
   error: { color: colors.error, textAlign: 'center' },
-  save: { fontSize: 16, fontWeight: '600', color: colors.ok },
-  saveDisabled: { color: colors.muted },
 })

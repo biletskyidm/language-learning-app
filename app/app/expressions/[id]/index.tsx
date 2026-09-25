@@ -27,19 +27,15 @@ export default function ExpressionScreen() {
       <Stack.Screen
         options={{
           title: expression.data?.expression ?? 'Expression',
-          headerRight: () =>
-            expression.data ? (
-              <Pressable
-                onPress={() => router.push(`/expressions/${id}/edit`)}
-                disabled={remove.isPending}
-                accessibilityRole="button"
-                hitSlop={12}
-              >
-                <Text style={styles.edit}>Edit</Text>
-              </Pressable>
-            ) : null,
         }}
       />
+      {expression.data ? (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button onPress={() => router.push(`/expressions/${id}/edit`)} disabled={remove.isPending}>
+            Edit
+          </Stack.Toolbar.Button>
+        </Stack.Toolbar>
+      ) : null}
       {expression.isPending ? <ActivityIndicator style={styles.state} /> : null}
       {expression.isError ? <Text style={styles.error}>Could not load this expression</Text> : null}
       {expression.data ? (
@@ -65,7 +61,6 @@ const styles = StyleSheet.create({
   container: { padding: spacing.md },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
-  edit: { fontSize: 16 },
   delete: {
     marginTop: spacing.lg,
     borderWidth: 1,

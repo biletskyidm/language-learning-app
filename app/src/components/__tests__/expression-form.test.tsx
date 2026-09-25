@@ -5,7 +5,19 @@ import type { CreateExpressionInput, ExpressionDraft } from '@contracts'
 import { ExpressionForm } from '../expression-form'
 
 jest.mock('expo-router', () => ({
-  Stack: { Screen: ({ options }: { options: { headerRight: () => React.ReactNode } }) => options.headerRight() },
+  Stack: {
+    Screen: () => null,
+    Toolbar: Object.assign(({ children }: { children: React.ReactNode }) => children, {
+      Button: ({ children, onPress }: { children?: React.ReactNode; onPress?: () => void }) => {
+        const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native')
+        return (
+          <Pressable onPress={onPress}>
+            <Text>{children}</Text>
+          </Pressable>
+        )
+      },
+    }),
+  },
 }))
 
 const EXPRESSION = 'hit the nail on the head'
