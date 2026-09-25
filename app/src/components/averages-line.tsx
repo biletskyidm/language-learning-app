@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
-import { Text, type StyleProp, type TextStyle } from 'react-native'
+import { type StyleProp, type TextStyle } from 'react-native'
+import { Text } from './themed'
 import type { FinalAssessmentAverages } from '@contracts'
 import { Score } from './score'
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { Expression } from '@contracts'
 import { relativeDays } from '../api/expression-srs'
 import { colors, spacing } from '../theme/tokens'

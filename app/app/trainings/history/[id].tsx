@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from '../../../src/components/themed'
 import type { ChatMessage, ChatTraining } from '@contracts'
 import { useTraining } from '../../../src/api/use-training'
 import { AssessmentPreview } from '../../../src/components/assessment-preview'

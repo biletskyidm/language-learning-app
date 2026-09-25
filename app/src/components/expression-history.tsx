@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import { useExpressionHistory } from '../api/use-expression-history'
 import { colors, spacing } from '../theme/tokens'
 import { Score } from './score'

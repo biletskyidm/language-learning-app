@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from '../../../src/components/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { GapsRound } from '@contracts'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   },
   chipLabel: { fontSize: 13 },
   button: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
-  buttonLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  buttonLabel: { color: colors.onAccent, fontSize: 15, fontWeight: '600' },
   secondary: {
     borderWidth: 1,
     borderColor: colors.border,

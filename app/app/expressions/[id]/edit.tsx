@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, StyleSheet, Text } from 'react-native'
+import { ActivityIndicator, StyleSheet } from 'react-native'
+import { Text } from '../../../src/components/themed'
 import type { Expression } from '@contracts'
 import { expressionPatch } from '../../../src/api/expression-patch'
 import { useExpression } from '../../../src/api/use-expression'

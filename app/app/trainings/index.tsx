@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from '../../src/components/themed'
 import { trainingStatusSchema, trainingTypeSchema } from '@contracts'
 import { useCancelTraining } from '../../src/api/use-cancel-training'
 import { useTrainings, type TrainingFilters } from '../../src/api/use-trainings'

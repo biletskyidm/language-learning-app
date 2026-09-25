@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { ChatMessage } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { overallScore } from './assessment'
@@ -37,10 +38,10 @@ const styles = StyleSheet.create({
   mine: { alignSelf: 'flex-end', alignItems: 'flex-end', maxWidth: '85%', gap: 4 },
   theirs: { alignSelf: 'flex-start', maxWidth: '85%' },
   bubble: { borderRadius: 16, padding: spacing.sm + 2 },
-  bubbleTheirs: { backgroundColor: '#d5d9e0' },
+  bubbleTheirs: { backgroundColor: colors.bubble },
   bubbleMine: { backgroundColor: colors.ok },
   bubbleText: { fontSize: 15 },
-  bubbleTextMine: { color: '#fff' },
+  bubbleTextMine: { color: colors.onAccent },
   badge: {
     borderWidth: 1,
     borderRadius: 999,
