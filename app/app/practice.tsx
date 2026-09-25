@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Text, TextInput } from '../src/components/themed'
 import {
   createTrainingInputSchema,
   DEFAULT_SETTINGS,
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeIcon: { color: '#fff', fontSize: 16, fontWeight: '600', lineHeight: 18 },
+  removeIcon: { color: colors.onAccent, fontSize: 16, fontWeight: '600', lineHeight: 18 },
   separator: { height: 1, backgroundColor: colors.border },
   add: { paddingVertical: spacing.sm, alignItems: 'center' },
   addLabel: { color: colors.ok, fontSize: 15, fontWeight: '600' },
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   hint: { color: colors.muted },
   startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
   startButtonOff: { opacity: 0.4 },
-  startLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  startLabel: { color: colors.onAccent, fontSize: 15, fontWeight: '600' },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
 })

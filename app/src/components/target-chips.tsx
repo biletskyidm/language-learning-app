@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { ChatMessage, TrainingTarget } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { litTargets } from './assessment'
@@ -47,5 +48,5 @@ const styles = StyleSheet.create({
   },
   chipLit: { borderColor: colors.ok, backgroundColor: colors.ok },
   chipLabel: { fontSize: 13, color: colors.muted },
-  chipLabelLit: { color: '#fff', fontWeight: '600' },
+  chipLabelLit: { color: colors.onAccent, fontWeight: '600' },
 })

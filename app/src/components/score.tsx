@@ -1,7 +1,8 @@
-import { Text, type StyleProp, type TextStyle } from 'react-native'
+import { type ColorValue, type StyleProp, type TextStyle } from 'react-native'
+import { Text } from './themed'
 import { colors } from '../theme/tokens'
 
-export const scoreColor = (score?: number): string => {
+export const scoreColor = (score?: number): ColorValue => {
   if (score === undefined) return colors.border
   if (score <= 3) return colors.error
   if (score <= 6) return colors.warn

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native'
+import { Text, TextInput } from './themed'
 import { useExpressionTags } from '../api/use-expression-tags'
 import { colors, spacing } from '../theme/tokens'
 

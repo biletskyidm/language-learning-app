@@ -1,5 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { Text, TextInput } from '../../src/components/themed'
 import type { Expression } from '@contracts'
 import {
   filtersFromParams,

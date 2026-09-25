@@ -34,6 +34,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **26** [Home: due today and active sessions](26-home-due-today-and-active-sessions.md) — blocked by: 18
 - [x] **27** [Per-phrase progress list](27-per-phrase-progress-list.md) — blocked by: 16
 - [x] **28** [Unified history: open any past training with details and SRS effects](28-unified-history-open-any-past-training-with-details-and-srs.md) — blocked by: 17, 21
+- [x] **29** [Dark mode following the system theme](29-dark-mode-follow-system-theme.md) — blocked by: none
 
 Milestone 1 (daily use) = redeploy after 20 lands (vocab + chat complete).
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { ExpressionSort, Frequency } from '@contracts'
 import type { ExpressionFilters } from '../api/expression-filters'
 import { colors, spacing } from '../theme/tokens'

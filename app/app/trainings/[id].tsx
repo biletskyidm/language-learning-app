@@ -7,8 +7,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -23,6 +21,7 @@ import { MessageBubble } from '../../src/components/message-bubble'
 import { openEndMenu } from '../../src/components/session-menu'
 import { SessionSummary } from '../../src/components/session-summary'
 import { TargetChips } from '../../src/components/target-chips'
+import { Text, TextInput } from '../../src/components/themed'
 import { TargetProgress } from '../../src/components/target-progress'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   sendOff: { opacity: 0.4 },
-  sendLabel: { color: '#fff', fontWeight: '600' },
+  sendLabel: { color: colors.onAccent, fontWeight: '600' },
   headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },
   canceled: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.sm },
   nudge: {
@@ -193,7 +192,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: '#e7f4ea',
+    backgroundColor: colors.okSoft,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },

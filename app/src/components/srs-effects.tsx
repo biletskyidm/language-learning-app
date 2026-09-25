@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { SrsEffect } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { Score } from './score'
