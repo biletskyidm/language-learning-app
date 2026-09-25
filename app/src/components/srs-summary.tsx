@@ -1,4 +1,5 @@
-import { Text, type StyleProp, type TextStyle } from 'react-native'
+import { type StyleProp, type TextStyle } from 'react-native'
+import { Text } from './themed'
 import type { Expression } from '@contracts'
 import { shortDate } from '../api/expression-srs'
 import { Score } from './score'

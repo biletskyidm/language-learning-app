@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { Redirect, Stack, router, useFocusEffect } from 'expo-router'
-import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Button, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Text } from '../src/components/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'

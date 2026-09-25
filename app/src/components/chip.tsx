@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
+import { Pressable, StyleSheet } from 'react-native'
+import { Text } from './themed'
 import { colors, spacing } from '../theme/tokens'
 
 type Props = { label: string; active: boolean; onPress: () => void }
@@ -24,5 +25,5 @@ const styles = StyleSheet.create({
   },
   chipActive: { borderColor: colors.ok, backgroundColor: colors.ok },
   chipLabel: { fontSize: 13, color: colors.muted },
-  chipLabelActive: { color: '#fff', fontWeight: '600' },
+  chipLabelActive: { color: colors.onAccent, fontWeight: '600' },
 })

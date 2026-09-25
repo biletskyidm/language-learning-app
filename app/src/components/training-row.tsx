@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { AveragesLine } from './averages-line'

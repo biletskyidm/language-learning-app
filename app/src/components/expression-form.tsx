@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { Button, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Button, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Text, TextInput } from './themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   createExpressionInputSchema,

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { Text, TextInput } from '../src/components/themed'
 import {
   createScenarioInputSchema,
   SCENARIO_CONTEXT_MAX,
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   save: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   saveOff: { opacity: 0.4 },
-  saveLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  saveLabel: { color: colors.onAccent, fontSize: 15, fontWeight: '600' },
   cancel: { paddingVertical: spacing.sm, paddingHorizontal: spacing.sm },
   cancelLabel: { color: colors.muted, fontSize: 15 },
   add: { paddingVertical: spacing.sm, alignItems: 'center' },
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeIcon: { color: '#fff', fontSize: 16, fontWeight: '600', lineHeight: 18 },
+  removeIcon: { color: colors.onAccent, fontSize: 16, fontWeight: '600', lineHeight: 18 },
   separator: { height: 1, backgroundColor: colors.border },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, paddingVertical: spacing.sm },

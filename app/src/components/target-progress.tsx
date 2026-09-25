@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Text } from './themed'
 import type { SrsEffect, TrainingTarget } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { Score } from './score'
@@ -50,16 +51,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: colors.scrim,
     justifyContent: 'center',
     padding: spacing.sm,
   },
   card: {
     gap: spacing.sm,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: spacing.md,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.25,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },

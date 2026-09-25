@@ -1,5 +1,6 @@
 import { Stack, router } from 'expo-router'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native'
+import { Text } from '../src/components/themed'
 import {
   TARGETS_BOUNDS,
   type ChatStyle,

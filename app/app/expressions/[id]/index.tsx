@@ -1,5 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native'
+import { Text } from '../../../src/components/themed'
 import { useDeleteExpression } from '../../../src/api/use-delete-expression'
 import { useExpression } from '../../../src/api/use-expression'
 import { ExpressionDetail } from '../../../src/components/expression-detail'
