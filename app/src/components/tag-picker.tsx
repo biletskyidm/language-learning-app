@@ -66,7 +66,7 @@ export const TagPicker = ({ selected, onSelect, onClose }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1, padding: spacing.md, gap: spacing.sm },
+  sheet: { flex: 1, padding: spacing.md, gap: spacing.sm, backgroundColor: colors.surface },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 17, fontWeight: '600' },
   done: { fontSize: 16, color: colors.ok, fontWeight: '600' },
