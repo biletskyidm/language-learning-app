@@ -20,7 +20,7 @@ const palettes = {
     surface: '#1c1c1e',
     bubble: '#2c2c2e',
     okSoft: '#12301b',
-    onAccent: '#ffffff',
+    onAccent: '#000000',
     scrim: 'rgba(0,0,0,0.6)',
     shadow: '#000000',
     ok: '#30a14e',
