@@ -112,7 +112,9 @@ export default function Home() {
             ))}
           </View>
         ) : null}
-        {summary.isError ? null : <WeekChart week={summary.data?.week} today={(new Date().getDay() + 6) % 7} />}
+        {summary.isPending || summary.data ? (
+          <WeekChart week={summary.data?.week} today={(new Date().getDay() + 6) % 7} />
+        ) : null}
       </ScrollView>
     </View>
   )
