@@ -12,28 +12,29 @@ export const ModeTiles = <M extends string>({ modes, selected, onSelect }: Props
       const active = mode === selected
 
       return (
-        <Pressable
-          key={mode}
-          onPress={() => onSelect(mode)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: active }}
-          style={[styles.tile, active && styles.tileActive]}
-        >
-          <View style={styles.head}>
-            <Text style={styles.emoji}>{emoji}</Text>
-            <Text style={styles.name}>{name}</Text>
-          </View>
-          <Text style={styles.blurb}>{blurb}</Text>
-        </Pressable>
+        <View key={mode} style={styles.cell}>
+          <Pressable
+            onPress={() => onSelect(mode)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            style={[styles.tile, active && styles.tileActive]}
+          >
+            <View style={styles.head}>
+              <Text style={styles.emoji}>{emoji}</Text>
+              <Text style={styles.name}>{name}</Text>
+            </View>
+            <Text style={styles.blurb}>{blurb}</Text>
+          </Pressable>
+        </View>
       )
     })}
   </View>
 )
 
 const styles = StyleSheet.create({
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 2 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', margin: -(spacing.sm + 2) / 2 },
+  cell: { width: '50%', padding: (spacing.sm + 2) / 2 },
   tile: {
-    flexBasis: '47%',
     flexGrow: 1,
     gap: 2,
     padding: spacing.sm + 2,
