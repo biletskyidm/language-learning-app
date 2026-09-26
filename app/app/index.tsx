@@ -4,7 +4,6 @@ import { Button, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../src/components/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DEFAULT_SETTINGS } from '@contracts'
-import { UnauthorizedError } from '../src/api/client'
 import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
 import { useSettings } from '../src/api/use-settings'
@@ -36,7 +35,6 @@ export default function Home() {
   if (credentials.isPending) return <View style={styles.screen} />
   if (!credentials.data) return <Redirect href="/setup" />
 
-  const rejected = summary.error instanceof UnauthorizedError
   const data = summary.data
   const practice = () =>
     openPracticeSheet(settings, (mode) => router.push({ pathname: '/practice', params: { mode } }))
@@ -55,7 +53,7 @@ export default function Home() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 100 }]}
       >
-        {rejected ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
+        {summary.isError ? <Button title="Change API URL or secret" onPress={() => router.push('/setup')} /> : null}
         {summary.isError ? (
           <Text style={styles.error}>API is not responding</Text>
         ) : (
