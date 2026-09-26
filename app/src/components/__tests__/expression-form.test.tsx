@@ -116,3 +116,28 @@ describe('ExpressionForm with AI fill', () => {
     expect(valueOf(MEANING)).toBe('my own half-written guess')
   })
 })
+
+describe('ExpressionForm examples', () => {
+  const EXAMPLE = 'You hit the nail on the head.'
+
+  it('adds an empty example with the + button', async () => {
+    await renderForm(jest.fn())
+
+    await fireEvent.press(screen.getByLabelText('Add example'))
+
+    expect(screen.getAllByPlaceholderText(EXAMPLE)).toHaveLength(2)
+  })
+
+  it('removes the example whose ✕ was pressed', async () => {
+    await renderForm(jest.fn())
+    await fireEvent.press(screen.getByLabelText('Add example'))
+    await fireEvent.changeText(screen.getAllByPlaceholderText(EXAMPLE)[0], 'first')
+    await fireEvent.changeText(screen.getAllByPlaceholderText(EXAMPLE)[1], 'second')
+
+    await fireEvent.press(screen.getAllByLabelText('Remove example')[0])
+
+    const remaining = screen.getAllByPlaceholderText(EXAMPLE)
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].props.value).toBe('second')
+  })
+})

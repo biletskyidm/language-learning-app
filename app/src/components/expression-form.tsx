@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Stack } from 'expo-router'
-import { Button, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text, TextInput } from './themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -66,6 +66,8 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
     frequency,
   })
 
+  const fillDisabled = !expression.trim() || filling || pending
+
   const submit = draft.success && !pending ? () => onSubmit(draft.data) : undefined
 
   const fill = async () => {
@@ -114,26 +116,30 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Text style={styles.label}>Expression</Text>
-      <TextInput
-        style={styles.input}
-        value={expression}
-        onChangeText={setExpression}
-        placeholder="hit the nail on the head"
-        autoCapitalize="none"
-        autoFocus={!initial}
-        editable={!filling}
-      />
-
-      {onFill ? (
-        <>
-          <Button
-            title={filling ? 'Drafting…' : 'Fill with AI'}
+      <View style={styles.fillWrap}>
+        <TextInput
+          style={[styles.input, onFill && styles.fillInput]}
+          value={expression}
+          onChangeText={setExpression}
+          placeholder="hit the nail on the head"
+          autoCapitalize="none"
+          autoFocus={!initial}
+          editable={!filling}
+        />
+        {onFill ? (
+          <Pressable
             onPress={fill}
-            disabled={!expression.trim() || filling || pending}
-          />
-          {fillError ? <Text style={styles.error}>{fillError}</Text> : null}
-        </>
-      ) : null}
+            disabled={fillDisabled}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: fillDisabled }}
+            style={[styles.fill, fillDisabled && styles.disabled]}
+          >
+            <Text style={styles.fillLabel}>✨</Text>
+            <Text style={styles.fillLabel}>{filling ? 'Drafting…' : 'Fill with AI'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {fillError ? <Text style={styles.error}>{fillError}</Text> : null}
 
       <Text style={styles.label}>Type</Text>
       <View style={styles.row}>
@@ -163,7 +169,17 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
         multiline
       />
 
-      <Text style={styles.label}>Examples</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>Examples</Text>
+        <Pressable
+          onPress={() => setExamples([...examples, ''])}
+          accessibilityRole="button"
+          accessibilityLabel="Add example"
+          style={styles.add}
+        >
+          <Text style={styles.addLabel}>+</Text>
+        </Pressable>
+      </View>
       {examples.map((example, index) => (
         <View key={index} style={styles.exampleRow}>
           <TextInput
@@ -176,13 +192,13 @@ export const ExpressionForm = ({ title, initial, pending, error, onFill, onSubmi
           <Pressable
             onPress={() => setExamples(examples.filter((_, i) => i !== index))}
             accessibilityRole="button"
-            hitSlop={8}
+            accessibilityLabel="Remove example"
+            style={styles.remove}
           >
-            <Text style={styles.remove}>✕</Text>
+            <Text style={styles.removeLabel}>✕</Text>
           </Pressable>
         </View>
       ))}
-      <Button title="Add example" onPress={() => setExamples([...examples, ''])} />
 
       <Text style={styles.label}>Tags</Text>
       <View style={styles.row}>
@@ -223,8 +239,34 @@ const styles = StyleSheet.create({
   },
   multiline: { minHeight: 64 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  exampleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  fillWrap: { justifyContent: 'center' },
+  fillInput: { paddingRight: 130 },
+  fill: {
+    position: 'absolute',
+    right: 6,
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: colors.okSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  fillLabel: { color: colors.ok, fontWeight: '600', fontSize: 13 },
+  disabled: { opacity: 0.4 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  add: {
+    marginTop: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.okSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addLabel: { color: colors.ok, fontSize: 22, fontWeight: '600', lineHeight: 24 },
+  exampleRow: { flexDirection: 'row', alignItems: 'center' },
   exampleInput: { flex: 1 },
-  remove: { color: colors.muted, fontSize: 16 },
+  remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  removeLabel: { color: colors.muted, fontSize: 18 },
   error: { color: colors.error, textAlign: 'center' },
 })
