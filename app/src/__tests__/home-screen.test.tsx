@@ -1,12 +1,12 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { ActionSheetIOS } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { DEFAULT_SETTINGS, type ProgressSummary, type TrainingSummary } from '@contracts'
 import Home from '../../app/index'
-import { apiGet } from '../api/client'
+import { apiGet, UnauthorizedError } from '../api/client'
 
 jest.mock('expo-router', () => ({
   Redirect: () => null,
@@ -78,13 +78,14 @@ const renderHome = async (summary: Partial<ProgressSummary> = {}) => {
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
-  return render(
+  await render(
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider initialMetrics={METRICS}>
         <Home />
       </SafeAreaProvider>
     </QueryClientProvider>,
   )
+  return queryClient
 }
 
 describe('Home', () => {
@@ -151,6 +152,20 @@ describe('Home', () => {
     expect(await screen.findByText('Weakest phrases')).toBeTruthy()
     expect(screen.queryByText(/Active sessions/)).toBeNull()
     expect(screen.queryByText(/Chat skills/)).toBeNull()
+  })
+
+  it('hides every card when a refresh fails after a successful load', async () => {
+    const queryClient = await renderHome()
+    await screen.findByText('Weakest phrases')
+
+    mockedApiGet.mockRejectedValue(new UnauthorizedError())
+    await act(() => queryClient.refetchQueries())
+
+    expect(await screen.findByText('API is not responding')).toBeTruthy()
+    expect(screen.queryByText('Weakest phrases')).toBeNull()
+    expect(screen.queryByText(/^Active sessions/)).toBeNull()
+    expect(screen.queryByText('Average score · last 30 days')).toBeNull()
+    expect(screen.queryByText(/^Chat skills/)).toBeNull()
   })
 
   it('lists the weakest phrases with their score', async () => {

@@ -73,51 +73,51 @@ export default function Home() {
             <Card>
               <WeekChart week={data?.week} today={(new Date().getDay() + 6) % 7} barHeight={90} />
             </Card>
+            {data?.active.count ? (
+              <Card>
+                <Pressable
+                  style={styles.cardHeader}
+                  onPress={() => router.push({ pathname: '/trainings', params: { status: 'ACTIVE' } })}
+                >
+                  <Text style={cardStyles.title}>Active sessions ({data.active.count})</Text>
+                  <Text style={styles.chevron}>›</Text>
+                </Pressable>
+                {data.active.latest.map((training) => (
+                  <TrainingRow key={training.id} training={training} />
+                ))}
+              </Card>
+            ) : null}
+            {data?.weakest.length ? (
+              <Card title="Weakest phrases">
+                {data.weakest.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.weak}
+                    onPress={() => router.push({ pathname: '/practice', params: { expressionId: item.id } })}
+                  >
+                    <View style={styles.weakHeading}>
+                      <Text style={styles.weakExpression} numberOfLines={1}>
+                        {item.expression}
+                      </Text>
+                      <Score value={item.score} style={styles.weakScore} />
+                    </View>
+                    <ScoreBar score={item.score} />
+                  </Pressable>
+                ))}
+              </Card>
+            ) : null}
+            {data ? (
+              <Card title="Average score · last 30 days">
+                <ScoreTrendChart trend={data.scoreTrend} />
+              </Card>
+            ) : null}
+            {data?.chatSkills.averages ? (
+              <Card title={`Chat skills · ${data.chatSkills.sessions} ${data.chatSkills.sessions === 1 ? 'session' : 'sessions'}`}>
+                <ChatSkills averages={data.chatSkills.averages} />
+              </Card>
+            ) : null}
           </>
         )}
-        {data?.active.count ? (
-          <Card>
-            <Pressable
-              style={styles.cardHeader}
-              onPress={() => router.push({ pathname: '/trainings', params: { status: 'ACTIVE' } })}
-            >
-              <Text style={cardStyles.title}>Active sessions ({data.active.count})</Text>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-            {data.active.latest.map((training) => (
-              <TrainingRow key={training.id} training={training} />
-            ))}
-          </Card>
-        ) : null}
-        {data?.weakest.length ? (
-          <Card title="Weakest phrases">
-            {data.weakest.map((item) => (
-              <Pressable
-                key={item.id}
-                style={styles.weak}
-                onPress={() => router.push({ pathname: '/practice', params: { expressionId: item.id } })}
-              >
-                <View style={styles.weakHeading}>
-                  <Text style={styles.weakExpression} numberOfLines={1}>
-                    {item.expression}
-                  </Text>
-                  <Score value={item.score} style={styles.weakScore} />
-                </View>
-                <ScoreBar score={item.score} />
-              </Pressable>
-            ))}
-          </Card>
-        ) : null}
-        {data ? (
-          <Card title="Average score · last 30 days">
-            <ScoreTrendChart trend={data.scoreTrend} />
-          </Card>
-        ) : null}
-        {data?.chatSkills.averages ? (
-          <Card title={`Chat skills · ${data.chatSkills.sessions} ${data.chatSkills.sessions === 1 ? 'session' : 'sessions'}`}>
-            <ChatSkills averages={data.chatSkills.averages} />
-          </Card>
-        ) : null}
       </ScrollView>
       <View pointerEvents="box-none" style={[styles.practiceWrap, { bottom: insets.bottom + 24 }]}>
         <Pressable style={styles.practice} onPress={practice} accessibilityRole="button">
