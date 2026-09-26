@@ -65,6 +65,16 @@ describe('Home', () => {
     jest.mocked(router.push).mockReset()
   })
 
+  it('shows placeholders until the summary arrives', async () => {
+    await renderHome()
+
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/due today/)).toBeNull()
+
+    expect(await screen.findByText('7 due today')).toBeTruthy()
+    expect(screen.queryAllByTestId('skeleton')).toHaveLength(0)
+  })
+
   it('shows how many phrases are due and how many were never practiced', async () => {
     await renderHome()
 

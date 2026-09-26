@@ -11,4 +11,15 @@ describe('WeekChart', () => {
     expect(screen.getByLabelText('Wed: 5')).toBeTruthy()
     expect(screen.getByLabelText('Sun: 2')).toBeTruthy()
   })
+
+  it('shows placeholder bars under the day labels while loading', async () => {
+    jest.useFakeTimers()
+    await render(<WeekChart today={2} />)
+
+    expect(screen.getByText('Mon')).toBeTruthy()
+    expect(screen.getByText('Sun')).toBeTruthy()
+    expect(screen.getAllByTestId('skeleton').length).toBeGreaterThanOrEqual(7)
+    expect(screen.queryByLabelText(/Mon: /)).toBeNull()
+    jest.useRealTimers()
+  })
 })
