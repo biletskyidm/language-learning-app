@@ -1,6 +1,7 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { Expression, Scenario } from '@contracts'
 import Practice from '../../app/practice'
 import { apiGet, apiPost } from '../api/client'
@@ -29,6 +30,8 @@ const expression = (id: string): Expression => ({
 })
 
 let mockParams: Record<string, string> = {}
+
+const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }
 
 const settings = { chatTargets: 5, gapsTargets: 4, describeTargets: 1, smuggleTargets: 3, defaultStyle: 'informal' }
 
@@ -60,7 +63,9 @@ const renderPractice = async () => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <Practice />
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <Practice />
+      </SafeAreaProvider>
     </QueryClientProvider>,
   )
 }
@@ -130,7 +135,7 @@ describe('Practice', () => {
     expect(context().props.value).toBe('a scrum standup with my team')
     expect(screen.getByText('formal').parent?.props.accessibilityState).toEqual({ selected: true })
 
-    await fireEvent.press(screen.getByText('Start chat'))
+    await fireEvent.press(screen.getByText('💬 Start chat'))
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({ type: 'chat', scenarioId: 's1' })
@@ -143,7 +148,7 @@ describe('Practice', () => {
     await fireEvent.press(await screen.findByText('Scrum standup'))
 
     await fireEvent.changeText(context(), 'a retro instead')
-    await fireEvent.press(screen.getByText('Start chat'))
+    await fireEvent.press(screen.getByText('💬 Start chat'))
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({
@@ -164,7 +169,7 @@ describe('Practice', () => {
       queryClient.setQueryData(['scenarios'], { items: [] })
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    await fireEvent.press(screen.getByText('Start chat'))
+    await fireEvent.press(screen.getByText('💬 Start chat'))
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({
@@ -200,7 +205,7 @@ describe('Practice', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await fireEvent.changeText(context(), 'a retro on Friday')
-    await fireEvent.press(screen.getByText('Start chat'))
+    await fireEvent.press(screen.getByText('💬 Start chat'))
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({
@@ -221,7 +226,7 @@ describe('Practice', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await fireEvent.press(screen.getByText('formal'))
-    await fireEvent.press(screen.getByText('Start chat'))
+    await fireEvent.press(screen.getByText('💬 Start chat'))
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({ type: 'chat', context: 'a retro', style: 'formal' })
