@@ -59,14 +59,14 @@ const styles = StyleSheet.create({
   label: { fontSize: 15, fontWeight: '500' },
   remove: { width: 44, height: 44, marginLeft: -spacing.sm, alignItems: 'center', justifyContent: 'center' },
   removeBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeIcon: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  removeIcon: { color: colors.muted, fontSize: 18, fontWeight: '700' },
   add: {
     paddingHorizontal: spacing.md - 2,
     backgroundColor: 'transparent',
