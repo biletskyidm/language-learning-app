@@ -23,10 +23,11 @@ export const PracticeTargetChips = ({ targets, removable, onOpen, onRemove, onAd
             onPress={() => onRemove(index)}
             accessibilityRole="button"
             accessibilityLabel={`Remove ${target.expression}`}
-            hitSlop={10}
             style={styles.remove}
           >
-            <Text style={styles.removeIcon}>✕</Text>
+            <View style={styles.removeBadge}>
+              <Text style={styles.removeIcon}>✕</Text>
+            </View>
           </Pressable>
         ) : null}
       </View>
@@ -45,22 +46,22 @@ export const PracticeTargetChips = ({ targets, removable, onOpen, onRemove, onAd
 )
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: spacing.sm + 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 36,
+    maxWidth: '100%',
+    minHeight: 44,
     borderRadius: 999,
     backgroundColor: colors.bubble,
   },
-  open: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md - 2 },
+  open: { flexShrink: 1, paddingVertical: spacing.sm, paddingHorizontal: spacing.md - 2 },
   label: { fontSize: 15, fontWeight: '500' },
-  remove: {
+  remove: { width: 44, height: 44, marginLeft: -spacing.sm, alignItems: 'center', justifyContent: 'center' },
+  removeBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    marginLeft: -6,
-    marginRight: 6,
     backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',

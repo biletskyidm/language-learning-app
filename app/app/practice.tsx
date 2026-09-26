@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text, TextInput } from '../src/components/themed'
 import {
@@ -170,6 +170,7 @@ const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode
 
 export default function Practice() {
   const params = useLocalSearchParams<{ mode?: string; expressionId?: string }>()
+  const insets = useSafeAreaInsets()
   const [mode, setMode] = useState<Mode>(startMode(params.mode))
   const [context, setContext] = useState('')
   const [style, setStyle] = useState<ChatStyle>()
@@ -221,10 +222,14 @@ export default function Practice() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={insets.top + 44}
+    >
       <Stack.Screen options={{ title: 'What to practice' }} />
       {body()}
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
