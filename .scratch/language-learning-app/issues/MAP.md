@@ -37,6 +37,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **29** [Dark mode following the system theme](29-dark-mode-follow-system-theme.md) — blocked by: none
 - [x] **30** ["Fill with AI" responds to the first tap while the keyboard is open](30-fill-with-ai-single-tap-with-keyboard-open.md) — blocked by: 10
 - [ ] **31** [Native capsule header buttons](31-native-capsule-header-buttons.md) — blocked by: none
+- [x] **32** [Home loading skeletons](32-home-loading-skeletons.md) — blocked by: 26
 
 Milestone 1 (daily use) = redeploy after 20 lands (vocab + chat complete).
 

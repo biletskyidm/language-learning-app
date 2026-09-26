@@ -8,6 +8,7 @@ import { useCredentials } from '../src/api/use-credentials'
 import { useProgressSummary } from '../src/api/use-progress-summary'
 import { Score } from '../src/components/score'
 import { ScoreBar } from '../src/components/score-bar'
+import { Skeleton } from '../src/components/skeleton'
 import { WeekChart } from '../src/components/week-chart'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -37,7 +38,13 @@ export default function Home() {
   const rejected = summary.error instanceof UnauthorizedError
 
   const progress = () => {
-    if (summary.isPending) return <Text style={styles.muted}>…</Text>
+    if (summary.isPending)
+      return (
+        <>
+          <Skeleton width={180} height={34} />
+          <Skeleton width={130} height={17} />
+        </>
+      )
     if (summary.isError) return <Text style={styles.error}>API is not responding</Text>
 
     return (
@@ -71,6 +78,20 @@ export default function Home() {
           <Button title="Sessions" onPress={() => router.push('/trainings')} />
           <Button title="Settings" onPress={() => router.push('/settings')} />
         </View>
+        {summary.isPending ? (
+          <View style={styles.weakest}>
+            <Text style={styles.heading}>Weakest phrases</Text>
+            {[0, 1, 2].map((row) => (
+              <View key={row} style={styles.weak}>
+                <View style={styles.weakHeading}>
+                  <Skeleton width="60%" height={18} />
+                  <Skeleton width={30} height={16} />
+                </View>
+                <Skeleton height={6} />
+              </View>
+            ))}
+          </View>
+        ) : null}
         {summary.data?.weakest.length ? (
           <View style={styles.weakest}>
             <Text style={styles.heading}>Weakest phrases</Text>
@@ -91,7 +112,9 @@ export default function Home() {
             ))}
           </View>
         ) : null}
-        {summary.data ? <WeekChart week={summary.data.week} today={(new Date().getDay() + 6) % 7} /> : null}
+        {summary.isPending || summary.data ? (
+          <WeekChart week={summary.data?.week} today={(new Date().getDay() + 6) % 7} />
+        ) : null}
       </ScrollView>
     </View>
   )

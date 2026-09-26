@@ -14,6 +14,7 @@ const palettes = {
     error: '#c0392b',
     muted: '#6b7280',
     border: '#d1d5db',
+    shimmer: '#ffffff',
   },
   dark: {
     text: '#ffffff',
@@ -28,6 +29,7 @@ const palettes = {
     error: '#ff5a4d',
     muted: '#98989f',
     border: '#38383a',
+    shimmer: '#4f4f53',
   },
 }
 

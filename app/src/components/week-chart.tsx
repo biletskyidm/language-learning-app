@@ -1,26 +1,38 @@
 import { StyleSheet, View } from 'react-native'
 import { Text } from './themed'
+import { Skeleton } from './skeleton'
 import { colors, spacing } from '../theme/tokens'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const BAR_HEIGHT = 120
+const PLACEHOLDER_HEIGHTS = [40, 70, 30, 90, 55, 25, 60]
 
-export const WeekChart = ({ week, today }: { week: number[]; today: number }) => {
-  const max = Math.max(1, ...week)
+export const WeekChart = ({ week, today }: { week?: number[]; today: number }) => {
+  const max = Math.max(1, ...(week ?? []))
 
   return (
     <View style={styles.chart}>
       <Text style={styles.heading}>Expressions trained this week</Text>
       <View style={styles.columns}>
-        {week.map((count, day) => (
-          <View key={DAYS[day]} style={styles.column} accessibilityLabel={`${DAYS[day]}: ${count}`}>
+        {DAYS.map((label, day) => (
+          <View key={label} style={styles.column} accessibilityLabel={week && `${label}: ${week[day]}`}>
             <View style={styles.plot}>
-              <Text style={styles.count}>{count}</Text>
-              <View
-                style={[styles.bar, { height: Math.max(2, (count / max) * BAR_HEIGHT) }, day === today && styles.today]}
-              />
+              {week ? (
+                <>
+                  <Text style={styles.count}>{week[day]}</Text>
+                  <View
+                    style={[
+                      styles.bar,
+                      { height: Math.max(2, (week[day] / max) * BAR_HEIGHT) },
+                      day === today && styles.today,
+                    ]}
+                  />
+                </>
+              ) : (
+                <Skeleton height={PLACEHOLDER_HEIGHTS[day]} style={styles.placeholder} />
+              )}
             </View>
-            <Text style={[styles.day, day === today && styles.todayLabel]}>{DAYS[day]}</Text>
+            <Text style={[styles.day, day === today && styles.todayLabel]}>{label}</Text>
           </View>
         ))}
       </View>
@@ -37,6 +49,7 @@ const styles = StyleSheet.create({
   count: { color: colors.muted, fontSize: 12 },
   bar: { alignSelf: 'stretch', borderRadius: 4, backgroundColor: colors.border },
   today: { backgroundColor: colors.ok },
+  placeholder: { alignSelf: 'stretch' },
   day: { color: colors.muted, fontSize: 12 },
   todayLabel: { color: colors.ok, fontWeight: '600' },
 })
