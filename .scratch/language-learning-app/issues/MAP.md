@@ -41,6 +41,8 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **33** [Home dashboard redesign](33-home-dashboard-redesign.md) — blocked by: 26, 31, 32
 - [x] **34** [App icon and PhraseLoop name](34-app-icon-and-phraseloop-name.md) — blocked by: none
 - [x] **35** [Week chart goal colors](35-week-chart-goal-colors.md) — blocked by: 33
+- [ ] **36** [Expression form action buttons](36-expression-form-action-buttons.md) — blocked by: 30
+- [ ] **37** [Practice screen chips and mode tiles](37-practice-screen-chips-and-mode-tiles.md) — blocked by: 12, 33
 
 Milestone 1 (daily use) = redeploy after 20 lands (vocab + chat complete).
 
