@@ -65,15 +65,15 @@ export default function Describe() {
       <Stack.Screen
         options={{
           title: 'Describe it',
-          headerRight: active
-            ? () => (
-                <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
-                  <Text style={[styles.headerAction, !canEnd && styles.off]}>End</Text>
-                </Pressable>
-              )
-            : undefined,
         }}
       />
+      {active ? (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button onPress={endMenu} disabled={!canEnd} tintColor={colors.error}>
+            End
+          </Stack.Toolbar.Button>
+        </Stack.Toolbar>
+      ) : null}
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {session.aggregates ? (
           <Text style={styles.summary}>
@@ -177,7 +177,6 @@ const styles = StyleSheet.create({
   note: { color: colors.muted },
   summary: { fontWeight: '600' },
   canceled: { color: colors.muted },
-  headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },
   off: { opacity: 0.4 },
   state: { paddingVertical: spacing.md },
   error: { color: colors.error, textAlign: 'center' },

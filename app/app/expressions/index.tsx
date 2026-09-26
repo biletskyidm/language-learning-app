@@ -40,13 +40,11 @@ export default function Expressions() {
       <Stack.Screen
         options={{
           title: 'Vocabulary',
-          headerRight: () => (
-            <Pressable onPress={() => router.push('/expressions/new')} accessibilityRole="button" hitSlop={12}>
-              <Text style={styles.add}>+</Text>
-            </Pressable>
-          ),
         }}
       />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button icon="plus" onPress={() => router.push('/expressions/new')} tintColor={colors.ok} />
+      </Stack.Toolbar>
       <TextInput
         style={styles.search}
         value={filters.search}
@@ -82,7 +80,6 @@ const styles = StyleSheet.create({
   meaning: { color: colors.muted },
   meta: { color: colors.muted, fontSize: 12 },
   separator: { height: 1, backgroundColor: colors.border },
-  add: { fontSize: 28, color: colors.ok, fontWeight: '300' },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
 })

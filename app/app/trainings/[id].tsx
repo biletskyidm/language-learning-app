@@ -79,15 +79,15 @@ export default function Chat() {
       <Stack.Screen
         options={{
           title: chat.context,
-          headerRight: active
-            ? () => (
-                <Pressable onPress={endMenu} disabled={!canEnd} accessibilityRole="button">
-                  <Text style={[styles.headerAction, !canEnd && styles.sendOff]}>End</Text>
-                </Pressable>
-              )
-            : undefined,
         }}
       />
+      {active ? (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button onPress={endMenu} disabled={!canEnd} tintColor={colors.error}>
+            End
+          </Stack.Toolbar.Button>
+        </Stack.Toolbar>
+      ) : null}
       <TargetChips targets={targets} messages={messages} onPress={setProgress} />
       {finalAssessment ? <SessionSummary finalAssessment={finalAssessment} /> : null}
       {status === 'CANCELED' ? <Text style={styles.canceled}>Session canceled</Text> : null}
@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
   },
   sendOff: { opacity: 0.4 },
   sendLabel: { color: colors.onAccent, fontWeight: '600' },
-  headerAction: { color: colors.error, fontSize: 16, fontWeight: '600' },
   canceled: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.sm },
   nudge: {
     flexDirection: 'row',
