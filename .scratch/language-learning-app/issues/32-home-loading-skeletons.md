@@ -1,4 +1,4 @@
-# 31: Home loading skeletons
+# 32: Home loading skeletons
 
 **What to build:** On first open Home shows only the menu; progress, weakest phrases and week chart pop in ~0.5–1s later with a layout jump. Show placeholder shapes with an animated shimmer while `/progress/summary` is pending.
 
