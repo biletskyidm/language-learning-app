@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Button, StyleSheet, View } from 'react-native'
+import { Button, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native'
 import { Text, TextInput } from '../src/components/themed'
 import { saveCredentials } from '../src/api/credentials'
 import { CREDENTIALS_KEY } from '../src/api/use-credentials'
@@ -22,7 +22,7 @@ export default function Setup() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Text style={styles.hint}>Point the app at your API and paste the shared secret. Both stay in the device keychain.</Text>
 
       <Text style={styles.label}>API URL</Text>
@@ -48,7 +48,7 @@ export default function Setup() {
       />
 
       <Button title="Save" onPress={save} disabled={!baseUrl.trim() || !secret.trim()} />
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 

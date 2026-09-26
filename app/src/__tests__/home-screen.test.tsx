@@ -168,6 +168,20 @@ describe('Home', () => {
     expect(screen.queryByText(/^Chat skills/)).toBeNull()
   })
 
+  it('offers to change the API URL or secret when the API fails for any reason', async () => {
+    const queryClient = await renderHome()
+    await screen.findByText('Weakest phrases')
+
+    jest.useFakeTimers()
+    mockedApiGet.mockRejectedValue(new Error('Network request failed'))
+    void queryClient.refetchQueries()
+    await act(() => jest.runAllTimersAsync())
+
+    await fireEvent.press(await screen.findByText('Change API URL or secret'))
+    expect(router.push).toHaveBeenCalledWith('/setup')
+    jest.useRealTimers()
+  })
+
   it('lists the weakest phrases with their score', async () => {
     await renderHome()
 

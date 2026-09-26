@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "Language Learning",
+    "name": "PhraseLoop",
     "slug": "language-learning-app",
     "scheme": "languagelearning",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.biletskyidm.languagelearning",
