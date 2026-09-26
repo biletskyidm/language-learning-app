@@ -5,30 +5,27 @@ import { colors, spacing } from '../theme/tokens'
 
 type Props = {
   targets: Expression[]
-  removable: boolean
   onOpen: (target: Expression) => void
   onRemove: (index: number) => void
   onAdd?: () => void
 }
 
-export const PracticeTargetChips = ({ targets, removable, onOpen, onRemove, onAdd }: Props) => (
+export const PracticeTargetChips = ({ targets, onOpen, onRemove, onAdd }: Props) => (
   <View style={styles.chips}>
     {targets.map((target, index) => (
       <View key={target.id} style={styles.chip}>
         <Pressable onPress={() => onOpen(target)} accessibilityRole="button" style={styles.open}>
           <Text style={styles.label}>{target.expression}</Text>
         </Pressable>
-        {removable ? (
-          <Pressable
-            onPress={() => onRemove(index)}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${target.expression}`}
-            hitSlop={4}
-            style={styles.remove}
-          >
-            <Text style={styles.removeIcon}>✕</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => onRemove(index)}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${target.expression}`}
+          hitSlop={4}
+          style={styles.remove}
+        >
+          <Text style={styles.removeIcon}>✕</Text>
+        </Pressable>
       </View>
     ))}
     {onAdd ? (

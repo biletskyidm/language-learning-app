@@ -104,10 +104,10 @@ describe('Practice', () => {
     await renderPractice()
     await waitFor(() => expect(rows()).toHaveLength(5))
 
-    await fireEvent.press(screen.getByText('Gaps'))
+    await fireEvent.press(screen.getByText('Describe it'))
 
-    await waitFor(() => expect(rows()).toHaveLength(4))
-    expect(picked()).toEqual(['/expressions/pick?limit=5', '/expressions/pick?limit=4'])
+    await waitFor(() => expect(rows()).toHaveLength(1))
+    expect(picked()).toEqual(['/expressions/pick?limit=5', '/expressions/pick?limit=1'])
   })
 
   it('keeps the chat draft while another mode re-picks its targets', async () => {
@@ -116,8 +116,8 @@ describe('Practice', () => {
     await fireEvent.changeText(context(), 'a scrum standup')
     await fireEvent.press(screen.getByText('formal'))
 
-    await fireEvent.press(screen.getByText('Gaps'))
-    await waitFor(() => expect(rows()).toHaveLength(4))
+    await fireEvent.press(screen.getByText('Describe it'))
+    await waitFor(() => expect(rows()).toHaveLength(1))
     await fireEvent.press(screen.getByText('Chat'))
 
     await waitFor(() => expect(rows()).toHaveLength(5))
