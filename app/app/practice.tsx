@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text, TextInput } from '../src/components/themed'
 import {
   createTrainingInputSchema,
@@ -19,7 +20,8 @@ import { useSettings } from '../src/api/use-settings'
 import { MAX_TARGETS, useTargetSelection } from '../src/api/use-target-selection'
 import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
-import { SrsSummary } from '../src/components/srs-summary'
+import { ModeTiles, type ModeTile } from '../src/components/mode-tiles'
+import { PracticeTargetChips } from '../src/components/practice-target-chips'
 import { trainingRoute } from '../src/components/training-route'
 import { colors, spacing } from '../src/theme/tokens'
 
@@ -30,18 +32,14 @@ const STYLES: [ChatStyle, string][] = [
 
 type Mode = 'chat' | 'gaps' | 'describe' | 'smuggle'
 
-const MODES: [Mode, string][] = [
-  ['chat', 'Chat'],
-  ['gaps', 'Gaps'],
-  ['describe', 'Describe it'],
-  ['smuggle', 'Smuggle'],
+const MODES: ModeTile<Mode>[] = [
+  { mode: 'chat', emoji: '💬', name: 'Chat', blurb: 'Role-play a situation with the tutor.' },
+  { mode: 'gaps', emoji: '🧩', name: 'Gaps', blurb: 'A short paragraph with these phrases cut out. Put them back.' },
+  { mode: 'describe', emoji: '🗣️', name: 'Describe it', blurb: 'Explain each phrase without using its words.' },
+  { mode: 'smuggle', emoji: '🎒', name: 'Smuggle', blurb: 'Work every phrase into one natural message.' },
 ]
 
-const HINTS: Record<Exclude<Mode, 'chat'>, string> = {
-  gaps: 'A short paragraph with these phrases cut out. Put them back.',
-  describe: 'One phrase at a time. Explain it without using its words and the tutor scores you.',
-  smuggle: 'Work every phrase into one natural message and see which ones land.',
-}
+const EMOJIS = Object.fromEntries(MODES.map(({ mode, emoji }) => [mode, emoji])) as Record<Mode, string>
 
 const START_LABELS: Record<Mode, string> = {
   chat: 'Start chat',
@@ -49,33 +47,6 @@ const START_LABELS: Record<Mode, string> = {
   describe: 'Start describe it',
   smuggle: 'Start smuggle',
 }
-
-type RowProps = {
-  item: Expression
-  removable: boolean
-  onRemove: () => void
-}
-
-const Row = ({ item, removable, onRemove }: RowProps) => (
-  <View style={styles.row}>
-    <Pressable style={styles.rowBody} onPress={() => router.push(`/expressions/${item.id}`)}>
-      <Text style={styles.expression}>{item.expression}</Text>
-      <Text style={styles.meaning}>{item.meaning}</Text>
-      <SrsSummary expression={item} now={new Date()} style={styles.stats} />
-    </Pressable>
-    {removable ? (
-      <Pressable
-        onPress={onRemove}
-        accessibilityRole="button"
-        accessibilityLabel="Remove"
-        hitSlop={8}
-        style={styles.remove}
-      >
-        <Text style={styles.removeIcon}>×</Text>
-      </Pressable>
-    ) : null}
-  </View>
-)
 
 type Draft = {
   presets: Scenario[]
@@ -102,10 +73,30 @@ const Presets = ({ presets, selected, onSelect }: PresetsProps) => (
   </ScrollView>
 )
 
-type StartProps = { targets: Expression[]; mode: Mode; onMode: (mode: Mode) => void; draft: Draft }
+const ChatScene = ({ draft }: { draft: Draft }) => (
+  <>
+    <Presets presets={draft.presets} selected={draft.scenarioId} onSelect={draft.onScenario} />
+    <TextInput
+      style={styles.context}
+      value={draft.context}
+      onChangeText={draft.onContext}
+      placeholder="What is the situation? e.g. a scrum standup"
+      placeholderTextColor={colors.muted}
+      multiline
+    />
+    <View style={styles.styles}>
+      {STYLES.map(([value, label]) => (
+        <Chip key={value} label={label} active={draft.style === value} onPress={() => draft.onStyle(value)} />
+      ))}
+    </View>
+  </>
+)
 
-const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
+type StartProps = { targets: Expression[]; mode: Mode; draft: Draft }
+
+const StartSession = ({ targets, mode, draft }: StartProps) => {
   const create = useCreateTraining()
+  const insets = useSafeAreaInsets()
 
   const expressionIds = targets.map((target) => target.id)
   const scene = draft.scenarioId ? { scenarioId: draft.scenarioId } : { context: draft.context, style: draft.style }
@@ -124,40 +115,15 @@ const StartSession = ({ targets, mode, onMode, draft }: StartProps) => {
     })
 
   return (
-    <View style={styles.start}>
-      <View style={styles.styles}>
-        {MODES.map(([value, label]) => (
-          <Chip key={value} label={label} active={mode === value} onPress={() => onMode(value)} />
-        ))}
-      </View>
-      {mode === 'chat' ? (
-        <>
-          <Presets presets={draft.presets} selected={draft.scenarioId} onSelect={draft.onScenario} />
-          <TextInput
-            style={styles.context}
-            value={draft.context}
-            onChangeText={draft.onContext}
-            placeholder="What is the situation? e.g. a scrum standup"
-            placeholderTextColor={colors.muted}
-            multiline
-          />
-          <View style={styles.styles}>
-            {STYLES.map(([value, label]) => (
-              <Chip key={value} label={label} active={draft.style === value} onPress={() => draft.onStyle(value)} />
-            ))}
-          </View>
-        </>
-      ) : (
-        <Text style={styles.hint}>{HINTS[mode]}</Text>
-      )}
-      {create.isError ? <Text style={styles.error}>Could not start the session</Text> : null}
+    <View style={[styles.start, { paddingBottom: insets.bottom + spacing.sm }]}>
+      {create.isError ? <Text style={styles.startError}>Could not start the session</Text> : null}
       <Pressable
         onPress={start}
         accessibilityRole="button"
         disabled={!input.success || create.isPending}
         style={[styles.startButton, (!input.success || create.isPending) && styles.startButtonOff]}
       >
-        <Text style={styles.startLabel}>{create.isPending ? 'Starting…' : START_LABELS[mode]}</Text>
+        <Text style={styles.startLabel}>{create.isPending ? 'Starting…' : `${EMOJIS[mode]} ${START_LABELS[mode]}`}</Text>
       </Pressable>
     </View>
   )
@@ -180,29 +146,25 @@ const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
           onClose={() => setPicking(false)}
         />
       ) : null}
-      <FlatList
-        data={targets}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <Row
-            item={item}
-            removable={targets.length > 1}
-            onRemove={() => remove(index)}
-          />
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
-      {targets.length < MAX_TARGETS ? (
-        <Pressable onPress={() => setPicking(true)} accessibilityRole="button" style={styles.add}>
-          <Text style={styles.addLabel}>Add an expression</Text>
-        </Pressable>
-      ) : null}
-      <StartSession targets={targets} mode={mode} onMode={onMode} draft={draft} />
+      <ScrollView contentContainerStyle={styles.body}>
+        <Text style={styles.caption}>PHRASES</Text>
+        <PracticeTargetChips
+          targets={targets}
+          removable={targets.length > 1}
+          onOpen={(target) => router.push(`/expressions/${target.id}`)}
+          onRemove={remove}
+          onAdd={targets.length < MAX_TARGETS ? () => setPicking(true) : undefined}
+        />
+        <Text style={[styles.caption, styles.captionGap]}>HOW</Text>
+        <ModeTiles modes={MODES} selected={mode} onSelect={onMode} />
+        {mode === 'chat' ? <ChatScene draft={draft} /> : null}
+      </ScrollView>
+      <StartSession targets={targets} mode={mode} draft={draft} />
     </>
   )
 }
 
-const MODE_NAMES = new Set<string>(MODES.map(([value]) => value))
+const MODE_NAMES = new Set<string>(MODES.map(({ mode }) => mode))
 
 const startMode = (mode?: string): Mode => (mode && MODE_NAMES.has(mode) ? (mode as Mode) : 'chat')
 
@@ -267,25 +229,17 @@ export default function Practice() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
-  rowBody: { flex: 1, gap: 2 },
-  expression: { fontSize: 16, fontWeight: '600' },
-  meaning: { color: colors.muted },
-  stats: { color: colors.muted, fontSize: 12 },
-  remove: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
+  container: { flex: 1 },
+  body: { gap: spacing.sm + 4, padding: spacing.md },
+  caption: { color: colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.6 },
+  captionGap: { marginTop: spacing.sm },
+  start: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm + 4,
+    paddingHorizontal: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
-  removeIcon: { color: colors.onAccent, fontSize: 16, fontWeight: '600', lineHeight: 18 },
-  separator: { height: 1, backgroundColor: colors.border },
-  add: { paddingVertical: spacing.sm, alignItems: 'center' },
-  addLabel: { color: colors.ok, fontSize: 15, fontWeight: '600' },
-  start: { gap: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   context: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -295,10 +249,10 @@ const styles = StyleSheet.create({
   },
   styles: { flexDirection: 'row', gap: spacing.sm },
   presets: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  hint: { color: colors.muted },
-  startButton: { backgroundColor: colors.ok, borderRadius: 8, paddingVertical: spacing.sm, alignItems: 'center' },
+  startButton: { backgroundColor: colors.ok, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   startButtonOff: { opacity: 0.4 },
-  startLabel: { color: colors.onAccent, fontSize: 15, fontWeight: '600' },
+  startError: { color: colors.error, textAlign: 'center' },
+  startLabel: { color: colors.onAccent, fontSize: 16, fontWeight: '600' },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
 })
