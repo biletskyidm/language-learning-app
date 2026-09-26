@@ -5,6 +5,7 @@ import { colors, spacing } from '../theme/tokens'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const BAR_HEIGHT = 120
+const GOAL = 3
 const PLACEHOLDER_HEIGHTS = [40, 70, 30, 90, 55, 25, 60]
 
 type Props = { week?: number[]; today: number; barHeight?: number }
@@ -27,7 +28,7 @@ export const WeekChart = ({ week, today, barHeight = BAR_HEIGHT }: Props) => {
                     style={[
                       styles.bar,
                       { height: Math.max(2, (week[day] / max) * barHeight) },
-                      day === today && styles.today,
+                      day <= today && (week[day] >= GOAL ? styles.met : styles.missed),
                     ]}
                   />
                 </>
@@ -51,7 +52,8 @@ const styles = StyleSheet.create({
   plot: { alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   count: { color: colors.muted, fontSize: 12 },
   bar: { alignSelf: 'stretch', borderRadius: 4, backgroundColor: colors.border },
-  today: { backgroundColor: colors.ok },
+  met: { backgroundColor: colors.ok },
+  missed: { backgroundColor: colors.error },
   placeholder: { alignSelf: 'stretch' },
   day: { color: colors.muted, fontSize: 12 },
   todayLabel: { color: colors.ok, fontWeight: '600' },

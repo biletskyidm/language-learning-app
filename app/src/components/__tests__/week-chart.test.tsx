@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react-native'
 import { WeekChart } from '../week-chart'
+import { colors } from '../../theme/tokens'
 
 describe('WeekChart', () => {
   it('labels each day from Monday to Sunday with its count', async () => {
@@ -23,6 +24,15 @@ describe('WeekChart', () => {
     await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} />)
 
     expect(screen.getByTestId('bar-Tue')).toHaveStyle({ height: 120 })
+  })
+
+  it('colors past bars by the daily goal and leaves future ones neutral', async () => {
+    await render(<WeekChart week={[3, 1, 0, 5, 0, 0, 0]} today={2} />)
+
+    expect(screen.getByTestId('bar-Mon')).toHaveStyle({ backgroundColor: colors.ok })
+    expect(screen.getByTestId('bar-Tue')).toHaveStyle({ backgroundColor: colors.error })
+    expect(screen.getByTestId('bar-Wed')).toHaveStyle({ backgroundColor: colors.error })
+    expect(screen.getByTestId('bar-Thu')).toHaveStyle({ backgroundColor: colors.border })
   })
 
   it('shows placeholder bars under the day labels while loading', async () => {
