@@ -36,8 +36,9 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [x] **28** [Unified history: open any past training with details and SRS effects](28-unified-history-open-any-past-training-with-details-and-srs.md) — blocked by: 17, 21
 - [x] **29** [Dark mode following the system theme](29-dark-mode-follow-system-theme.md) — blocked by: none
 - [x] **30** ["Fill with AI" responds to the first tap while the keyboard is open](30-fill-with-ai-single-tap-with-keyboard-open.md) — blocked by: 10
-- [ ] **31** [Native capsule header buttons](31-native-capsule-header-buttons.md) — blocked by: none
+- [x] **31** [Native capsule header buttons](31-native-capsule-header-buttons.md) — blocked by: none
 - [x] **32** [Home loading skeletons](32-home-loading-skeletons.md) — blocked by: 26
+- [x] **33** [Home dashboard redesign](33-home-dashboard-redesign.md) — blocked by: 26, 31, 32
 
 Milestone 1 (daily use) = redeploy after 20 lands (vocab + chat complete).
 

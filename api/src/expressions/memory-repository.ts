@@ -11,6 +11,7 @@ import type {
   ExpressionPickParams,
   ExpressionRepository,
   ProgressCounts,
+  ScoredExpression,
   SrsFields,
 } from './repository'
 
@@ -145,6 +146,11 @@ export class InMemoryExpressionRepository implements ExpressionRepository {
     return {
       dueNow: mine.filter(due).length,
       unpracticed: mine.filter((e) => e.score === undefined).length,
+      total: mine.length,
     }
+  }
+
+  async scores(userId: string): Promise<ScoredExpression[]> {
+    return this.expressions.filter((e) => e.userId === userId).map(({ id, createdAt, score }) => ({ id, createdAt, score }))
   }
 }

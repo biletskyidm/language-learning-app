@@ -12,6 +12,19 @@ describe('WeekChart', () => {
     expect(screen.getByLabelText('Sun: 2')).toBeTruthy()
   })
 
+  it('scales the tallest bar to the given height', async () => {
+    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} barHeight={90} />)
+
+    expect(screen.getByTestId('bar-Tue')).toHaveStyle({ height: 90 })
+    expect(screen.getByTestId('bar-Mon')).toHaveStyle({ height: 45 })
+  })
+
+  it('draws bars 120 high by default', async () => {
+    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} />)
+
+    expect(screen.getByTestId('bar-Tue')).toHaveStyle({ height: 120 })
+  })
+
   it('shows placeholder bars under the day labels while loading', async () => {
     jest.useFakeTimers()
     await render(<WeekChart today={2} />)

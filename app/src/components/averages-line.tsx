@@ -4,7 +4,7 @@ import { Text } from './themed'
 import type { FinalAssessmentAverages } from '@contracts'
 import { Score } from './score'
 
-const AVERAGE_LABELS: [keyof FinalAssessmentAverages, string][] = [
+export const AVERAGE_LABELS: [keyof FinalAssessmentAverages, string][] = [
   ['contextCorrectness', 'Context'],
   ['grammarAndSyntax', 'Grammar'],
   ['vocabularyDiversity', 'Vocabulary'],

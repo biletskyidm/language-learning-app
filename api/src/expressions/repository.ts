@@ -16,7 +16,8 @@ export type SrsFields = {
   nextTrainingAt: Date
 }
 
-export type ProgressCounts = { dueNow: number; unpracticed: number }
+export type ProgressCounts = { dueNow: number; unpracticed: number; total: number }
+export type ScoredExpression = Pick<Expression, 'id' | 'createdAt' | 'score'>
 
 export interface ExpressionRepository {
   /** Diagnostic total across every user; used by the startup log. */
@@ -32,4 +33,5 @@ export interface ExpressionRepository {
   delete(userId: string, id: string): Promise<boolean>
   tags(userId: string): Promise<string[]>
   progressCounts(userId: string, now: Date): Promise<ProgressCounts>
+  scores(userId: string): Promise<ScoredExpression[]>
 }

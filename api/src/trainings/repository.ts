@@ -4,18 +4,26 @@ import type {
   DrillRound,
   ExpressionHistoryItem,
   FinalAssessment,
+  FinalAssessmentAverages,
   SrsEffect,
   Training,
   TrainingListQuery,
+  TrainingStatus,
   TrainingSummary,
 } from '@contracts'
 
 /** Distributes over the union, so each training type keeps its own payload. */
 export type NewTraining = Training extends infer T ? (T extends Training ? Omit<T, 'id' | 'userId'> : never) : never
 
+export type ScoreEffect = Pick<SrsEffect, 'expressionId' | 'at'> & {
+  before: Pick<SrsEffect['before'], 'score'>
+  after: Pick<SrsEffect['after'], 'score'>
+}
+
 export interface TrainingRepository {
   create(userId: string, training: NewTraining): Promise<Training>
   list(userId: string, query: TrainingListQuery): Promise<TrainingSummary[]>
+  count(userId: string, status: TrainingStatus): Promise<number>
   findById(userId: string, id: string): Promise<Training | undefined>
   appendMessages(userId: string, id: string, messages: ChatMessage[], expectedCount: number): Promise<Training | undefined>
   appendSrsEffects(userId: string, id: string, effects: SrsEffect[]): Promise<void>
@@ -43,6 +51,8 @@ export interface TrainingRepository {
   ): Promise<Training | undefined>
   cancel(userId: string, id: string, canceledAt: Date): Promise<Training | undefined>
   srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at'>[]>
+  scoreEffectsSince(userId: string, from: Date): Promise<ScoreEffect[]>
+  completedChatAverages(userId: string): Promise<FinalAssessmentAverages[]>
   /** Newest first, so an expression's schedule reads as a history. */
   listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]>
 }
