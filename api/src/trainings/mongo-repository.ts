@@ -5,13 +5,15 @@ import type {
   DrillRound,
   ExpressionHistoryItem,
   FinalAssessment,
+  FinalAssessmentAverages,
   SrsEffect,
   Training,
   TrainingListQuery,
+  TrainingStatus,
   TrainingSummary,
 } from '@contracts'
 import { toDomain, toSummary, type TrainingDoc } from './mapper'
-import type { NewTraining, TrainingRepository } from './repository'
+import type { NewTraining, ScoreEffect, TrainingRepository } from './repository'
 
 export const TRAININGS_COLLECTION = 'trainings'
 
@@ -187,6 +189,42 @@ export class MongoTrainingRepository implements TrainingRepository {
         { $project: { _id: 0, expressionId: '$srsEffects.expressionId', at: '$srsEffects.at' } },
       ])
       .toArray()
+  }
+
+  async scoreEffectsSince(userId: string, from: Date): Promise<ScoreEffect[]> {
+    const range = { $gte: from }
+
+    return this.db
+      .collection(TRAININGS_COLLECTION)
+      .aggregate<ScoreEffect>([
+        { $match: { userId, 'srsEffects.at': range } },
+        { $unwind: '$srsEffects' },
+        { $match: { 'srsEffects.at': range } },
+        {
+          $project: {
+            _id: 0,
+            expressionId: '$srsEffects.expressionId',
+            at: '$srsEffects.at',
+            before: { score: '$srsEffects.before.score' },
+            after: { score: '$srsEffects.after.score' },
+          },
+        },
+      ])
+      .toArray()
+  }
+
+  async completedChatAverages(userId: string): Promise<FinalAssessmentAverages[]> {
+    const docs = await this.db
+      .collection(TRAININGS_COLLECTION)
+      .find({ userId, type: 'chat', status: 'COMPLETED', finalAssessment: { $exists: true } })
+      .project<{ finalAssessment: { averages: FinalAssessmentAverages } }>({ _id: 0, 'finalAssessment.averages': 1 })
+      .toArray()
+
+    return docs.map(({ finalAssessment }) => finalAssessment.averages)
+  }
+
+  async count(userId: string, status: TrainingStatus): Promise<number> {
+    return this.db.collection(TRAININGS_COLLECTION).countDocuments({ userId, status })
   }
 
   async listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]> {

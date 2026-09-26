@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../../src/components/themed'
 import { trainingStatusSchema, trainingTypeSchema } from '@contracts'
@@ -11,7 +11,8 @@ import { TRAINING_STATUS_NAMES, TRAINING_TYPE_NAMES, TrainingRow } from '../../s
 import { colors, spacing } from '../../src/theme/tokens'
 
 export default function Sessions() {
-  const [filters, setFilters] = useState<TrainingFilters>({})
+  const { status } = useLocalSearchParams<{ status?: string }>()
+  const [filters, setFilters] = useState<TrainingFilters>({ status: trainingStatusSchema.safeParse(status).data })
   const trainings = useTrainings(filters)
   const cancel = useCancelTraining()
 

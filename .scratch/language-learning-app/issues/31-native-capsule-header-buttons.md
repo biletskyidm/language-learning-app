@@ -9,5 +9,5 @@
 - Save (`colors.ok`): `ExpressionForm`, disabled until valid.
 - Drop now-unused header text styles.
 
-- [ ] app: `tsc --noEmit` + jest pass.
-- [ ] sim: vocab `+`, expression Edit, form Save, each training End render as capsules like the back button; disabled states greyed; taps work.
+- [x] app: `tsc --noEmit` + jest pass.
+- [x] sim: vocab `+`, expression Edit, form Save, each training End render as capsules like the back button; disabled states greyed; taps work.

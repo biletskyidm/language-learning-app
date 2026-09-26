@@ -187,6 +187,98 @@ describe('GET /progress/summary', () => {
     })
   })
 
+  it('counts every phrase of the caller as the total', async () => {
+    const result = await summary({
+      now,
+      expressions: [practiced('p1', day(20)), expression('f1'), expression('x1', { userId: 'someone else' })],
+    })
+
+    expect(result.total).toBe(2)
+  })
+
+  describe('active', () => {
+    it('counts every active training and lists the two newest first', async () => {
+      const result = await summary({
+        now,
+        trainings: [
+          training('old', { createdAt: day(2) }),
+          training('newest', { createdAt: day(5) }),
+          training('done', { status: 'COMPLETED', createdAt: day(6) }),
+          training('middle', { createdAt: day(4) }),
+          training('theirs', { userId: 'someone else', createdAt: day(7) }),
+        ],
+      })
+
+      expect(result.active.count).toBe(3)
+      expect(result.active.latest.map((t) => t.id)).toEqual(['newest', 'middle'])
+    })
+  })
+
+  describe('chatSkills', () => {
+    const averages = (score: number) => ({
+      contextCorrectness: score,
+      grammarAndSyntax: score + 1,
+      vocabularyDiversity: score,
+      sentenceComplexity: score,
+      sentenceNaturalness: score,
+    })
+    const completed = (id: string, score: number, overrides: Partial<ChatTraining> = {}) =>
+      training(id, {
+        status: 'COMPLETED',
+        finalAssessment: {
+          averages: averages(score),
+          targets: {},
+          narrative: { strengths: '', areasForImprovement: '', suggestedFocus: '' },
+          computedAt: day(3),
+        },
+        ...overrides,
+      })
+
+    it('averages completed chats with each session weighted equally', async () => {
+      const result = await summary({
+        now,
+        trainings: [
+          completed('c1', 4, { messages: Array(20).fill({ role: 'user', content: 'hi', at: day(2) }) }),
+          completed('c2', 8),
+          completed('active', 1, { status: 'ACTIVE' }),
+          completed('theirs', 1, { userId: 'someone else' }),
+          training('no-assessment', { status: 'COMPLETED' }),
+        ],
+      })
+
+      expect(result.chatSkills).toEqual({ sessions: 2, averages: averages(6) })
+    })
+
+    it('has no averages before any chat is completed', async () => {
+      const result = await summary({ now, trainings: [training('active')] })
+
+      expect(result.chatSkills).toEqual({ sessions: 0 })
+    })
+  })
+
+  describe('scoreTrend', () => {
+    it('covers 30 days and stays empty before the first scored day', async () => {
+      const result = await summary({
+        now,
+        expressions: [practiced('e1', day(20), { score: 7, createdAt: new Date('2026-03-01T00:00:00.000Z') })],
+        trainings: [training('t1', { srsEffects: [effect('e1', '2026-03-08T08:00:00.000Z')] })],
+      })
+
+      expect(result.scoreTrend).toEqual([...Array(27).fill(null), 7, 7, 7])
+    })
+
+    it('ends each day at local midnight of the given timezone offset', async () => {
+      const options = {
+        now,
+        expressions: [practiced('e1', day(20), { score: 7, createdAt: new Date('2026-03-01T00:00:00.000Z') })],
+        trainings: [training('t1', { srsEffects: [effect('e1', '2026-03-08T22:30:00.000Z')] })],
+      }
+
+      expect((await summary(options)).scoreTrend.slice(-3)).toEqual([7, 7, 7])
+      expect((await summary({ ...options, query: '?tzOffset=-180' })).scoreTrend.slice(-3)).toEqual([null, 7, 7])
+    })
+  })
+
   it("counts only the caller's own data", async () => {
     const result = await summary({
       now,

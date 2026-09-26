@@ -5,12 +5,14 @@ import {
   type DrillRound,
   type ExpressionHistoryItem,
   type FinalAssessment,
+  type FinalAssessmentAverages,
   type SrsEffect,
   type Training,
   type TrainingListQuery,
+  type TrainingStatus,
   type TrainingSummary,
 } from '@contracts'
-import type { NewTraining, TrainingRepository } from './repository'
+import type { NewTraining, ScoreEffect, TrainingRepository } from './repository'
 
 export class InMemoryTrainingRepository implements TrainingRepository {
   constructor(private readonly trainings: Training[] = []) {}
@@ -34,6 +36,10 @@ export class InMemoryTrainingRepository implements TrainingRepository {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit)
       .map((training) => trainingSummarySchema.parse(training))
+  }
+
+  async count(userId: string, status: TrainingStatus): Promise<number> {
+    return this.trainings.filter((training) => training.userId === userId && training.status === status).length
   }
 
   async findById(userId: string, id: string): Promise<Training | undefined> {
@@ -145,6 +151,27 @@ export class InMemoryTrainingRepository implements TrainingRepository {
       .flatMap((training) => training.srsEffects)
       .filter(({ at }) => at >= from && at < to)
       .map(({ expressionId, at }) => ({ expressionId, at }))
+  }
+
+  async scoreEffectsSince(userId: string, from: Date): Promise<ScoreEffect[]> {
+    return this.trainings
+      .filter((training) => training.userId === userId)
+      .flatMap((training) => training.srsEffects)
+      .filter(({ at }) => at >= from)
+      .map(({ expressionId, at, before, after }) => ({
+        expressionId,
+        at,
+        before: { score: before.score },
+        after: { score: after.score },
+      }))
+  }
+
+  async completedChatAverages(userId: string): Promise<FinalAssessmentAverages[]> {
+    return this.trainings.flatMap((training) =>
+      training.userId === userId && training.type === 'chat' && training.status === 'COMPLETED' && training.finalAssessment
+        ? [training.finalAssessment.averages]
+        : [],
+    )
   }
 
   async listEffectsForExpression(userId: string, expressionId: string): Promise<ExpressionHistoryItem[]> {

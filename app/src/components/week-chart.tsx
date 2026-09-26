@@ -7,7 +7,9 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const BAR_HEIGHT = 120
 const PLACEHOLDER_HEIGHTS = [40, 70, 30, 90, 55, 25, 60]
 
-export const WeekChart = ({ week, today }: { week?: number[]; today: number }) => {
+type Props = { week?: number[]; today: number; barHeight?: number }
+
+export const WeekChart = ({ week, today, barHeight = BAR_HEIGHT }: Props) => {
   const max = Math.max(1, ...(week ?? []))
 
   return (
@@ -16,20 +18,21 @@ export const WeekChart = ({ week, today }: { week?: number[]; today: number }) =
       <View style={styles.columns}>
         {DAYS.map((label, day) => (
           <View key={label} style={styles.column} accessibilityLabel={week && `${label}: ${week[day]}`}>
-            <View style={styles.plot}>
+            <View style={[styles.plot, { height: barHeight + 20 }]}>
               {week ? (
                 <>
                   <Text style={styles.count}>{week[day]}</Text>
                   <View
+                    testID={`bar-${label}`}
                     style={[
                       styles.bar,
-                      { height: Math.max(2, (week[day] / max) * BAR_HEIGHT) },
+                      { height: Math.max(2, (week[day] / max) * barHeight) },
                       day === today && styles.today,
                     ]}
                   />
                 </>
               ) : (
-                <Skeleton height={PLACEHOLDER_HEIGHTS[day]} style={styles.placeholder} />
+                <Skeleton height={(PLACEHOLDER_HEIGHTS[day] * barHeight) / BAR_HEIGHT} style={styles.placeholder} />
               )}
             </View>
             <Text style={[styles.day, day === today && styles.todayLabel]}>{label}</Text>
@@ -45,7 +48,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 16, fontWeight: '600' },
   columns: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   column: { flex: 1, alignItems: 'center', gap: 4 },
-  plot: { height: BAR_HEIGHT + 20, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  plot: { alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   count: { color: colors.muted, fontSize: 12 },
   bar: { alignSelf: 'stretch', borderRadius: 4, backgroundColor: colors.border },
   today: { backgroundColor: colors.ok },

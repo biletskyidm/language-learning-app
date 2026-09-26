@@ -8,6 +8,7 @@ import type {
   ExpressionPickParams,
   ExpressionRepository,
   ProgressCounts,
+  ScoredExpression,
   SrsFields,
 } from './repository'
 
@@ -220,11 +221,22 @@ export class MongoExpressionRepository implements ExpressionRepository {
 
   async progressCounts(userId: string, now: Date): Promise<ProgressCounts> {
     const collection = this.db.collection(EXPRESSIONS_COLLECTION)
-    const [dueNow, unpracticed] = await Promise.all([
+    const [dueNow, unpracticed, total] = await Promise.all([
       collection.countDocuments({ userId, score: { $ne: null }, nextTrainingAt: { $lte: now } }),
       collection.countDocuments({ userId, score: null }),
+      collection.countDocuments({ userId }),
     ])
 
-    return { dueNow, unpracticed }
+    return { dueNow, unpracticed, total }
+  }
+
+  async scores(userId: string): Promise<ScoredExpression[]> {
+    const docs = await this.db
+      .collection(EXPRESSIONS_COLLECTION)
+      .find({ userId })
+      .project<{ _id: ObjectId; createdAt: Date; score?: number | null }>({ createdAt: 1, score: 1 })
+      .toArray()
+
+    return docs.map(({ _id, createdAt, score }) => ({ id: _id.toHexString(), createdAt, score: score ?? undefined }))
   }
 }
