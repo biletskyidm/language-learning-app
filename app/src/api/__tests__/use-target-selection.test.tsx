@@ -33,12 +33,12 @@ describe('useTargetSelection', () => {
     expect(ids(result.current.targets)).toEqual(['e1', 'e2'])
   })
 
-  it('keeps the last target rather than leaving nothing to practice', async () => {
+  it('removes the last target', async () => {
     const { result } = await renderHook(() => useTargetSelection(range(1)))
 
     await act(() => result.current.remove(0))
 
-    expect(ids(result.current.targets)).toEqual(['e0'])
+    expect(ids(result.current.targets)).toEqual([])
   })
 
   it('adds an expression the picker did not suggest', async () => {

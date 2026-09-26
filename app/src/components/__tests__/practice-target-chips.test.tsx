@@ -18,7 +18,7 @@ const expression = (id: string, text: string): Expression => ({
 const targets = [expression('e1', 'break the ice'), expression('e2', 'under the weather')]
 
 const setup = (overrides: Partial<React.ComponentProps<typeof PracticeTargetChips>> = {}) => {
-  const props = { targets, removable: true, onOpen: jest.fn(), onRemove: jest.fn(), onAdd: jest.fn(), ...overrides }
+  const props = { targets, onOpen: jest.fn(), onRemove: jest.fn(), onAdd: jest.fn(), ...overrides }
   return { props, view: render(<PracticeTargetChips {...props} />) }
 }
 
@@ -49,10 +49,10 @@ describe('PracticeTargetChips', () => {
     expect(props.onOpen).not.toHaveBeenCalled()
   })
 
-  it('hides remove when removal is not allowed', async () => {
-    await setup({ removable: false }).view
+  it('offers remove on a single target', async () => {
+    await setup({ targets: [targets[0]] }).view
 
-    expect(screen.queryByLabelText('Remove break the ice')).toBeNull()
+    expect(screen.getByLabelText('Remove break the ice')).toBeTruthy()
   })
 
   it('offers add when provided', async () => {

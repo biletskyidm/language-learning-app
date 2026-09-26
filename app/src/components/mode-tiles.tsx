@@ -12,35 +12,39 @@ export const ModeTiles = <M extends string>({ modes, selected, onSelect }: Props
       const active = mode === selected
 
       return (
-        <Pressable
-          key={mode}
-          onPress={() => onSelect(mode)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: active }}
-          style={[styles.tile, active && styles.tileActive]}
-        >
-          <Text style={styles.emoji}>{emoji}</Text>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.blurb}>{blurb}</Text>
-        </Pressable>
+        <View key={mode} style={styles.cell}>
+          <Pressable
+            onPress={() => onSelect(mode)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            style={[styles.tile, active && styles.tileActive]}
+          >
+            <View style={styles.head}>
+              <Text style={styles.emoji}>{emoji}</Text>
+              <Text style={styles.name}>{name}</Text>
+            </View>
+            <Text style={styles.blurb}>{blurb}</Text>
+          </Pressable>
+        </View>
       )
     })}
   </View>
 )
 
 const styles = StyleSheet.create({
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 2 },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', margin: -(spacing.sm + 2) / 2 },
+  cell: { width: '50%', padding: (spacing.sm + 2) / 2 },
   tile: {
-    flexBasis: '47%',
     flexGrow: 1,
     gap: 2,
-    padding: spacing.sm + 4,
+    padding: spacing.sm + 2,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: colors.border,
   },
   tileActive: { borderColor: colors.ok, backgroundColor: colors.okSoft },
-  emoji: { fontSize: 22, marginBottom: 2 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  emoji: { fontSize: 18 },
   name: { fontSize: 15, fontWeight: '600' },
-  blurb: { fontSize: 12, color: colors.muted, lineHeight: 16 },
+  blurb: { fontSize: 11, color: colors.muted, lineHeight: 14 },
 })

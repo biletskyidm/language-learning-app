@@ -34,7 +34,6 @@ type Mode = 'chat' | 'gaps' | 'describe' | 'smuggle'
 
 const MODES: ModeTile<Mode>[] = [
   { mode: 'chat', emoji: '💬', name: 'Chat', blurb: 'Role-play a situation with the tutor.' },
-  { mode: 'gaps', emoji: '🧩', name: 'Gaps', blurb: 'A short paragraph with these phrases cut out. Put them back.' },
   { mode: 'describe', emoji: '🗣️', name: 'Describe it', blurb: 'Explain each phrase without using its words.' },
   { mode: 'smuggle', emoji: '🎒', name: 'Smuggle', blurb: 'Work every phrase into one natural message.' },
 ]
@@ -150,7 +149,6 @@ const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
         <Text style={styles.caption}>PHRASES</Text>
         <PracticeTargetChips
           targets={targets}
-          removable={targets.length > 1}
           onOpen={(target) => router.push(`/expressions/${target.id}`)}
           onRemove={remove}
           onAdd={targets.length < MAX_TARGETS ? () => setPicking(true) : undefined}

@@ -27,7 +27,7 @@ export const useTargetSelection = (initial: Expression[], vocabulary?: Expressio
 
   const remove = useCallback((index: number) => {
     setTargets((current) => {
-      if (!current[index] || current.length === 1) return current
+      if (!current[index]) return current
       return current.filter((_, i) => i !== index)
     })
   }, [])
