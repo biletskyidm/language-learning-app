@@ -1,9 +1,12 @@
-import { useEffect, useRef } from 'react'
-import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { Text } from './themed'
+import { useRef, useState, type ReactNode } from 'react'
+import { Animated, LayoutAnimation, Modal, Pressable, StyleSheet, useColorScheme, View } from 'react-native'
+import { BlurView } from 'expo-blur'
 import type { Assessment, AssessmentCategory } from '@contracts'
-import { colors, spacing } from '../theme/tokens'
+import { colors, palettes, spacing } from '../theme/tokens'
+import { overallScore } from './assessment'
 import { Score } from './score'
+import { ScoreBar } from './score-bar'
+import { Text } from './themed'
 
 const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCorrectness' | 'overallFeedback'> }[] = [
   { label: 'Context', key: 'contextCorrectness' },
@@ -13,99 +16,190 @@ const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCor
   { label: 'Naturalness', key: 'sentenceNaturalness' },
 ]
 
-const Row = ({ label, category }: { label: string; category: AssessmentCategory }) => (
-  <View style={styles.row}>
-    <View style={styles.rowHead}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Score value={category.score} style={styles.rowScore} />
+const FADE = 40
+
+const FadeScroll = ({ children }: { children: ReactNode }) => {
+  const surface = palettes[useColorScheme() === 'dark' ? 'dark' : 'light'].surface
+  const y = useRef(new Animated.Value(0)).current
+  const [size, setSize] = useState({ view: 0, content: 0 })
+  const max = Math.max(0, size.content - size.view)
+
+  return (
+    <View style={styles.fadeWrap}>
+      <Animated.ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.body}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: true })}
+        onLayout={({ nativeEvent: { layout } }) => setSize((current) => ({ ...current, view: layout.height }))}
+        onContentSizeChange={(_, content) => setSize((current) => ({ ...current, content }))}
+      >
+        {children}
+      </Animated.ScrollView>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.fade,
+          {
+            top: 0,
+            experimental_backgroundImage: `linear-gradient(to bottom, ${surface}, ${surface}00)`,
+            opacity: y.interpolate({ inputRange: [0, FADE], outputRange: [0, 1], extrapolate: 'clamp' }),
+          },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.fade,
+          {
+            bottom: 0,
+            experimental_backgroundImage: `linear-gradient(to top, ${surface}, ${surface}00)`,
+            opacity:
+              max === 0
+                ? 0
+                : y.interpolate({ inputRange: [max - FADE, max], outputRange: [1, 0], extrapolate: 'clamp' }),
+          },
+        ]}
+      />
     </View>
-    {category.feedback ? <Text style={styles.feedback}>{category.feedback}</Text> : null}
-    {category.suggestions ? <Text style={styles.suggestion}>{category.suggestions}</Text> : null}
+  )
+}
+
+type RowProps = {
+  label: string
+  category: AssessmentCategory
+  correctVersion?: string
+  open: boolean
+  onToggle: () => void
+}
+
+const Row = ({ label, category, correctVersion, open, onToggle }: RowProps) => (
+  <View style={styles.row}>
+    <Pressable
+      onPress={onToggle}
+      style={styles.rowHead}
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${category.score.toFixed(0)} of 10`}
+      accessibilityState={{ expanded: open }}
+    >
+      <Text style={styles.rowLabel} numberOfLines={2}>
+        {label}
+      </Text>
+      <View style={styles.bar}>
+        <ScoreBar score={category.score} />
+      </View>
+      <Score value={category.score} digits={0} style={styles.rowScore} />
+      <Text style={styles.toggle}>{open ? '−' : '+'}</Text>
+    </Pressable>
+    {open ? (
+      <View style={styles.detail}>
+        {category.feedback ? <Text style={styles.feedback}>{category.feedback}</Text> : null}
+        {category.suggestions ? (
+          <Text style={styles.suggestion}>
+            <Text style={styles.accent}>Try: </Text>
+            {category.suggestions}
+          </Text>
+        ) : null}
+        {correctVersion ? <Text style={styles.feedback}>✓ {correctVersion}</Text> : null}
+      </View>
+    ) : null}
   </View>
 )
 
 type Props = { assessment: Assessment; onDismiss: () => void }
 
 export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
-  const pop = useRef(new Animated.Value(0)).current
+  const [open, setOpen] = useState<string | null>(null)
   const targets = Object.entries(assessment.targetPhrasesCorrectness)
-
-  useEffect(() => {
-    Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()
-  }, [pop])
+  const toggle = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    setOpen((current) => (current === key ? null : key))
+  }
 
   return (
-    <View style={styles.backdrop}>
+    <Modal transparent animationType="fade" onRequestClose={onDismiss}>
+      <BlurView intensity={40} tint="systemUltraThinMaterial" style={StyleSheet.absoluteFill} />
       <Pressable
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, styles.dim]}
         onPress={onDismiss}
         accessibilityRole="button"
         accessibilityLabel="Dismiss assessment"
       />
-      <Animated.View
-        style={[
-          styles.card,
-          { opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] },
-        ]}
-      >
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
-          {CATEGORIES.map(({ label, key }) => (
-            <Row key={key} label={label} category={assessment[key]} />
-          ))}
-          {targets.length ? (
-            <View style={styles.targets}>
-              <Text style={styles.heading}>Targets</Text>
-              {targets.map(([expression, target]) => (
-                <View key={expression} style={styles.row}>
-                  <Row label={expression} category={target} />
-                  {target.correctVersion ? (
-                    <Text style={styles.correct}>{target.correctVersion}</Text>
-                  ) : null}
-                </View>
-              ))}
+      <View pointerEvents="box-none" style={styles.center}>
+        <View style={styles.card}>
+          <FadeScroll>
+            <Pressable
+              onPress={() => toggle('strengths')}
+              style={styles.hero}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: open === 'strengths' }}
+            >
+              <Score value={overallScore(assessment)} style={styles.heroScore} />
+              <Text style={styles.strengths} numberOfLines={open === 'strengths' ? undefined : 3}>
+                {assessment.overallFeedback.strengths}
+              </Text>
+            </Pressable>
+            {CATEGORIES.map(({ label, key }) => (
+              <Row
+                key={key}
+                label={label}
+                category={assessment[key]}
+                open={open === key}
+                onToggle={() => toggle(key)}
+              />
+            ))}
+            {targets.length ? <Text style={styles.section}>Targets</Text> : null}
+            {targets.map(([expression, target]) => (
+              <Row
+                key={expression}
+                label={expression}
+                category={target}
+                correctVersion={target.correctVersion}
+                open={open === `target:${expression}`}
+                onToggle={() => toggle(`target:${expression}`)}
+              />
+            ))}
+            <View style={styles.improve}>
+              <Text style={styles.section}>To improve</Text>
+              <Text style={styles.feedback}>{assessment.overallFeedback.areasForImprovement}</Text>
             </View>
-          ) : null}
-          <View style={styles.targets}>
-            <Text style={styles.heading}>Overall</Text>
-            <Text style={styles.feedback}>{assessment.overallFeedback.strengths}</Text>
-            <Text style={styles.suggestion}>{assessment.overallFeedback.areasForImprovement}</Text>
-          </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
+          </FadeScroll>
+        </View>
+      </View>
+    </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: colors.scrim,
-    justifyContent: 'center',
-    padding: spacing.sm,
-  },
+  dim: { backgroundColor: 'rgba(0,0,0,0.12)' },
+  center: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.md },
   card: {
-    maxHeight: '92%',
+    maxHeight: '80%',
     borderRadius: 20,
     backgroundColor: colors.surface,
     overflow: 'hidden',
     shadowColor: colors.shadow,
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
   },
-  scroll: { flexShrink: 1 },
-  body: { gap: spacing.md, padding: spacing.md },
-  row: { gap: 2 },
-  rowHead: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-  rowLabel: { flexShrink: 1, fontWeight: '600', fontSize: 15 },
-  rowScore: { fontWeight: '700', fontSize: 15 },
-  feedback: { fontSize: 14 },
-  suggestion: { color: colors.muted, fontSize: 14 },
-  targets: { gap: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
-  heading: { fontWeight: '700', fontSize: 15 },
-  correct: { fontSize: 14, paddingTop: 2 },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: spacing.md, paddingBottom: 12 },
+  heroScore: { fontSize: 34, fontWeight: '800' },
+  strengths: { flex: 1, fontSize: 12, lineHeight: 16, color: colors.muted },
+  fadeWrap: { flexShrink: 1 },
+  scroll: { flexGrow: 0 },
+  body: { paddingHorizontal: spacing.md, paddingBottom: 12 },
+  fade: { position: 'absolute', left: 0, right: 0, height: FADE },
+  section: { fontSize: 11, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', paddingTop: 12, paddingBottom: 2 },
+  row: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11 },
+  rowLabel: { width: 120, fontSize: 14, fontWeight: '600' },
+  bar: { flex: 1 },
+  rowScore: { width: 22, textAlign: 'right', fontSize: 14, fontWeight: '800' },
+  toggle: { width: 14, textAlign: 'center', fontSize: 16, color: colors.muted },
+  detail: { gap: 6, paddingBottom: 12 },
+  feedback: { fontSize: 13, lineHeight: 18 },
+  suggestion: { fontSize: 13, lineHeight: 18, color: colors.muted },
+  accent: { fontSize: 12, fontWeight: '700', color: colors.ok },
+  improve: { gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
 })
