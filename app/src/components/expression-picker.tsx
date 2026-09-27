@@ -5,22 +5,17 @@ import type { Expression } from '@contracts'
 import { DEFAULT_FILTERS } from '../api/expression-filters'
 import { useExpressions } from '../api/use-expressions'
 import { colors, spacing } from '../theme/tokens'
-import { Chip } from './chip'
 import { SrsSummary } from './srs-summary'
-import { TagPicker } from './tag-picker'
 
 type Props = {
-  title: string
   excludedIds: string[]
   onSelect: (expression: Expression) => void
   onClose: () => void
 }
 
-export const ExpressionPicker = ({ title, excludedIds, onSelect, onClose }: Props) => {
+export const ExpressionPicker = ({ excludedIds, onSelect, onClose }: Props) => {
   const [search, setSearch] = useState('')
-  const [tag, setTag] = useState<string | undefined>(undefined)
-  const [pickingTag, setPickingTag] = useState(false)
-  const expressions = useExpressions({ ...DEFAULT_FILTERS, search, tag })
+  const expressions = useExpressions({ ...DEFAULT_FILTERS, search })
   const items = (expressions.data?.items ?? []).filter((item) => !excludedIds.includes(item.id))
 
   const choose = (expression: Expression) => {
@@ -31,35 +26,50 @@ export const ExpressionPicker = ({ title, excludedIds, onSelect, onClose }: Prop
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.sheet}>
+        <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <Pressable onPress={onClose} accessibilityRole="button">
-            <Text style={styles.done}>Cancel</Text>
+          <View style={styles.search}>
+            <Text style={styles.searchIcon} accessibilityElementsHidden importantForAccessibility="no">
+              🔍
+            </Text>
+            <TextInput
+              style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search your phrases"
+              placeholderTextColor={colors.muted}
+              accessibilityLabel="Search your phrases"
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+            />
+          </View>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            hitSlop={8}
+            style={styles.close}
+          >
+            <Text style={styles.closeLabel}>✕</Text>
           </Pressable>
         </View>
-        <TextInput
-          style={styles.search}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search expression or meaning"
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
-        />
-        <View style={styles.row}>
-          <Chip label={tag ? `#${tag}` : 'Tag…'} active={Boolean(tag)} onPress={() => setPickingTag(true)} />
-        </View>
-        {pickingTag ? (
-          <TagPicker selected={tag} onSelect={setTag} onClose={() => setPickingTag(false)} />
-        ) : null}
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
           keyboardDismissMode="on-drag"
           renderItem={({ item }) => (
-            <Pressable onPress={() => choose(item)} style={styles.option} accessibilityRole="button">
+            <Pressable
+              onPress={() => choose(item)}
+              style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.expression}, ${item.meaning}`}
+              accessibilityHint="Adds it to this session"
+            >
               <Text style={styles.expression}>{item.expression}</Text>
-              <Text style={styles.meaning}>{item.meaning}</Text>
+              <Text style={styles.meaning} numberOfLines={2}>
+                {item.meaning}
+              </Text>
               <SrsSummary expression={item} now={new Date()} style={styles.stats} />
             </Pressable>
           )}
@@ -80,16 +90,40 @@ export const ExpressionPicker = ({ title, excludedIds, onSelect, onClose }: Prop
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1, padding: spacing.md, gap: spacing.sm, backgroundColor: colors.surface },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 17, fontWeight: '600' },
-  done: { fontSize: 16, color: colors.ok, fontWeight: '600' },
-  search: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm },
-  row: { flexDirection: 'row', gap: spacing.sm },
-  option: { paddingVertical: spacing.sm, gap: 2 },
-  expression: { fontSize: 15, fontWeight: '600' },
+  sheet: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    gap: spacing.sm + 4,
+    backgroundColor: colors.surface,
+  },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: colors.border },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  search: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bubble,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+  },
+  searchIcon: { fontSize: 14, opacity: 0.6 },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 16 },
+  close: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.bubble,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeLabel: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  option: { paddingVertical: spacing.sm + 2, gap: 2 },
+  pressed: { backgroundColor: colors.bubble },
+  expression: { fontSize: 16, fontWeight: '600' },
   meaning: { color: colors.muted },
   stats: { color: colors.muted, fontSize: 12 },
-  separator: { height: 1, backgroundColor: colors.border },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   state: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.lg },
 })
