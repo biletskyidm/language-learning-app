@@ -60,6 +60,36 @@ describe('loadPrompt', () => {
     expect(rendered).not.toContain('{{')
   })
 
+  it.each(['tutor-first-message', 'tutor-reply'] as const)(
+    'keeps the %s prompt short, single-question and free of the targets',
+    (role) => {
+      const rendered = renderPrompt(loadPrompt(role), {
+        context: 'a scrum standup',
+        style: 'informal',
+        targets: '- break the ice',
+        history: 'assistant: How did yesterday go?',
+        userContent: 'Slowly.',
+      })
+
+      expect(rendered).toContain('1-2 short sentences')
+      expect(rendered).toContain('at most one question')
+      expect(rendered).toContain('Never use these expressions')
+    },
+  )
+
+  it('drops the target section of the tutor reply prompt when there is nothing to practice', () => {
+    const rendered = renderPrompt(loadPrompt('tutor-reply'), {
+      context: 'a scrum standup',
+      style: 'informal',
+      targets: '',
+      history: 'assistant: How did yesterday go?',
+      userContent: 'Slowly.',
+    })
+
+    expect(rendered).not.toContain('practicing')
+    expect(rendered).not.toContain('{{')
+  })
+
   it('renders the assessment prompt with the targets, their meanings and what the tutor asked', () => {
     const rendered = renderPrompt(loadPrompt('assessment'), {
       context: 'a scrum standup',
