@@ -17,6 +17,7 @@ export const useCompleteTraining = () => {
     onError: (error, trainingId) => {
       if (error instanceof ApiError && (error.code === 'TRAINING_NOT_ACTIVE' || error.code === 'TURN_CONFLICT')) {
         queryClient.invalidateQueries({ queryKey: [TRAININGS_KEY, 'detail', trainingId] })
+        queryClient.invalidateQueries({ queryKey: [TRAININGS_KEY, 'list'] })
       }
     },
   })

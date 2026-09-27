@@ -110,13 +110,14 @@ describe('useCompleteTraining', () => {
   it.each([
     ['it had already ended elsewhere', 'TRAINING_NOT_ACTIVE'],
     ['a turn landed while it was ending', 'TURN_CONFLICT'],
-  ])('refetches the conversation when %s', async (_name, code) => {
+  ])('refetches the conversation and the session lists when %s', async (_name, code) => {
     mockedApiPost.mockRejectedValue(new ApiError(409, code, 'Refused'))
 
     const result = await end()
 
     await waitFor(() => expect(result.current.isError).toBe(true))
     expect(queryClient.getQueryState(DETAIL_KEY)?.isInvalidated).toBe(true)
+    expect(queryClient.getQueryState(LIST_KEY)?.isInvalidated).toBe(true)
   })
 
   it('leaves the conversation active when the summary could not be written', async () => {
