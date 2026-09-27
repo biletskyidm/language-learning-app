@@ -1,6 +1,6 @@
 import { DynamicColorIOS } from 'react-native'
 
-const palettes = {
+export const palettes = {
   light: {
     text: '#000000',
     surface: '#ffffff',
