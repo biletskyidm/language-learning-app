@@ -88,13 +88,10 @@ describe('AssessmentPreview', () => {
     expect(screen.getByText(/I broke the ice with a joke/)).toBeTruthy()
   })
 
-  it('reveals the areas for improvement on demand', async () => {
+  it('always shows the areas for improvement', async () => {
     await show()
 
-    expect(screen.queryByText('stay on the topic')).toBeNull()
-
-    await fireEvent.press(row('To improve'))
-
+    expect(screen.getByText('To improve')).toBeTruthy()
     expect(screen.getByText('stay on the topic')).toBeTruthy()
   })
 

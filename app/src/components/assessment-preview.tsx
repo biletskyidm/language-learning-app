@@ -31,7 +31,7 @@ const FadeScroll = ({ children }: { children: ReactNode }) => {
         contentContainerStyle={styles.body}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: true })}
-        onLayout={(event) => setSize((current) => ({ ...current, view: event.nativeEvent.layout.height }))}
+        onLayout={({ nativeEvent: { layout } }) => setSize((current) => ({ ...current, view: layout.height }))}
         onContentSizeChange={(_, content) => setSize((current) => ({ ...current, content }))}
       >
         {children}
@@ -127,18 +127,18 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
       />
       <View pointerEvents="box-none" style={styles.center}>
         <View style={styles.card}>
-          <Pressable
-            onPress={() => toggle('strengths')}
-            style={styles.hero}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: open === 'strengths' }}
-          >
-            <Score value={overallScore(assessment)} style={styles.heroScore} />
-            <Text style={styles.strengths} numberOfLines={open === 'strengths' ? undefined : 3}>
-              {assessment.overallFeedback.strengths}
-            </Text>
-          </Pressable>
           <FadeScroll>
+            <Pressable
+              onPress={() => toggle('strengths')}
+              style={styles.hero}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: open === 'strengths' }}
+            >
+              <Score value={overallScore(assessment)} style={styles.heroScore} />
+              <Text style={styles.strengths} numberOfLines={open === 'strengths' ? undefined : 3}>
+                {assessment.overallFeedback.strengths}
+              </Text>
+            </Pressable>
             {CATEGORIES.map(({ label, key }) => (
               <Row
                 key={key}
@@ -160,17 +160,8 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
               />
             ))}
             <View style={styles.improve}>
-              <Pressable
-                onPress={() => toggle('improve')}
-                accessibilityRole="button"
-                accessibilityLabel="To improve"
-                accessibilityState={{ expanded: open === 'improve' }}
-              >
-                <Text style={styles.accent}>To improve {open === 'improve' ? '−' : '+'}</Text>
-              </Pressable>
-              {open === 'improve' ? (
-                <Text style={styles.feedback}>{assessment.overallFeedback.areasForImprovement}</Text>
-              ) : null}
+              <Text style={styles.section}>To improve</Text>
+              <Text style={styles.feedback}>{assessment.overallFeedback.areasForImprovement}</Text>
             </View>
           </FadeScroll>
         </View>
@@ -192,7 +183,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
   },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: spacing.md, paddingBottom: 12 },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: spacing.md, paddingBottom: 12 },
   heroScore: { fontSize: 34, fontWeight: '800' },
   strengths: { flex: 1, fontSize: 12, lineHeight: 16, color: colors.muted },
   fadeWrap: { flexShrink: 1 },
@@ -210,5 +201,5 @@ const styles = StyleSheet.create({
   feedback: { fontSize: 13, lineHeight: 18 },
   suggestion: { fontSize: 13, lineHeight: 18, color: colors.muted },
   accent: { fontSize: 12, fontWeight: '700', color: colors.ok },
-  improve: { gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 },
+  improve: { gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
 })
