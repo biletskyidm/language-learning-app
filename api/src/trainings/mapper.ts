@@ -1,5 +1,12 @@
 import { ObjectId } from 'mongodb'
-import { trainingSchema, trainingSummarySchema, type Training, type TrainingSummary } from '@contracts'
+import {
+  describeVerdictSchema,
+  smuggleVerdictSchema,
+  trainingSchema,
+  trainingSummarySchema,
+  type Training,
+  type TrainingSummary,
+} from '@contracts'
 
 export type TrainingDoc = { _id: ObjectId } & Record<string, unknown>
 
@@ -9,10 +16,24 @@ export const toDomain = (doc: TrainingDoc): Training => {
   return trainingSchema.parse({ ...rest, id: _id.toHexString() })
 }
 
+const verdictScores = (verdict: unknown) => {
+  const smuggle = smuggleVerdictSchema.safeParse(verdict)
+  if (smuggle.success) return smuggle.data.results.map(({ score }) => score)
+  const describe = describeVerdictSchema.safeParse(verdict)
+
+  return describe.success ? [describe.data.score] : []
+}
+
+const drillScores = (rounds: unknown) =>
+  Array.isArray(rounds) ? rounds.flatMap((round) => verdictScores(round?.verdict)) : []
+
+export const summarize = ({ rounds, ...rest }: Record<string, unknown>): TrainingSummary =>
+  trainingSummarySchema.parse({ ...rest, scores: rest.aggregates ? drillScores(rounds) : undefined })
+
 export const toSummary = (doc: TrainingDoc): TrainingSummary => {
   const { _id, ...rest } = doc
 
-  return trainingSummarySchema.parse({ ...rest, id: _id.toHexString() })
+  return summarize({ ...rest, id: _id.toHexString() })
 }
 
 export const toDoc = (training: Training): TrainingDoc => {

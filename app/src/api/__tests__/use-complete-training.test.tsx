@@ -59,9 +59,9 @@ const DETAIL_KEY = [TRAININGS_KEY, 'detail', 't1']
 const HISTORY_KEY = [EXPRESSIONS_KEY, 'history', 'e1']
 
 const end = async () => {
-  const { result } = await renderHook(() => useCompleteTraining('t1'), { wrapper })
+  const { result } = await renderHook(() => useCompleteTraining(), { wrapper })
   await act(async () => {
-    result.current.mutate()
+    result.current.mutate('t1')
   })
 
   return result

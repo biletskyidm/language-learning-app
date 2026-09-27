@@ -1,9 +1,11 @@
+import { Fragment } from 'react'
 import { router } from 'expo-router'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Text } from './themed'
 import type { TrainingStatus, TrainingSummary, TrainingType } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { AveragesLine } from './averages-line'
+import { Score } from './score'
 import { trainingRoute } from './training-route'
 
 export const TRAINING_TYPE_NAMES: Record<TrainingType, string> = {
@@ -25,6 +27,7 @@ export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; o
   const route = trainingRoute(training.type, training.id, training.status)
   const openable = route !== undefined
   const resumable = openable && training.status === 'ACTIVE'
+  const { scores } = training
   const averages = training.finalAssessment?.averages
 
   return (
@@ -44,6 +47,17 @@ export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; o
           {training.createdAt.toLocaleDateString()}
         </Text>
         {averages ? <AveragesLine averages={averages} style={styles.meta} /> : null}
+        {scores?.length ? (
+          <Text style={styles.meta}>
+            Score:{' '}
+            {scores.map((score, index) => (
+              <Fragment key={index}>
+                {index > 0 ? ' · ' : ''}
+                <Score value={score} digits={0} style={styles.meta} />
+              </Fragment>
+            ))}
+          </Text>
+        ) : null}
       </View>
       {onMenu && training.status === 'ACTIVE' ? (
         <Pressable onPress={onMenu} accessibilityRole="button" accessibilityLabel="Session menu" hitSlop={12}>

@@ -6,7 +6,7 @@ import Sessions from '../../app/trainings/index'
 import { apiGet } from '../api/client'
 
 jest.mock('expo-router', () => ({
-  Stack: { Screen: () => null },
+  Stack: { Screen: () => null, Toolbar: Object.assign(() => null, { Button: () => null }) },
   router: { push: jest.fn() },
   useLocalSearchParams: jest.fn(),
 }))
@@ -14,6 +14,9 @@ jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
 jest.mock('../api/client', () => ({ ApiError: class extends Error {}, apiGet: jest.fn(), apiPost: jest.fn() }))
 
 const mockedApiGet = apiGet as jest.MockedFunction<typeof apiGet>
+
+const trainingFetches = () =>
+  mockedApiGet.mock.calls.map(([path]) => path).filter((path) => path.startsWith('/trainings'))
 
 const renderSessions = async (params: { status?: string }) => {
   jest.mocked(useLocalSearchParams).mockReturnValue(params)
@@ -34,7 +37,7 @@ describe('Sessions', () => {
     await renderSessions({ status: 'ACTIVE' })
 
     expect(await screen.findByText('No sessions here yet')).toBeTruthy()
-    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/trainings?status=ACTIVE'])
+    expect(trainingFetches()).toEqual(['/trainings?status=ACTIVE'])
     expect(screen.getByRole('button', { name: 'Active', selected: true })).toBeTruthy()
   })
 
@@ -42,6 +45,6 @@ describe('Sessions', () => {
     await renderSessions(params)
 
     expect(await screen.findByText('No sessions here yet')).toBeTruthy()
-    expect(mockedApiGet.mock.calls.map(([path]) => path)).toEqual(['/trainings'])
+    expect(trainingFetches()).toEqual(['/trainings'])
   })
 })

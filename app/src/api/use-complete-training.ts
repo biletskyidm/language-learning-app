@@ -4,20 +4,19 @@ import { ApiError, apiPost } from './client'
 import { EXPRESSIONS_KEY } from './use-expressions'
 import { TRAININGS_KEY } from './use-training'
 
-export const useCompleteTraining = (trainingId: string) => {
+export const useCompleteTraining = () => {
   const queryClient = useQueryClient()
-  const detail = [TRAININGS_KEY, 'detail', trainingId]
 
   return useMutation({
-    mutationFn: () => apiPost(`/trainings/${trainingId}/complete`, undefined, trainingSchema),
+    mutationFn: (trainingId: string) => apiPost(`/trainings/${trainingId}/complete`, undefined, trainingSchema),
     onSuccess: (training) => {
-      queryClient.setQueryData(detail, training)
+      queryClient.setQueryData([TRAININGS_KEY, 'detail', training.id], training)
       queryClient.invalidateQueries({ queryKey: [TRAININGS_KEY, 'list'] })
       queryClient.invalidateQueries({ queryKey: [EXPRESSIONS_KEY, 'history'] })
     },
-    onError: (error) => {
+    onError: (error, trainingId) => {
       if (error instanceof ApiError && (error.code === 'TRAINING_NOT_ACTIVE' || error.code === 'TURN_CONFLICT')) {
-        queryClient.invalidateQueries({ queryKey: detail })
+        queryClient.invalidateQueries({ queryKey: [TRAININGS_KEY, 'detail', trainingId] })
       }
     },
   })

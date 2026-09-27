@@ -18,6 +18,15 @@ jest.mock('expo-router', () => ({
           </Pressable>
         )
       },
+      Menu: ({ children }: { children: React.ReactNode }) => children,
+      MenuAction: ({ children, onPress }: { children?: React.ReactNode; onPress?: () => void }) => {
+        const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native')
+        return (
+          <Pressable onPress={onPress}>
+            <Text>{children}</Text>
+          </Pressable>
+        )
+      },
     }),
   },
   useLocalSearchParams: () => ({ id: 't1' }),

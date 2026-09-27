@@ -223,6 +223,7 @@ export const trainingSummarySchema = baseTrainingSchema.omit({ srsEffects: true 
   context: z.string().optional(),
   style: chatStyleSchema.optional(),
   finalAssessment: z.object({ averages: finalAssessmentAveragesSchema }).optional(),
+  scores: z.array(z.number().min(0).max(10)).optional(),
 })
 
 export const TRAININGS_PAGE_MAX = 50

@@ -10,6 +10,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
   router: { push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: () => mockParams,
+  useNavigation: () => mockNavigation,
 }))
 jest.mock('expo-crypto', () => ({ getRandomValues: jest.fn() }))
 jest.mock('../api/client', () => ({ ApiError: class extends Error {}, apiGet: jest.fn(), apiPost: jest.fn() }))
@@ -30,6 +31,10 @@ const expression = (id: string): Expression => ({
 })
 
 let mockParams: Record<string, string> = {}
+const mockNavigation = {
+  getState: () => ({ routes: [{ key: 'home', name: 'index' }, { key: 'pick', name: 'practice' }] }),
+  reset: jest.fn(),
+}
 
 const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }
 
@@ -139,6 +144,25 @@ describe('Practice', () => {
 
     await waitFor(() => expect(mockedApiPost).toHaveBeenCalled())
     expect(mockedApiPost.mock.calls[0]?.[1]).toMatchObject({ type: 'chat', scenarioId: 's1' })
+  })
+
+  it('leaves Home › Sessions › the new session on the stack once it starts', async () => {
+    mockedApiPost.mockResolvedValue({ id: 't1', type: 'describe' })
+    mockParams = { mode: 'describe' }
+    await renderPractice()
+    await waitFor(() => expect(rows()).toHaveLength(1))
+
+    await fireEvent.press(screen.getByText('🗣️ Start describe it'))
+
+    await waitFor(() => expect(mockNavigation.reset).toHaveBeenCalled())
+    expect(mockNavigation.reset).toHaveBeenCalledWith({
+      index: 2,
+      routes: [
+        { key: 'home', name: 'index', params: undefined },
+        { name: 'trainings/index' },
+        { name: 'trainings/describe/[id]', params: { id: 't1' } },
+      ],
+    })
   })
 
   it('goes back to free text once the context is edited', async () => {

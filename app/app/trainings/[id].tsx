@@ -18,7 +18,6 @@ import { useTraining } from '../../src/api/use-training'
 import { readyToEnd } from '../../src/components/assessment'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
-import { openEndMenu } from '../../src/components/session-menu'
 import { SessionSummary } from '../../src/components/session-summary'
 import { TargetChips } from '../../src/components/target-chips'
 import { Text, TextInput } from '../../src/components/themed'
@@ -31,7 +30,7 @@ export default function Chat() {
   const insets = useSafeAreaInsets()
   const training = useTraining(id)
   const send = useSendMessage(id)
-  const complete = useCompleteTraining(id)
+  const complete = useCompleteTraining()
   const cancel = useCancelTraining()
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
@@ -63,10 +62,7 @@ export default function Chat() {
   const active = status === 'ACTIVE'
   const canEnd = active && !send.isPending && !ending
   const end = () => {
-    if (canEnd) complete.mutate()
-  }
-  const endMenu = () => {
-    if (canEnd) openEndMenu({ onEnd: () => complete.mutate(), onCancel: () => cancel.mutate(id) })
+    if (canEnd) complete.mutate(id)
   }
 
   return (
@@ -82,9 +78,14 @@ export default function Chat() {
       />
       {active ? (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button onPress={endMenu} disabled={!canEnd} tintColor={colors.error}>
-            End
-          </Stack.Toolbar.Button>
+          <Stack.Toolbar.Menu icon="ellipsis" disabled={!canEnd}>
+            <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => complete.mutate(id)}>
+              End session
+            </Stack.Toolbar.MenuAction>
+            <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={() => cancel.mutate(id)}>
+              Cancel session
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
         </Stack.Toolbar>
       ) : null}
       <TargetChips targets={targets} messages={messages} onPress={setProgress} />
