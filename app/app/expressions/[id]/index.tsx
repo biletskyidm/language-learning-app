@@ -1,5 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native'
+import { ActivityIndicator, Alert, ScrollView, StyleSheet } from 'react-native'
 import { Text } from '../../../src/components/themed'
 import { useDeleteExpression } from '../../../src/api/use-delete-expression'
 import { useExpression } from '../../../src/api/use-expression'
@@ -31,9 +31,14 @@ export default function ExpressionScreen() {
       />
       {expression.data ? (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button onPress={() => router.push(`/expressions/${id}/edit`)} disabled={remove.isPending}>
-            Edit
-          </Stack.Toolbar.Button>
+          <Stack.Toolbar.Menu icon="ellipsis" disabled={remove.isPending}>
+            <Stack.Toolbar.MenuAction icon="pencil" onPress={() => router.push(`/expressions/${id}/edit`)}>
+              Edit
+            </Stack.Toolbar.MenuAction>
+            <Stack.Toolbar.MenuAction icon="trash" destructive onPress={confirmDelete}>
+              Delete
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
         </Stack.Toolbar>
       ) : null}
       {expression.isPending ? <ActivityIndicator style={styles.state} /> : null}
@@ -43,14 +48,6 @@ export default function ExpressionScreen() {
           <ExpressionDetail expression={expression.data} />
           <ExpressionHistory id={id} />
           {remove.isError ? <Text style={styles.error}>Could not delete this expression</Text> : null}
-          <Pressable
-            onPress={confirmDelete}
-            disabled={remove.isPending}
-            accessibilityRole="button"
-            style={styles.delete}
-          >
-            <Text style={styles.deleteLabel}>Delete</Text>
-          </Pressable>
         </>
       ) : null}
     </ScrollView>
@@ -61,13 +58,4 @@ const styles = StyleSheet.create({
   container: { padding: spacing.md },
   state: { paddingVertical: spacing.lg },
   error: { color: colors.error, textAlign: 'center', paddingVertical: spacing.lg },
-  delete: {
-    marginTop: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.error,
-    borderRadius: 8,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-  },
-  deleteLabel: { color: colors.error, fontSize: 16, fontWeight: '600' },
 })
