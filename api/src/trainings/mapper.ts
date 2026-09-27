@@ -28,7 +28,7 @@ const drillScores = (rounds: unknown) =>
   Array.isArray(rounds) ? rounds.flatMap((round) => verdictScores(round?.verdict)) : []
 
 export const summarize = ({ rounds, ...rest }: Record<string, unknown>): TrainingSummary =>
-  trainingSummarySchema.parse({ ...rest, scores: rest.aggregates ? drillScores(rounds) : undefined })
+  trainingSummarySchema.parse({ ...rest, scores: rest.status === 'ACTIVE' ? undefined : drillScores(rounds) })
 
 export const toSummary = (doc: TrainingDoc): TrainingSummary => {
   const { _id, ...rest } = doc

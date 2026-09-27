@@ -137,6 +137,13 @@ describe('GET /trainings', () => {
     expect(smuggle?.scores).toEqual([9, 6])
   })
 
+  it('keeps the scores a canceled drill earned before it was dropped', async () => {
+    const [row] = (await page('', [describeDrill({ status: 'CANCELED', aggregates: undefined, canceledAt: day(1) })]))
+      .items
+
+    expect(row?.scores).toEqual([8, 5])
+  })
+
   it('leaves the scores off a drill that is still going', async () => {
     const [row] = (await page('', [describeDrill({ status: 'ACTIVE', aggregates: undefined, completedAt: undefined })]))
       .items
