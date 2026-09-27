@@ -24,7 +24,7 @@ export const ExpressionPicker = ({ excludedIds, onSelect, onClose }: Props) => {
   }
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible animationType="slide" presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={onClose}>
       <View style={styles.sheet}>
         <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
         <View style={styles.header}>
