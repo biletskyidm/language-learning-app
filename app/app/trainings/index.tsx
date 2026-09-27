@@ -20,6 +20,8 @@ export default function Sessions() {
   const cancel = useCancelTraining()
   const complete = useCompleteTraining()
   const settings = useSettings().data ?? DEFAULT_SETTINGS
+  const busy = (id: string) =>
+    (complete.isPending && complete.variables === id) || (cancel.isPending && cancel.variables === id)
 
   const empty = () => {
     if (trainings.isPending) return <ActivityIndicator style={styles.state} />
@@ -70,8 +72,11 @@ export default function Sessions() {
         renderItem={({ item }) => (
           <TrainingRow
             training={item}
-            onMenu={() =>
-              openSessionMenu({ onEnd: () => complete.mutate(item.id), onCancel: () => cancel.mutate(item.id) })
+            onMenu={
+              busy(item.id)
+                ? undefined
+                : () =>
+                    openSessionMenu({ onEnd: () => complete.mutate(item.id), onCancel: () => cancel.mutate(item.id) })
             }
           />
         )}
