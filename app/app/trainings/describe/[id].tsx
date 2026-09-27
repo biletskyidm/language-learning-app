@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text, TextInput } from '../../../src/components/themed'
 import { DESCRIBE_MAX_LENGTH } from '@contracts'
 import { ApiError } from '../../../src/api/client'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
+import { useExpression } from '../../../src/api/use-expression'
 import { useTraining } from '../../../src/api/use-training'
 import { useDescribeDraft } from '../../../src/components/describe-draft'
-import { scoreColor } from '../../../src/components/score'
+import { DescribeVerdict } from '../../../src/components/describe-verdict'
 import { openEndMenu } from '../../../src/components/session-menu'
 import { colors, spacing } from '../../../src/theme/tokens'
 
@@ -30,6 +32,8 @@ export default function Describe() {
   const session = training.data?.type === 'describe' ? training.data : undefined
   const round = session?.rounds.at(-1)
   const draft = useDescribeDraft(round)
+  const details = useExpression(round?.material.targetExpressionId)
+  const insets = useSafeAreaInsets()
   const active = session?.status === 'ACTIVE'
   const busy = next.isPending || answer.isPending || complete.isPending || cancel.isPending
 
@@ -59,6 +63,8 @@ export default function Describe() {
     }
   }
   const verdict = round?.verdict
+  const lastRound = round !== undefined && round.index + 1 >= session.targets.length
+  const advance = () => (lastRound ? complete.mutate() : next.mutate())
 
   return (
     <View style={styles.container}>
@@ -112,22 +118,14 @@ export default function Describe() {
           </>
         ) : null}
 
-        {draft.phase === 'judged' && verdict ? (
-          <>
-            <Text style={styles.description}>{draft.description}</Text>
-            <Text style={[styles.score, { color: scoreColor(verdict.score) }]}>{verdict.score} / 10</Text>
-            <Text style={styles.note}>{verdict.feedback}</Text>
-            {active ? (
-              <Pressable
-                onPress={() => next.mutate()}
-                disabled={busy}
-                accessibilityRole="button"
-                style={[styles.secondary, busy && styles.off]}
-              >
-                <Text style={styles.secondaryLabel}>Another one</Text>
-              </Pressable>
-            ) : null}
-          </>
+        {round && draft.phase === 'judged' && verdict ? (
+          <DescribeVerdict
+            expression={round.material.expression}
+            description={draft.description}
+            verdict={verdict}
+            meaning={round.targets[0]?.meaning ?? ''}
+            examples={details.data?.expression === round.material.expression ? details.data.examples : []}
+          />
         ) : null}
 
         {busy ? <ActivityIndicator style={styles.state} /> : null}
@@ -143,6 +141,20 @@ export default function Describe() {
         {complete.isError ? <Text style={styles.error}>Could not end the session — try again</Text> : null}
         {cancel.isError ? <Text style={styles.error}>Could not cancel the session — try again</Text> : null}
       </ScrollView>
+      {round && draft.phase === 'judged' && active ? (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+          <Pressable
+            onPress={advance}
+            disabled={busy}
+            accessibilityRole="button"
+            style={[styles.button, busy && styles.off]}
+          >
+            <Text style={styles.buttonLabel}>
+              {lastRound ? 'Finish session' : `Next phrase · ${round.index + 2} of ${session.targets.length}`}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -172,9 +184,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryLabel: { fontSize: 15, fontWeight: '600' },
-  description: { fontSize: 16, lineHeight: 24 },
-  score: { fontSize: 22, fontWeight: '700' },
-  note: { color: colors.muted },
+  footer: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
   summary: { fontWeight: '600' },
   canceled: { color: colors.muted },
   off: { opacity: 0.4 },
