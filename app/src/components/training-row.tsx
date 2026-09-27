@@ -71,7 +71,7 @@ export const TrainingRow = ({ training, onMenu }: { training: TrainingSummary; o
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   icon: { fontSize: 22 },
-  body: { flex: 1, gap: 2 },
+  body: { flex: 1, gap: 3 },
   title: { fontSize: 16, fontWeight: '600' },
   meta: { color: colors.muted, fontSize: 12 },
   active: { color: colors.ok, fontWeight: '600' },
