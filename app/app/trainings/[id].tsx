@@ -155,7 +155,7 @@ const INPUT_MAX_HEIGHT = 120
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  messages: { flexGrow: 1, justifyContent: 'flex-end', padding: spacing.md, gap: spacing.sm },
+  messages: { padding: spacing.md, gap: spacing.sm },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
