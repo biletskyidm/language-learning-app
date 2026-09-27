@@ -139,7 +139,6 @@ const Targets = ({ initial, mode, onMode, draft }: TargetsProps) => {
     <>
       {picking ? (
         <ExpressionPicker
-          title="Add an expression"
           excludedIds={targets.map((target) => target.id)}
           onSelect={add}
           onClose={() => setPicking(false)}
