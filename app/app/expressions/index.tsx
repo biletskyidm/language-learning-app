@@ -43,7 +43,7 @@ export default function Expressions() {
         }}
       />
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button icon="plus" onPress={() => router.push('/expressions/new')} tintColor={colors.ok} />
+        <Stack.Toolbar.Button icon="plus" onPress={() => router.push('/expressions/new')} />
       </Stack.Toolbar>
       <TextInput
         style={styles.search}
