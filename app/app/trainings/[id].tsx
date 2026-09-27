@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import {
   ActivityIndicator,
@@ -37,7 +37,6 @@ export default function Chat() {
   const [preview, setPreview] = useState<ChatMessage | null>(null)
   const [progress, setProgress] = useState<TrainingTarget | null>(null)
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
-  const list = useRef<FlatList<ChatMessage>>(null)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
   if (training.isError) return <Text style={styles.error}>Could not open this conversation</Text>
@@ -105,13 +104,12 @@ export default function Chat() {
         </View>
       ) : null}
       <FlatList
-        ref={list}
-        data={messages}
-        keyExtractor={(_, index) => String(index)}
+        inverted
+        data={[...messages].reverse()}
+        keyExtractor={(_, index) => String(messages.length - 1 - index)}
         renderItem={({ item }) => <MessageBubble message={item} onPreview={() => setPreview(item)} />}
-        contentContainerStyle={[styles.messages, !active && { paddingBottom: insets.bottom + spacing.md }]}
-        ListFooterComponent={send.isPending ? <TypingIndicator /> : null}
-        onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
+        contentContainerStyle={[styles.messages, !active && { paddingTop: insets.bottom + spacing.md }]}
+        ListHeaderComponent={send.isPending ? <TypingIndicator /> : null}
       />
       {ending ? <ActivityIndicator style={styles.state} /> : null}
       {complete.isError ? <Text style={styles.error}>Could not end the session — try again</Text> : null}
@@ -157,7 +155,7 @@ const INPUT_MAX_HEIGHT = 120
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  messages: { padding: spacing.md, gap: spacing.sm },
+  messages: { flexGrow: 1, justifyContent: 'flex-end', padding: spacing.md, gap: spacing.sm },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
