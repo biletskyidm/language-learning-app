@@ -123,8 +123,8 @@ export default function Describe() {
             expression={round.material.expression}
             description={draft.description}
             verdict={verdict}
-            meaning={details.data?.meaning ?? round.targets[0]?.meaning ?? ''}
-            examples={details.data?.examples ?? []}
+            meaning={round.targets[0]?.meaning ?? ''}
+            examples={details.data?.expression === round.material.expression ? details.data.examples : []}
           />
         ) : null}
 
