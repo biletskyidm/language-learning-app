@@ -83,4 +83,23 @@ describe('Sessions', () => {
     expect(jest.mocked(apiPost).mock.calls[0]?.[0]).toBe(path)
     await waitFor(() => expect(screen.queryByLabelText('Session menu')).toBeNull())
   })
+
+  it('keeps every ending row hidden when a second row is ended before the first settles', async () => {
+    jest.mocked(apiPost).mockReturnValue(new Promise(() => undefined))
+    jest.spyOn(ActionSheetIOS, 'showActionSheetWithOptions').mockImplementation(({ options }, onPick) =>
+      onPick(options.indexOf('End session')),
+    )
+    await renderSessions({}, [active, { ...active, id: 't2', context: 'a retro' }])
+
+    const [first] = await screen.findAllByLabelText('Session menu')
+    await fireEvent.press(first!)
+    await waitFor(() => expect(screen.getAllByLabelText('Session menu')).toHaveLength(1))
+    await fireEvent.press(screen.getByLabelText('Session menu'))
+
+    await waitFor(() => expect(screen.queryByLabelText('Session menu')).toBeNull())
+    expect(jest.mocked(apiPost).mock.calls.map(([path]) => path)).toEqual([
+      '/trainings/t1/complete',
+      '/trainings/t2/complete',
+    ])
+  })
 })

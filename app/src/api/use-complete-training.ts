@@ -8,6 +8,7 @@ export const useCompleteTraining = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    mutationKey: [TRAININGS_KEY, 'complete'],
     mutationFn: (trainingId: string) => apiPost(`/trainings/${trainingId}/complete`, undefined, trainingSchema),
     onSuccess: (training) => {
       queryClient.setQueryData([TRAININGS_KEY, 'detail', training.id], training)

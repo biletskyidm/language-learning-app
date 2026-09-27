@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutationState } from '@tanstack/react-query'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../../src/components/themed'
@@ -6,6 +7,7 @@ import { DEFAULT_SETTINGS, trainingStatusSchema, trainingTypeSchema } from '@con
 import { useCancelTraining } from '../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../src/api/use-complete-training'
 import { useSettings } from '../../src/api/use-settings'
+import { TRAININGS_KEY } from '../../src/api/use-training'
 import { useTrainings, type TrainingFilters } from '../../src/api/use-trainings'
 import { Chip } from '../../src/components/chip'
 import { openPracticeSheet } from '../../src/components/practice-sheet'
@@ -20,8 +22,10 @@ export default function Sessions() {
   const cancel = useCancelTraining()
   const complete = useCompleteTraining()
   const settings = useSettings().data ?? DEFAULT_SETTINGS
-  const busy = (id: string) =>
-    (complete.isPending && complete.variables === id) || (cancel.isPending && cancel.variables === id)
+  const ending = useMutationState({
+    filters: { mutationKey: [TRAININGS_KEY], status: 'pending' },
+    select: (mutation) => mutation.state.variables,
+  })
 
   const empty = () => {
     if (trainings.isPending) return <ActivityIndicator style={styles.state} />
@@ -73,7 +77,7 @@ export default function Sessions() {
           <TrainingRow
             training={item}
             onMenu={
-              busy(item.id)
+              ending.includes(item.id)
                 ? undefined
                 : () =>
                     openSessionMenu({ onEnd: () => complete.mutate(item.id), onCancel: () => cancel.mutate(item.id) })
