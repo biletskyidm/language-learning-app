@@ -69,7 +69,12 @@ export default function Home() {
               <CountTile label="Never practiced" count={data?.unpracticed} total={data?.total} />
             </View>
             <Card>
-              <WeekChart week={data?.week} today={(new Date().getDay() + 6) % 7} barHeight={90} />
+              <WeekChart
+                week={data?.week}
+                today={(new Date().getDay() + 6) % 7}
+                goal={settings.dailyGoal}
+                barHeight={90}
+              />
             </Card>
             {data?.active.count ? (
               <Card>

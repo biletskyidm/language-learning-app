@@ -8,6 +8,8 @@ export const TARGETS_BOUNDS = {
   smuggleTargets: { min: 1, max: 10, fallback: 3 },
 } as const
 
+export const DAILY_GOAL_BOUNDS = { min: 1, max: 50, fallback: 3 } as const
+
 type Bounds = { min: number; max: number; fallback: number }
 
 const bounded = ({ min, max }: Bounds) => z.number().int().min(min).max(max)
@@ -18,6 +20,7 @@ const shape = {
   describeTargets: bounded(TARGETS_BOUNDS.describeTargets),
   smuggleTargets: bounded(TARGETS_BOUNDS.smuggleTargets),
   defaultStyle: chatStyleSchema,
+  dailyGoal: bounded(DAILY_GOAL_BOUNDS),
 }
 
 export const settingsInputSchema = z.object(shape)
@@ -28,6 +31,7 @@ export const settingsSchema = z.object({
   describeTargets: shape.describeTargets.default(TARGETS_BOUNDS.describeTargets.fallback),
   smuggleTargets: shape.smuggleTargets.default(TARGETS_BOUNDS.smuggleTargets.fallback),
   defaultStyle: shape.defaultStyle.default('informal'),
+  dailyGoal: shape.dailyGoal.default(DAILY_GOAL_BOUNDS.fallback),
 })
 
 export type Settings = z.infer<typeof settingsSchema>

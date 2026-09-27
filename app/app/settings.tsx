@@ -2,6 +2,7 @@ import { Stack, router } from 'expo-router'
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native'
 import { Text } from '../src/components/themed'
 import {
+  DAILY_GOAL_BOUNDS,
   TARGETS_BOUNDS,
   type ChatStyle,
   type Settings,
@@ -68,6 +69,14 @@ const Form = ({ settings }: { settings: Settings }) => {
           onChange={(next) => update.mutate({ ...settings, [field]: next })}
         />
       ))}
+      <Text style={styles.heading}>Daily goal</Text>
+      <Stepper
+        label="Phrases per day"
+        value={settings.dailyGoal}
+        min={DAILY_GOAL_BOUNDS.min}
+        max={DAILY_GOAL_BOUNDS.max}
+        onChange={(next) => update.mutate({ ...settings, dailyGoal: next })}
+      />
       <Text style={styles.heading}>Default chat style</Text>
       <View style={styles.styles}>
         {STYLES.map(([value, label]) => (

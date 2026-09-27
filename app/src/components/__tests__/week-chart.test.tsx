@@ -5,7 +5,7 @@ import { colors } from '../../theme/tokens'
 
 describe('WeekChart', () => {
   it('labels each day from Monday to Sunday with its count', async () => {
-    await render(<WeekChart week={[3, 0, 5, 1, 0, 0, 2]} today={2} />)
+    await render(<WeekChart week={[3, 0, 5, 1, 0, 0, 2]} today={2} goal={3} />)
 
     expect(screen.getByLabelText('Mon: 3')).toBeTruthy()
     expect(screen.getByLabelText('Tue: 0')).toBeTruthy()
@@ -14,30 +14,30 @@ describe('WeekChart', () => {
   })
 
   it('scales the tallest bar to the given height', async () => {
-    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} barHeight={90} />)
+    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} goal={3} barHeight={90} />)
 
     expect(screen.getByTestId('bar-Tue')).toHaveStyle({ height: 90 })
     expect(screen.getByTestId('bar-Mon')).toHaveStyle({ height: 45 })
   })
 
   it('draws bars 120 high by default', async () => {
-    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} />)
+    await render(<WeekChart week={[3, 6, 0, 0, 0, 0, 0]} today={2} goal={3} />)
 
     expect(screen.getByTestId('bar-Tue')).toHaveStyle({ height: 120 })
   })
 
   it('colors past bars by the daily goal and leaves future ones neutral', async () => {
-    await render(<WeekChart week={[3, 1, 0, 5, 0, 0, 0]} today={2} />)
+    await render(<WeekChart week={[3, 1, 0, 5, 0, 0, 0]} today={2} goal={3} />)
 
     expect(screen.getByTestId('bar-Mon')).toHaveStyle({ backgroundColor: colors.ok })
-    expect(screen.getByTestId('bar-Tue')).toHaveStyle({ backgroundColor: colors.error })
+    expect(screen.getByTestId('bar-Tue')).toHaveStyle({ backgroundColor: colors.warn })
     expect(screen.getByTestId('bar-Wed')).toHaveStyle({ backgroundColor: colors.error })
     expect(screen.getByTestId('bar-Thu')).toHaveStyle({ backgroundColor: colors.border })
   })
 
   it('shows placeholder bars under the day labels while loading', async () => {
     jest.useFakeTimers()
-    await render(<WeekChart today={2} />)
+    await render(<WeekChart today={2} goal={3} />)
 
     expect(screen.getByText('Mon')).toBeTruthy()
     expect(screen.getByText('Sun')).toBeTruthy()

@@ -56,6 +56,7 @@ describe('GET /settings', () => {
       describeTargets: 1,
       smuggleTargets: 3,
       defaultStyle: 'informal',
+      dailyGoal: 3,
     })
   })
 
@@ -86,6 +87,8 @@ describe('PUT /settings', () => {
     ['describeTargets', 0],
     ['smuggleTargets', 11],
     ['gapsTargets', 2.5],
+    ['dailyGoal', 0],
+    ['dailyGoal', 51],
   ])('rejects %s of %s', async (field, value) => {
     const { app } = harness()
 
