@@ -1,11 +1,11 @@
-import { useRef, useState, type ReactNode } from 'react'
-import { Animated, LayoutAnimation, Modal, Pressable, StyleSheet, useColorScheme, View } from 'react-native'
+import { useState } from 'react'
+import { LayoutAnimation, Modal, Pressable, StyleSheet, View } from 'react-native'
 import { BlurView } from 'expo-blur'
 import type { Assessment, AssessmentCategory } from '@contracts'
-import { colors, palettes, spacing } from '../theme/tokens'
+import { colors, spacing } from '../theme/tokens'
 import { overallScore } from './assessment'
 import { Score } from './score'
-import { ScoreBar } from './score-bar'
+import { FadeScroll, scoreboard, ScoreLine } from './scoreboard'
 import { Text } from './themed'
 
 const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCorrectness' | 'overallFeedback'> }[] = [
@@ -16,55 +16,6 @@ const CATEGORIES: { label: string; key: keyof Omit<Assessment, 'targetPhrasesCor
   { label: 'Naturalness', key: 'sentenceNaturalness' },
 ]
 
-const FADE = 40
-
-const FadeScroll = ({ children }: { children: ReactNode }) => {
-  const surface = palettes[useColorScheme() === 'dark' ? 'dark' : 'light'].surface
-  const y = useRef(new Animated.Value(0)).current
-  const [size, setSize] = useState({ view: 0, content: 0 })
-  const max = Math.max(0, size.content - size.view)
-
-  return (
-    <View style={styles.fadeWrap}>
-      <Animated.ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.body}
-        scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: true })}
-        onLayout={({ nativeEvent: { layout } }) => setSize((current) => ({ ...current, view: layout.height }))}
-        onContentSizeChange={(_, content) => setSize((current) => ({ ...current, content }))}
-      >
-        {children}
-      </Animated.ScrollView>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.fade,
-          {
-            top: 0,
-            experimental_backgroundImage: `linear-gradient(to bottom, ${surface}, ${surface}00)`,
-            opacity: y.interpolate({ inputRange: [0, FADE], outputRange: [0, 1], extrapolate: 'clamp' }),
-          },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.fade,
-          {
-            bottom: 0,
-            experimental_backgroundImage: `linear-gradient(to top, ${surface}, ${surface}00)`,
-            opacity:
-              max === 0
-                ? 0
-                : y.interpolate({ inputRange: [max - FADE, max], outputRange: [1, 0], extrapolate: 'clamp' }),
-          },
-        ]}
-      />
-    </View>
-  )
-}
-
 type RowProps = {
   label: string
   category: AssessmentCategory
@@ -74,33 +25,25 @@ type RowProps = {
 }
 
 const Row = ({ label, category, correctVersion, open, onToggle }: RowProps) => (
-  <View style={styles.row}>
+  <View style={scoreboard.row}>
     <Pressable
       onPress={onToggle}
-      style={styles.rowHead}
       accessibilityRole="button"
       accessibilityLabel={`${label} ${category.score.toFixed(0)} of 10`}
       accessibilityState={{ expanded: open }}
     >
-      <Text style={styles.rowLabel} numberOfLines={2}>
-        {label}
-      </Text>
-      <View style={styles.bar}>
-        <ScoreBar score={category.score} />
-      </View>
-      <Score value={category.score} digits={0} style={styles.rowScore} />
-      <Text style={styles.toggle}>{open ? '−' : '+'}</Text>
+      <ScoreLine label={label} score={category.score} open={open} />
     </Pressable>
     {open ? (
       <View style={styles.detail}>
-        {category.feedback ? <Text style={styles.feedback}>{category.feedback}</Text> : null}
+        {category.feedback ? <Text style={scoreboard.text}>{category.feedback}</Text> : null}
         {category.suggestions ? (
           <Text style={styles.suggestion}>
             <Text style={styles.accent}>Try: </Text>
             {category.suggestions}
           </Text>
         ) : null}
-        {correctVersion ? <Text style={styles.feedback}>✓ {correctVersion}</Text> : null}
+        {correctVersion ? <Text style={scoreboard.text}>✓ {correctVersion}</Text> : null}
       </View>
     ) : null}
   </View>
@@ -126,15 +69,15 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
         accessibilityLabel="Dismiss assessment"
       />
       <View pointerEvents="box-none" style={styles.center}>
-        <View style={styles.card}>
+        <View style={[scoreboard.card, styles.card]}>
           <FadeScroll>
             <Pressable
               onPress={() => toggle('strengths')}
-              style={styles.hero}
+              style={scoreboard.hero}
               accessibilityRole="button"
               accessibilityState={{ expanded: open === 'strengths' }}
             >
-              <Score value={overallScore(assessment)} style={styles.heroScore} />
+              <Score value={overallScore(assessment)} style={scoreboard.heroScore} />
               <Text style={styles.strengths} numberOfLines={open === 'strengths' ? undefined : 3}>
                 {assessment.overallFeedback.strengths}
               </Text>
@@ -148,7 +91,7 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
                 onToggle={() => toggle(key)}
               />
             ))}
-            {targets.length ? <Text style={styles.section}>Targets</Text> : null}
+            {targets.length ? <Text style={scoreboard.section}>Targets</Text> : null}
             {targets.map(([expression, target]) => (
               <Row
                 key={expression}
@@ -160,8 +103,8 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
               />
             ))}
             <View style={styles.improve}>
-              <Text style={styles.section}>To improve</Text>
-              <Text style={styles.feedback}>{assessment.overallFeedback.areasForImprovement}</Text>
+              <Text style={scoreboard.section}>To improve</Text>
+              <Text style={scoreboard.text}>{assessment.overallFeedback.areasForImprovement}</Text>
             </View>
           </FadeScroll>
         </View>
@@ -173,32 +116,9 @@ export const AssessmentPreview = ({ assessment, onDismiss }: Props) => {
 const styles = StyleSheet.create({
   dim: { backgroundColor: 'rgba(0,0,0,0.12)' },
   center: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.md },
-  card: {
-    maxHeight: '80%',
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: spacing.md, paddingBottom: 12 },
-  heroScore: { fontSize: 34, fontWeight: '800' },
+  card: { maxHeight: '80%' },
   strengths: { flex: 1, fontSize: 12, lineHeight: 16, color: colors.muted },
-  fadeWrap: { flexShrink: 1 },
-  scroll: { flexGrow: 0 },
-  body: { paddingHorizontal: spacing.md, paddingBottom: 12 },
-  fade: { position: 'absolute', left: 0, right: 0, height: FADE },
-  section: { fontSize: 11, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', paddingTop: 12, paddingBottom: 2 },
-  row: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11 },
-  rowLabel: { width: 120, fontSize: 14, fontWeight: '600' },
-  bar: { flex: 1 },
-  rowScore: { width: 22, textAlign: 'right', fontSize: 14, fontWeight: '800' },
-  toggle: { width: 14, textAlign: 'center', fontSize: 16, color: colors.muted },
   detail: { gap: 6, paddingBottom: 12 },
-  feedback: { fontSize: 13, lineHeight: 18 },
   suggestion: { fontSize: 13, lineHeight: 18, color: colors.muted },
   accent: { fontSize: 12, fontWeight: '700', color: colors.ok },
   improve: { gap: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },

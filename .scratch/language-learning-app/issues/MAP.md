@@ -46,6 +46,7 @@ Tick when done. "Blocked by" lists issue numbers that must be done first.
 - [ ] **38** [Expression picker sheet header](38-expression-picker-sheet-header.md) — blocked by: 37
 - [ ] **39** [Chat tutor tone and typing scroll](39-chat-tutor-tone-and-typing-scroll.md) — blocked by: 14
 - [x] **40** [Assessment preview scoreboard](40-assessment-preview-scoreboard.md) — blocked by: 15, 28
+- [x] **41** [Session summary scoreboard](41-session-summary-scoreboard.md) — blocked by: 40
 
 Milestone 1 (daily use) = redeploy after 20 lands (vocab + chat complete).
 
