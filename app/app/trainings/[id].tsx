@@ -88,7 +88,7 @@ export default function Chat() {
         </Stack.Toolbar>
       ) : null}
       <TargetChips targets={targets} messages={messages} onPress={setProgress} />
-      {finalAssessment ? <SessionSummary finalAssessment={finalAssessment} /> : null}
+      {finalAssessment ? <SessionSummary finalAssessment={finalAssessment} capped /> : null}
       {status === 'CANCELED' ? <Text style={styles.canceled}>Session canceled</Text> : null}
       {active && readyToEnd(targets, messages) ? (
         <View style={styles.nudge}>
