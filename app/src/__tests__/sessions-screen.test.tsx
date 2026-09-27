@@ -47,4 +47,11 @@ describe('Sessions', () => {
     expect(await screen.findByText('No sessions here yet')).toBeTruthy()
     expect(trainingFetches()).toEqual(['/trainings'])
   })
+
+  it('offers no Gaps filter', async () => {
+    await renderSessions({})
+
+    expect(await screen.findByText('Describe-it')).toBeTruthy()
+    expect(screen.queryByText('Gaps')).toBeNull()
+  })
 })

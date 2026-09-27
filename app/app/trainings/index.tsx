@@ -52,7 +52,7 @@ export default function Sessions() {
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           <Chip label="All types" active={!filters.type} onPress={() => setFilters({ ...filters, type: undefined })} />
-          {trainingTypeSchema.options.map((type) => (
+          {trainingTypeSchema.options.filter((type) => type !== 'gaps').map((type) => (
             <Chip
               key={type}
               label={TRAINING_TYPE_NAMES[type]}
