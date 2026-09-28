@@ -9,7 +9,6 @@ import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
 import { useGapsBoard } from '../../../src/components/gaps-board'
-import { openEndMenu } from '../../../src/components/session-menu'
 import { colors, spacing } from '../../../src/theme/tokens'
 
 /** Drawn rather than left as whitespace, which collapses when a blank lands at a line wrap. */
@@ -49,7 +48,7 @@ export default function Gaps() {
   const training = useTraining(id)
   const next = useNextRound(id)
   const answer = useAnswerRound(id)
-  const complete = useCompleteTraining(id)
+  const complete = useCompleteTraining()
   const cancel = useCancelTraining()
   const dealt = useRef(false)
 
@@ -70,13 +69,6 @@ export default function Gaps() {
   if (training.isError || !session) return <Text style={styles.error}>Could not open this drill</Text>
 
   const canEnd = active && !busy
-  const endMenu = () => {
-    if (canEnd) openEndMenu({
-      onEnd: () => complete.mutate(),
-      onCancel: () => cancel.mutate(id),
-      ending: 'End keeps this session with its round counters. Cancel drops it.',
-    })
-  }
   const check = () => {
     if (round && board.ready && !busy) answer.mutate({ index: round.index, answer: { fills: board.fills } })
   }
@@ -91,9 +83,14 @@ export default function Gaps() {
       />
       {active ? (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button onPress={endMenu} disabled={!canEnd} tintColor={colors.error}>
-            End
-          </Stack.Toolbar.Button>
+          <Stack.Toolbar.Menu icon="ellipsis" disabled={!canEnd}>
+            <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => complete.mutate(id)}>
+              End session
+            </Stack.Toolbar.MenuAction>
+            <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={() => cancel.mutate(id)}>
+              Cancel session
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
         </Stack.Toolbar>
       ) : null}
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.md }]}>

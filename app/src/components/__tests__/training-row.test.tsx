@@ -37,6 +37,20 @@ describe('TrainingRow', () => {
     expect(router.push).toHaveBeenCalledWith('/trainings/history/t1')
   })
 
+  it('shows every score of an ended drill', async () => {
+    await render(
+      <TrainingRow training={summary({ type: 'describe', status: 'COMPLETED', context: undefined, scores: [7, 3, 9] })} />,
+    )
+
+    expect(screen.getByText('Score: 7 · 3 · 9')).toBeTruthy()
+  })
+
+  it('shows no score line for a drill with nothing scored', async () => {
+    await render(<TrainingRow training={summary({ type: 'gaps', status: 'COMPLETED', scores: [] })} />)
+
+    expect(screen.queryByText(/Score:/)).toBeNull()
+  })
+
   it('opens an ended drill read-only too', async () => {
     await render(<TrainingRow training={summary({ type: 'gaps', status: 'COMPLETED', context: undefined })} />)
 

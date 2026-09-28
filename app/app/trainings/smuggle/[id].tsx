@@ -8,7 +8,6 @@ import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
 import { scoreColor } from '../../../src/components/score'
-import { openEndMenu } from '../../../src/components/session-menu'
 import { useSmuggleDraft } from '../../../src/components/smuggle-draft'
 import { colors, spacing } from '../../../src/theme/tokens'
 
@@ -17,7 +16,7 @@ export default function Smuggle() {
   const training = useTraining(id)
   const next = useNextRound(id)
   const answer = useAnswerRound(id)
-  const complete = useCompleteTraining(id)
+  const complete = useCompleteTraining()
   const cancel = useCancelTraining()
   const dealt = useRef(false)
 
@@ -38,15 +37,6 @@ export default function Smuggle() {
   if (training.isError || !session) return <Text style={styles.error}>Could not open this drill</Text>
 
   const canEnd = active && !busy
-  const endMenu = () => {
-    if (canEnd) {
-      openEndMenu({
-        onEnd: () => complete.mutate(),
-        onCancel: () => cancel.mutate(id),
-        ending: 'End keeps this session with its round counters. Cancel drops it.',
-      })
-    }
-  }
   const send = () => {
     if (round && draft.ready && !busy) {
       answer.mutate({ index: round.index, answer: { message: draft.message.trim() } })
@@ -63,9 +53,14 @@ export default function Smuggle() {
       />
       {active ? (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button onPress={endMenu} disabled={!canEnd} tintColor={colors.error}>
-            End
-          </Stack.Toolbar.Button>
+          <Stack.Toolbar.Menu icon="ellipsis" disabled={!canEnd}>
+            <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => complete.mutate(id)}>
+              End session
+            </Stack.Toolbar.MenuAction>
+            <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={() => cancel.mutate(id)}>
+              Cancel session
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
         </Stack.Toolbar>
       ) : null}
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">

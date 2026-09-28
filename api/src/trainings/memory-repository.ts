@@ -1,5 +1,4 @@
 import {
-  trainingSummarySchema,
   type ChatMessage,
   type DrillAggregates,
   type DrillRound,
@@ -12,6 +11,7 @@ import {
   type TrainingStatus,
   type TrainingSummary,
 } from '@contracts'
+import { summarize } from './mapper'
 import type { NewTraining, ScoreEffect, TrainingRepository } from './repository'
 
 export class InMemoryTrainingRepository implements TrainingRepository {
@@ -35,7 +35,7 @@ export class InMemoryTrainingRepository implements TrainingRepository {
       )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit)
-      .map((training) => trainingSummarySchema.parse(training))
+      .map((training) => summarize(training))
   }
 
   async count(userId: string, status: TrainingStatus): Promise<number> {

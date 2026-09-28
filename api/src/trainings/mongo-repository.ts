@@ -262,7 +262,7 @@ export class MongoTrainingRepository implements TrainingRepository {
         ...(status && { status }),
         ...(before && { createdAt: { $lt: before } }),
       })
-      .project({ messages: 0, rounds: 0, srsEffects: 0 })
+      .project({ messages: 0, srsEffects: 0, 'rounds.targets': 0, 'rounds.material': 0, 'rounds.answer': 0 })
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .toArray()

@@ -74,6 +74,16 @@ describe('useCreateTraining', () => {
     expect(queryClient.getQueryData([TRAININGS_KEY, 'detail', 't1'])).toEqual(created)
   })
 
+  it('marks the session lists stale so a reused Sessions screen shows the new row', async () => {
+    const list = [TRAININGS_KEY, 'list', {}]
+    queryClient.setQueryData(list, { pages: [{ items: [] }], pageParams: [undefined] })
+
+    const result = await start(chat)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryState(list)?.isInvalidated).toBe(true)
+  })
+
   it('surfaces a refused start so the screen can keep the draft context', async () => {
     mockedApiPost.mockRejectedValue(new Error('POST /trainings failed with 502'))
 

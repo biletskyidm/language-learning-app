@@ -1,11 +1,16 @@
 import { useState } from 'react'
-import { Stack, useLocalSearchParams } from 'expo-router'
+import { useMutationState } from '@tanstack/react-query'
+import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native'
 import { Text } from '../../src/components/themed'
-import { trainingStatusSchema, trainingTypeSchema } from '@contracts'
+import { DEFAULT_SETTINGS, trainingStatusSchema, trainingTypeSchema } from '@contracts'
 import { useCancelTraining } from '../../src/api/use-cancel-training'
+import { useCompleteTraining } from '../../src/api/use-complete-training'
+import { useSettings } from '../../src/api/use-settings'
+import { TRAININGS_KEY } from '../../src/api/use-training'
 import { useTrainings, type TrainingFilters } from '../../src/api/use-trainings'
 import { Chip } from '../../src/components/chip'
+import { openPracticeSheet } from '../../src/components/practice-sheet'
 import { openSessionMenu } from '../../src/components/session-menu'
 import { TRAINING_STATUS_NAMES, TRAINING_TYPE_NAMES, TrainingRow } from '../../src/components/training-row'
 import { colors, spacing } from '../../src/theme/tokens'
@@ -15,6 +20,12 @@ export default function Sessions() {
   const [filters, setFilters] = useState<TrainingFilters>({ status: trainingStatusSchema.safeParse(status).data })
   const trainings = useTrainings(filters)
   const cancel = useCancelTraining()
+  const complete = useCompleteTraining()
+  const settings = useSettings().data ?? DEFAULT_SETTINGS
+  const ending = useMutationState({
+    filters: { mutationKey: [TRAININGS_KEY], status: 'pending' },
+    select: (mutation) => mutation.state.variables,
+  })
 
   const empty = () => {
     if (trainings.isPending) return <ActivityIndicator style={styles.state} />
@@ -25,6 +36,14 @@ export default function Sessions() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Sessions' }} />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon="plus"
+          onPress={() =>
+            openPracticeSheet(settings, (mode) => router.push({ pathname: '/practice', params: { mode } }))
+          }
+        />
+      </Stack.Toolbar>
       <View style={styles.filters}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           <Chip label="All" active={!filters.status} onPress={() => setFilters({ ...filters, status: undefined })} />
@@ -39,7 +58,7 @@ export default function Sessions() {
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           <Chip label="All types" active={!filters.type} onPress={() => setFilters({ ...filters, type: undefined })} />
-          {trainingTypeSchema.options.map((type) => (
+          {trainingTypeSchema.options.filter((type) => type !== 'gaps').map((type) => (
             <Chip
               key={type}
               label={TRAINING_TYPE_NAMES[type]}
@@ -49,12 +68,21 @@ export default function Sessions() {
           ))}
         </ScrollView>
       </View>
+      {complete.isError ? <Text style={styles.error}>Could not end that session — try again</Text> : null}
       {cancel.isError ? <Text style={styles.error}>Could not cancel that session — try again</Text> : null}
       <FlatList
         data={trainings.data?.pages.flatMap((page) => page.items) ?? []}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TrainingRow training={item} onMenu={() => openSessionMenu(() => cancel.mutate(item.id))} />
+          <TrainingRow
+            training={item}
+            onMenu={
+              ending.includes(item.id)
+                ? undefined
+                : () =>
+                    openSessionMenu({ onEnd: () => complete.mutate(item.id), onCancel: () => cancel.mutate(item.id) })
+            }
+          />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={empty()}

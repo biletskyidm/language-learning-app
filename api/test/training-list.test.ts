@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { apiErrorSchema, trainingListResponseSchema, type ChatTraining, type Training } from '@contracts'
+import {
+  apiErrorSchema,
+  trainingListResponseSchema,
+  type ChatTraining,
+  type DescribeTraining,
+  type SmuggleTraining,
+  type Training,
+} from '@contracts'
 import { createApp } from '../src/app'
 import { InMemoryTrainingRepository } from '../src/trainings/memory-repository'
 import { bearer, TEST_SECRET, testDeps } from './deps'
@@ -19,6 +26,55 @@ const training = (id: string, overrides: Partial<ChatTraining> = {}): Training =
   createdAt: day(1),
   ...overrides,
 })
+
+const target = { expressionId: 'e1', expression: 'break the ice', meaning: 'to get a conversation started' }
+
+const describeDrill = (overrides: Partial<DescribeTraining> = {}): DescribeTraining => ({
+  id: 'd1',
+  userId: 'me',
+  type: 'describe',
+  status: 'COMPLETED',
+  targets: [target],
+  rounds: [8, 5].map((score, index) => ({
+    index,
+    targets: [target],
+    material: { targetExpressionId: 'e1', expression: 'break the ice' },
+    answer: { description: 'start talking with someone new' },
+    verdict: { score, feedback: 'ok' },
+  })),
+  aggregates: { rounds: 2, correct: 1, wrong: 1 },
+  srsEffects: [],
+  createdAt: day(1),
+  completedAt: day(1),
+  ...overrides,
+})
+
+const smuggleDrill: SmuggleTraining = {
+  id: 's1',
+  userId: 'me',
+  type: 'smuggle',
+  status: 'COMPLETED',
+  targets: [target, target],
+  rounds: [
+    {
+      index: 0,
+      targets: [target, target],
+      material: { targets: [target, target] },
+      answer: { message: 'I broke the ice and then touched base.' },
+      verdict: {
+        results: [
+          { expression: 'break the ice', score: 9, note: 'natural' },
+          { expression: 'touch base', score: 6, note: 'stiff' },
+        ],
+        reply: 'Sounds good.',
+      },
+    },
+  ],
+  aggregates: { rounds: 1, correct: 1, wrong: 1 },
+  srsEffects: [],
+  createdAt: day(1),
+  completedAt: day(1),
+}
 
 const SESSIONS = [
   training('t1', { createdAt: day(1), status: 'COMPLETED', completedAt: day(2) }),
@@ -71,6 +127,28 @@ describe('GET /trainings', () => {
     expect(row).not.toHaveProperty('messages')
     expect(row).not.toHaveProperty('srsEffects')
     expect(row).toMatchObject({ id: 't4', type: 'chat', status: 'ACTIVE', context: 'context of t4', style: 'informal' })
+  })
+
+  it('gives an ended drill every score it earned, without its rounds', async () => {
+    const [describe, smuggle] = (await page('', [describeDrill(), smuggleDrill])).items
+
+    expect(describe).not.toHaveProperty('rounds')
+    expect(describe?.scores).toEqual([8, 5])
+    expect(smuggle?.scores).toEqual([9, 6])
+  })
+
+  it('keeps the scores a canceled drill earned before it was dropped', async () => {
+    const [row] = (await page('', [describeDrill({ status: 'CANCELED', aggregates: undefined, canceledAt: day(1) })]))
+      .items
+
+    expect(row?.scores).toEqual([8, 5])
+  })
+
+  it('leaves the scores off a drill that is still going', async () => {
+    const [row] = (await page('', [describeDrill({ status: 'ACTIVE', aggregates: undefined, completedAt: undefined })]))
+      .items
+
+    expect(row?.scores).toBeUndefined()
   })
 
   it('pages backwards from a createdAt cursor', async () => {

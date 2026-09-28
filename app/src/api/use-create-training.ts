@@ -10,6 +10,7 @@ export const useCreateTraining = () => {
     mutationFn: (input: CreateTrainingInput) => apiPost('/trainings', input, trainingSchema),
     onSuccess: (training) => {
       queryClient.setQueryData([TRAININGS_KEY, 'detail', training.id], training)
+      queryClient.invalidateQueries({ queryKey: [TRAININGS_KEY, 'list'] })
     },
   })
 }

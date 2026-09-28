@@ -9,6 +9,7 @@ export const useCancelTraining = () => {
   const lists = { queryKey: [TRAININGS_KEY, 'list'] }
 
   return useMutation({
+    mutationKey: [TRAININGS_KEY, 'cancel'],
     mutationFn: (trainingId: string) => apiPost(`/trainings/${trainingId}/cancel`, undefined, trainingSchema),
     onSuccess: (training) => {
       queryClient.setQueryData([TRAININGS_KEY, 'detail', training.id], training)

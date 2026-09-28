@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Stack, router, useLocalSearchParams } from 'expo-router'
+import { Stack, router, useLocalSearchParams, useNavigation } from 'expo-router'
+import type { NavigationProp, ParamListBase } from 'expo-router/react-navigation'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Text, TextInput } from '../src/components/themed'
@@ -22,7 +23,7 @@ import { Chip } from '../src/components/chip'
 import { ExpressionPicker } from '../src/components/expression-picker'
 import { ModeTiles, type ModeTile } from '../src/components/mode-tiles'
 import { PracticeTargetChips } from '../src/components/practice-target-chips'
-import { trainingRoute } from '../src/components/training-route'
+import { sessionStack } from '../src/components/training-route'
 import { colors, spacing } from '../src/theme/tokens'
 
 const STYLES: [ChatStyle, string][] = [
@@ -95,6 +96,7 @@ type StartProps = { targets: Expression[]; mode: Mode; draft: Draft }
 
 const StartSession = ({ targets, mode, draft }: StartProps) => {
   const create = useCreateTraining()
+  const navigation = useNavigation<NavigationProp<ParamListBase>>()
   const insets = useSafeAreaInsets()
 
   const expressionIds = targets.map((target) => target.id)
@@ -107,9 +109,8 @@ const StartSession = ({ targets, mode, draft }: StartProps) => {
     input.success &&
     create.mutate(input.data, {
       onSuccess: (training) => {
-        const route = trainingRoute(training.type, training.id)
-        router.replace('/trainings')
-        if (route) router.push(route)
+        const routes = sessionStack(navigation.getState()?.routes ?? [], training.type, training.id)
+        navigation.reset({ index: routes.length - 1, routes })
       },
     })
 
