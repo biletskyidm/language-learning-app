@@ -145,12 +145,12 @@ export class InMemoryTrainingRepository implements TrainingRepository {
     return copy(training)
   }
 
-  async srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at'>[]> {
+  async srsEffectsBetween(userId: string, from: Date, to: Date): Promise<Pick<SrsEffect, 'expressionId' | 'at' | 'scoreWritten'>[]> {
     return this.trainings
       .filter((training) => training.userId === userId)
       .flatMap((training) => training.srsEffects)
       .filter(({ at }) => at >= from && at < to)
-      .map(({ expressionId, at }) => ({ expressionId, at }))
+      .map(({ expressionId, at, scoreWritten }) => ({ expressionId, at, scoreWritten }))
   }
 
   async scoreEffectsSince(userId: string, from: Date): Promise<ScoreEffect[]> {
