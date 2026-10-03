@@ -264,4 +264,35 @@ describe('Practice', () => {
 
     await waitFor(() => expect(picked()).toEqual(['/expressions/pick?limit=5']))
   })
+
+  it('never shows a pick cached from an earlier visit', async () => {
+    const rotated = Array.from({ length: 5 }, (_, index) => expression(`e${index + 5}`))
+    let pick = vocabulary
+    mockedApiGet.mockImplementation(async (path: string) => {
+      if (path === '/settings') return settings
+      if (path === '/scenarios') return { items: [scenario] }
+      if (path.startsWith('/expressions/pick')) return { items: pick }
+      return { items: [...vocabulary, ...rotated] }
+    })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const visit = () =>
+      render(
+        <QueryClientProvider client={client}>
+          <SafeAreaProvider initialMetrics={METRICS}>
+            <Practice />
+          </SafeAreaProvider>
+        </QueryClientProvider>,
+      )
+    const first = await visit()
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    await first.unmount()
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    pick = rotated
+    await visit()
+
+    await waitFor(() => expect(rows()).toHaveLength(5))
+    expect(screen.getByText('phrase e5')).toBeTruthy()
+    expect(screen.queryByText('phrase e0')).toBeNull()
+  })
 })
