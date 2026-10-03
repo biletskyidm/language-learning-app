@@ -39,7 +39,10 @@ export default function Smuggle() {
   const canEnd = active && !busy
   const send = () => {
     if (round && draft.ready && !busy) {
-      answer.mutate({ index: round.index, answer: { message: draft.message.trim() } })
+      answer.mutate(
+        { index: round.index, answer: { message: draft.message.trim() } },
+        { onSuccess: () => complete.mutate(id) },
+      )
     }
   }
   const verdict = round?.verdict
@@ -134,14 +137,9 @@ export default function Smuggle() {
                 — {note}
               </Text>
             ))}
-            {active ? (
-              <Pressable
-                onPress={() => next.mutate()}
-                disabled={busy}
-                accessibilityRole="button"
-                style={[styles.secondary, busy && styles.off]}
-              >
-                <Text style={styles.secondaryLabel}>Another one</Text>
+            {active && !busy ? (
+              <Pressable onPress={() => complete.mutate(id)} accessibilityRole="button" style={styles.secondary}>
+                <Text style={styles.secondaryLabel}>Finish session</Text>
               </Pressable>
             ) : null}
           </>
