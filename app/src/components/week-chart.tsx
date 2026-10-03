@@ -14,7 +14,7 @@ export const WeekChart = ({ week, today, goal, barHeight = BAR_HEIGHT }: Props) 
 
   return (
     <View style={styles.chart}>
-      <Text style={styles.heading}>Expressions trained this week</Text>
+      <Text style={styles.heading}>Expressions nailed this week (6+)</Text>
       <View style={styles.columns}>
         {DAYS.map((label, day) => (
           <View key={label} style={styles.column} accessibilityLabel={week && `${label}: ${week[day]}`}>
