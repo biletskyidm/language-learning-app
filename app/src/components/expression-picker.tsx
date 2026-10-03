@@ -15,7 +15,7 @@ type Props = {
 
 export const ExpressionPicker = ({ excludedIds, onSelect, onClose }: Props) => {
   const [search, setSearch] = useState('')
-  const expressions = useExpressions({ ...DEFAULT_FILTERS, search })
+  const expressions = useExpressions({ ...DEFAULT_FILTERS, sort: 'nextTrainingAt', dir: 'asc', search })
   const items = (expressions.data?.items ?? []).filter((item) => !excludedIds.includes(item.id))
 
   const choose = (expression: Expression) => {

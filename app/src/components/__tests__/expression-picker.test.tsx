@@ -75,6 +75,12 @@ describe('ExpressionPicker', () => {
     expect(useExpressions).toHaveBeenLastCalledWith(expect.not.objectContaining({ tag: expect.anything() }))
   })
 
+  it('lists due phrases first', async () => {
+    await setup().view
+
+    expect(useExpressions).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'nextTrainingAt', dir: 'asc' }))
+  })
+
   it('shows nothing matches when the list is empty', async () => {
     query({ data: { items: [] } })
     await setup().view
