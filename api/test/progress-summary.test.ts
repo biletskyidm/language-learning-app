@@ -152,6 +152,27 @@ describe('GET /progress/summary', () => {
       expect(result.week).toEqual([2, 0, 2, 0, 0, 0, 0])
     })
 
+    it('counts only phrases scored above 5', async () => {
+      const scored = (id: string, at: string, scoreWritten: number) => ({ ...effect(id, at), scoreWritten })
+      const result = await summary({
+        now: wednesday,
+        trainings: [
+          training('t1', {
+            srsEffects: [
+              scored('e1', '2026-03-09T08:00:00.000Z', 5),
+              scored('e2', '2026-03-09T09:00:00.000Z', 3),
+              scored('e3', '2026-03-09T10:00:00.000Z', 6),
+              scored('e4', '2026-03-09T11:00:00.000Z', 3),
+              scored('e4', '2026-03-09T12:00:00.000Z', 8),
+              scored('e4', '2026-03-09T13:00:00.000Z', 9),
+            ],
+          }),
+        ],
+      })
+
+      expect(result.week).toEqual([2, 0, 0, 0, 0, 0, 0])
+    })
+
     it('leaves out practice from before this Monday', async () => {
       const result = await summary({
         now: wednesday,

@@ -61,7 +61,8 @@ export const progressRoutes = (deps: Pick<Deps, 'expressions' | 'trainings' | 'c
     ])
 
     const days = Array.from({ length: 7 }, () => new Set<string>())
-    for (const { expressionId, at } of effects) days[Math.floor((at.getTime() - from.getTime()) / DAY)]?.add(expressionId)
+    for (const { expressionId, at, scoreWritten } of effects)
+      if (scoreWritten > 5) days[Math.floor((at.getTime() - from.getTime()) / DAY)]?.add(expressionId)
 
     const dayEnds = Array.from({ length: SCORE_TREND_DAYS }, (_, day) => new Date(trendFrom.getTime() + (day + 1) * DAY))
 

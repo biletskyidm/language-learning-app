@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Stack, useLocalSearchParams } from 'expo-router'
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router'
 import {
   ActivityIndicator,
   FlatList,
@@ -18,10 +18,11 @@ import { useTraining } from '../../src/api/use-training'
 import { readyToEnd } from '../../src/components/assessment'
 import { AssessmentPreview } from '../../src/components/assessment-preview'
 import { MessageBubble } from '../../src/components/message-bubble'
-import { SessionSummary } from '../../src/components/session-summary'
 import { TargetChips } from '../../src/components/target-chips'
+import { TargetMeaning } from '../../src/components/target-meaning'
 import { Text, TextInput } from '../../src/components/themed'
 import { TargetProgress } from '../../src/components/target-progress'
+import { trainingRoute } from '../../src/components/training-route'
 import { TypingIndicator } from '../../src/components/typing-indicator'
 import { colors, spacing } from '../../src/theme/tokens'
 
@@ -35,6 +36,7 @@ export default function Chat() {
   const [draft, setDraft] = useState('')
   const [preview, setPreview] = useState<ChatMessage | null>(null)
   const [progress, setProgress] = useState<TrainingTarget | null>(null)
+  const [meaning, setMeaning] = useState<TrainingTarget | null>(null)
   const [inputHeight, setInputHeight] = useState(INPUT_MIN_HEIGHT)
 
   if (training.isPending) return <ActivityIndicator style={styles.state} />
@@ -42,6 +44,7 @@ export default function Chat() {
 
   const chat = training.data
   if (chat.type !== 'chat') return <Text style={styles.error}>This session is not a conversation</Text>
+  if (chat.status !== 'ACTIVE') return <Redirect href={trainingRoute(chat.type, chat.id, chat.status)!} />
 
   const messages: ChatMessage[] =
     send.isPending && send.variables
@@ -58,9 +61,8 @@ export default function Chat() {
     send.mutate(content, { onError: () => setDraft((current) => current || content) })
   }
 
-  const { status, targets, finalAssessment } = chat
-  const active = status === 'ACTIVE'
-  const canEnd = active && !send.isPending && !ending
+  const { targets } = chat
+  const canEnd = !send.isPending && !ending
   const end = () => {
     if (canEnd) complete.mutate(id)
   }
@@ -76,22 +78,18 @@ export default function Chat() {
           title: chat.context,
         }}
       />
-      {active ? (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Menu icon="ellipsis" disabled={!canEnd}>
-            <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => complete.mutate(id)}>
-              End session
-            </Stack.Toolbar.MenuAction>
-            <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={() => cancel.mutate(id)}>
-              Cancel session
-            </Stack.Toolbar.MenuAction>
-          </Stack.Toolbar.Menu>
-        </Stack.Toolbar>
-      ) : null}
-      <TargetChips targets={targets} messages={messages} onPress={setProgress} />
-      {finalAssessment ? <SessionSummary finalAssessment={finalAssessment} capped /> : null}
-      {status === 'CANCELED' ? <Text style={styles.canceled}>Session canceled</Text> : null}
-      {active && readyToEnd(targets, messages) ? (
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu icon="ellipsis" disabled={!canEnd}>
+          <Stack.Toolbar.MenuAction icon="checkmark.circle" onPress={() => complete.mutate(id)}>
+            End session
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={() => cancel.mutate(id)}>
+            Cancel session
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+      </Stack.Toolbar>
+      <TargetChips targets={targets} messages={messages} onPress={setProgress} onMeaning={setMeaning} />
+      {readyToEnd(targets, messages) ? (
         <View style={styles.nudge}>
           <Text style={styles.nudgeText}>Every target landed. Ready to wrap up?</Text>
           <Pressable
@@ -109,44 +107,43 @@ export default function Chat() {
         data={[...messages].reverse()}
         keyExtractor={(_, index) => String(messages.length - 1 - index)}
         renderItem={({ item }) => <MessageBubble message={item} onPreview={() => setPreview(item)} />}
-        contentContainerStyle={[styles.messages, !active && { paddingTop: insets.bottom + spacing.md }]}
+        contentContainerStyle={styles.messages}
         ListHeaderComponent={send.isPending ? <TypingIndicator /> : null}
       />
       {ending ? <ActivityIndicator style={styles.state} /> : null}
       {complete.isError ? <Text style={styles.error}>Could not end the session — try again</Text> : null}
       {cancel.isError ? <Text style={styles.error}>Could not cancel the session — try again</Text> : null}
       {send.isError ? <Text style={styles.error}>Could not send that — try again</Text> : null}
-      {active ? (
-        <View style={[styles.composer, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <TextInput
-            style={[styles.input, { height: inputHeight }]}
-            value={draft}
-            onChangeText={setDraft}
-            onContentSizeChange={(event) =>
-              setInputHeight(
-                Math.min(INPUT_MAX_HEIGHT, Math.max(INPUT_MIN_HEIGHT, event.nativeEvent.contentSize.height)),
-              )
-            }
-            placeholder="Say something"
-            placeholderTextColor={colors.muted}
-            multiline
-            maxLength={2000}
-          />
-          <Pressable
-            onPress={submit}
-            disabled={!draft.trim() || send.isPending || ending}
-            style={[styles.send, (!draft.trim() || send.isPending || ending) && styles.sendOff]}
-          >
-            <Text style={styles.sendLabel}>Send</Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <View style={[styles.composer, { paddingBottom: insets.bottom + spacing.sm }]}>
+        <TextInput
+          style={[styles.input, { height: inputHeight }]}
+          value={draft}
+          onChangeText={setDraft}
+          onContentSizeChange={(event) =>
+            setInputHeight(
+              Math.min(INPUT_MAX_HEIGHT, Math.max(INPUT_MIN_HEIGHT, event.nativeEvent.contentSize.height)),
+            )
+          }
+          placeholder="Say something"
+          placeholderTextColor={colors.muted}
+          multiline
+          maxLength={2000}
+        />
+        <Pressable
+          onPress={submit}
+          disabled={!draft.trim() || send.isPending || ending}
+          style={[styles.send, (!draft.trim() || send.isPending || ending) && styles.sendOff]}
+        >
+          <Text style={styles.sendLabel}>Send</Text>
+        </Pressable>
+      </View>
       {preview?.assessment ? (
         <AssessmentPreview assessment={preview.assessment} onDismiss={() => setPreview(null)} />
       ) : null}
       {progress ? (
         <TargetProgress target={progress} effects={chat.srsEffects} onDismiss={() => setProgress(null)} />
       ) : null}
+      {meaning ? <TargetMeaning target={meaning} onDismiss={() => setMeaning(null)} /> : null}
     </KeyboardAvoidingView>
   )
 }
@@ -183,7 +180,6 @@ const styles = StyleSheet.create({
   },
   sendOff: { opacity: 0.4 },
   sendLabel: { color: colors.onAccent, fontWeight: '600' },
-  canceled: { color: colors.muted, textAlign: 'center', paddingVertical: spacing.sm },
   nudge: {
     flexDirection: 'row',
     alignItems: 'center',

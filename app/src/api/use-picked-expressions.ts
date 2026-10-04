@@ -9,4 +9,5 @@ export const usePickedExpressions = (limit: number | undefined) =>
     queryKey: [PICK_KEY, limit],
     queryFn: () => apiGet(`/expressions/pick?limit=${limit}`, expressionPickResponseSchema),
     enabled: limit !== undefined,
+    gcTime: 0,
   })
