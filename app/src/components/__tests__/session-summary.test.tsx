@@ -20,8 +20,8 @@ const finalAssessment: FinalAssessment = {
   computedAt: new Date('2026-09-27'),
 }
 
-describe.each([false, true])('SessionSummary capped=%s', (capped) => {
-  beforeEach(() => render(<SessionSummary finalAssessment={finalAssessment} capped={capped} />))
+describe('SessionSummary', () => {
+  beforeEach(() => render(<SessionSummary finalAssessment={finalAssessment} />))
 
   it('shows the mean of the averages as the overall score', () => {
     expect(screen.getByText('6.4')).toBeTruthy()

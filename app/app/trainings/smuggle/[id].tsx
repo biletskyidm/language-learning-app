@@ -1,14 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Text, TextInput } from '../../../src/components/themed'
-import { SMUGGLE_MAX_LENGTH } from '@contracts'
+import { SMUGGLE_MAX_LENGTH, type TrainingTarget } from '@contracts'
 import { useCancelTraining } from '../../../src/api/use-cancel-training'
 import { useCompleteTraining } from '../../../src/api/use-complete-training'
 import { useAnswerRound, useNextRound } from '../../../src/api/use-drill-round'
 import { useTraining } from '../../../src/api/use-training'
 import { scoreColor } from '../../../src/components/score'
 import { useSmuggleDraft } from '../../../src/components/smuggle-draft'
+import { TargetMeaning } from '../../../src/components/target-meaning'
 import { colors, spacing } from '../../../src/theme/tokens'
 
 export default function Smuggle() {
@@ -19,6 +20,7 @@ export default function Smuggle() {
   const complete = useCompleteTraining()
   const cancel = useCancelTraining()
   const dealt = useRef(false)
+  const [meaning, setMeaning] = useState<TrainingTarget | null>(null)
 
   const session = training.data?.type === 'smuggle' ? training.data : undefined
   const round = session?.rounds.at(-1)
@@ -82,8 +84,9 @@ export default function Smuggle() {
                 const score = draft.scores.get(target.expression)
 
                 return (
-                  <View
+                  <Pressable
                     key={target.expressionId}
+                    onLongPress={score === undefined ? () => setMeaning(target) : undefined}
                     accessibilityLabel={`${target.expression}, ${
                       score === undefined ? 'not judged yet' : `scored ${score} out of 10`
                     }`}
@@ -95,7 +98,7 @@ export default function Smuggle() {
                     <Text style={[styles.chipLabel, score !== undefined && styles.chipLabelJudged]}>
                       {target.expression}
                     </Text>
-                  </View>
+                  </Pressable>
                 )
               })}
             </View>
@@ -158,6 +161,7 @@ export default function Smuggle() {
         {complete.isError ? <Text style={styles.error}>Could not end the session — try again</Text> : null}
         {cancel.isError ? <Text style={styles.error}>Could not cancel the session — try again</Text> : null}
       </ScrollView>
+      {meaning ? <TargetMeaning target={meaning} onDismiss={() => setMeaning(null)} /> : null}
     </View>
   )
 }

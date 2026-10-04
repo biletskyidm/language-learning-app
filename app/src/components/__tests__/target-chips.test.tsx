@@ -62,4 +62,28 @@ describe('TargetChips', () => {
 
     expect(onPress).toHaveBeenCalledWith(targets[1])
   })
+
+  it('hands an unused target over on long press', async () => {
+    const onMeaning = jest.fn()
+    await render(<TargetChips targets={targets} messages={[]} onMeaning={onMeaning} />)
+
+    await fireEvent(screen.getByLabelText('under the weather, not used yet'), 'longPress')
+
+    expect(onMeaning).toHaveBeenCalledWith(targets[1])
+  })
+
+  it('ignores long press on a used target', async () => {
+    const onMeaning = jest.fn()
+    await render(
+      <TargetChips
+        targets={targets}
+        messages={[message(assessment(8, 'break the ice'))]}
+        onMeaning={onMeaning}
+      />,
+    )
+
+    await fireEvent(screen.getByLabelText('break the ice, used correctly'), 'longPress')
+
+    expect(onMeaning).not.toHaveBeenCalled()
+  })
 })

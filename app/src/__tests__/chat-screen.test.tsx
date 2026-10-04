@@ -7,6 +7,10 @@ import Chat from '../../app/trainings/[id]'
 import { apiGet } from '../api/client'
 
 jest.mock('expo-router', () => ({
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = jest.requireActual<typeof import('react-native')>('react-native')
+    return <Text>{`redirect ${href}`}</Text>
+  },
   Stack: {
     Screen: () => null,
     Toolbar: Object.assign(({ children }: { children: React.ReactNode }) => children, {
@@ -86,7 +90,7 @@ const NUDGE = 'Every target landed. Ready to wrap up?'
 
 let queryClient: QueryClient
 
-const open = async (training: Training) => {
+const mount = async (training: Training) => {
   mockedApiGet.mockResolvedValue(training)
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
 
@@ -97,7 +101,10 @@ const open = async (training: Training) => {
       </SafeAreaProvider>
     </QueryClientProvider>,
   )
+}
 
+const open = async (training: Training) => {
+  await mount(training)
   await screen.findByText('Morning — how did yesterday go?')
 }
 
@@ -133,45 +140,12 @@ describe('Chat screen', () => {
     expect(screen.queryByText(NUDGE)).toBeNull()
   })
 
-  it('shows the averages and the narrative at the top of an ended chat, without a composer', async () => {
-    await open({
-      ...resumed,
-      status: 'COMPLETED',
-      completedAt: new Date('2026-01-01T00:10:00.000Z'),
-      finalAssessment: {
-        averages: {
-          contextCorrectness: 7,
-          grammarAndSyntax: 8,
-          vocabularyDiversity: 6.25,
-          sentenceComplexity: 5,
-          sentenceNaturalness: 7.5,
-        },
-        targets: {
-          'break the ice': { used: true, usedCorrectly: true, score: 8 },
-          'touch base': { used: false, usedCorrectly: false, score: 0 },
-        },
-        narrative: {
-          strengths: 'You kept the conversation moving.',
-          areasForImprovement: 'Your sentences stayed short.',
-          suggestedFocus: 'Try touch base next time.',
-        },
-        computedAt: new Date('2026-01-01T00:10:00.000Z'),
-      },
-    })
+  it.each([
+    ['COMPLETED', { completedAt: new Date('2026-01-01T00:10:00.000Z') }],
+    ['CANCELED', { canceledAt: new Date('2026-01-01T00:10:00.000Z') }],
+  ] as const)('sends a %s chat to its history view', async (status, ended) => {
+    await mount({ ...resumed, status, ...ended })
 
-    expect(screen.getByText('Context 7.0 · Grammar 8.0 · Vocabulary 6.3 · Complexity 5.0 · Naturalness 7.5')).toBeTruthy()
-    expect(screen.getByText('You kept the conversation moving.')).toBeTruthy()
-    expect(screen.getByText('Your sentences stayed short.')).toBeTruthy()
-    expect(screen.getByText('Try touch base next time.')).toBeTruthy()
-    expect(screen.queryByPlaceholderText('Say something')).toBeNull()
-    expect(screen.queryByText(NUDGE)).toBeNull()
-  })
-
-  it('marks a canceled chat as canceled, without a composer or a summary', async () => {
-    await open({ ...resumed, status: 'CANCELED', canceledAt: new Date('2026-01-01T00:10:00.000Z') })
-
-    expect(screen.getByText('Session canceled')).toBeTruthy()
-    expect(screen.getByText('I broke the ice with the client.')).toBeTruthy()
-    expect(screen.queryByPlaceholderText('Say something')).toBeNull()
+    expect(await screen.findByText('redirect /trainings/history/t1')).toBeTruthy()
   })
 })

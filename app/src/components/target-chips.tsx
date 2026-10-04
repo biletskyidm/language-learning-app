@@ -4,9 +4,14 @@ import type { ChatMessage, TrainingTarget } from '@contracts'
 import { colors, spacing } from '../theme/tokens'
 import { litTargets } from './assessment'
 
-type Props = { targets: TrainingTarget[]; messages: ChatMessage[]; onPress?: (target: TrainingTarget) => void }
+type Props = {
+  targets: TrainingTarget[]
+  messages: ChatMessage[]
+  onPress?: (target: TrainingTarget) => void
+  onMeaning?: (target: TrainingTarget) => void
+}
 
-export const TargetChips = ({ targets, messages, onPress }: Props) => {
+export const TargetChips = ({ targets, messages, onPress, onMeaning }: Props) => {
   const lit = litTargets(messages)
 
   return (
@@ -18,6 +23,7 @@ export const TargetChips = ({ targets, messages, onPress }: Props) => {
           <Pressable
             key={target.expressionId}
             onPress={() => onPress?.(target)}
+            onLongPress={isLit ? undefined : () => onMeaning?.(target)}
             accessibilityRole="button"
             accessibilityLabel={`${target.expression}, ${isLit ? 'used correctly' : 'not used yet'}`}
             style={[styles.chip, isLit && styles.chipLit]}
